@@ -5,19 +5,36 @@ import PackageDescription
 
 let package = Package(
     name: "MetalLink",
+    platforms: [
+        .iOS(.v15),
+        .macOS(.v12),
+    ],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "MetalLink",
-            targets: ["MetalLink"]),
+            targets: ["MetalLink"]
+        ),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "main")
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "MetalLink"),
+            name: "MetalLinkHeaders",
+            publicHeadersPath: "."
+        ),
+        .target(
+            name: "MetalLink",
+            dependencies: [
+                "MetalLinkHeaders",
+                "BitHandling"
+            ]
+        ),
         .testTarget(
             name: "MetalLinkTests",
-            dependencies: ["MetalLink"]),
+            dependencies: [
+                "MetalLink"
+            ]
+        ),
     ]
 )
