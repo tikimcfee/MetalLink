@@ -22,7 +22,7 @@ public let BackingBufferDefaultSize = 31_415
 public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     let link: MetalLink
     private(set) var buffer: MTLBuffer
-    var pointer: UnsafeMutablePointer<Stored>
+    public var pointer: UnsafeMutablePointer<Stored>
     
     let enlargeMultiplier = 2.01
     private(set) var currentBufferSize: Int
@@ -33,7 +33,7 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     private var enlargeSemaphore = DispatchSemaphore(value: 1)
     private var createSemaphore = DispatchSemaphore(value: 1)
     
-    init(
+    public init(
         link: MetalLink,
         initialSize: Int = BackingBufferDefaultSize
     ) throws {
@@ -44,7 +44,7 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         self.pointer = buffer.boundPointer(as: Stored.self, count: currentBufferSize)
     }
     
-    func createNext(
+    public func createNext(
         _ withUpdates: ((inout Stored) -> Void)? = nil
     ) throws -> Stored {
         createSemaphore.wait()

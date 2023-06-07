@@ -24,20 +24,20 @@ extension MetalLinkPickingTexture {
 }
 
 public class MetalLinkPickingTexture: MetalLinkReader {
-    let link: MetalLink
-    var pickingTexture: MTLTexture?
-    var generateNewTexture: Bool = false
+    public let link: MetalLink
+    public var pickingTexture: MTLTexture?
+    public var generateNewTexture: Bool = false
     
-    var currentHover: InstanceIDType = .zero {
+    public var currentHover: InstanceIDType = .zero {
         didSet { pickingHover.send(currentHover) }
     }
     private let pickingHover = PassthroughSubject<InstanceIDType, Never>()
-    lazy var sharedPickingHover = pickingHover.share()
+    public lazy var sharedPickingHover = pickingHover.share()
     
     private var bag = Set<AnyCancellable>()
-    var colorIndex: Int
+    public var colorIndex: Int
 
-    init(link: MetalLink, colorIndex: Int) {
+    public init(link: MetalLink, colorIndex: Int) {
         self.link = link
         self.pickingTexture = MetalLinkPickingTexture.generatePickingTexture(for: link)
         self.colorIndex = colorIndex

@@ -7,26 +7,26 @@
 
 import Foundation
 
-class BackgroundQuad: MetalLinkObject, QuadSizable {
-    var quad: MetalLinkQuadMesh
-    var node: MetalLinkNode { self }
+public class BackgroundQuad: MetalLinkObject, QuadSizable {
+    public var quad: MetalLinkQuadMesh
+    public var node: MetalLinkNode { self }
     
-    override var hasIntrinsicSize: Bool { true }
+    public override var hasIntrinsicSize: Bool { true }
     
-    override var contentSize: LFloat3 {
+    public override var contentSize: LFloat3 {
         LFloat3(scale.x * 2, scale.y * 2, 1)
     }
     
-    override var contentOffset: LFloat3 {
+    public override var contentOffset: LFloat3 {
         LFloat3(-scale.x, scale.y, 0)
     }
     
-    init(_ link: MetalLink) {
+    public init(_ link: MetalLink) {
         self.quad = MetalLinkQuadMesh(link)
         super.init(link, mesh: quad)
     }
     
-    override func doRender(in sdp: inout SafeDrawPass) {
+    public override func doRender(in sdp: inout SafeDrawPass) {
         super.doRender(in: &sdp)
     }
 }

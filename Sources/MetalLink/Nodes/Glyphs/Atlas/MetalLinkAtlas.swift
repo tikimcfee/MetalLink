@@ -7,20 +7,20 @@
 
 import MetalKit
 
-enum LinkAtlasError: Error {
+public enum LinkAtlasError: Error {
     case noTargetAtlasTexture
     case noStateBuilder
 }
 
-class MetalLinkAtlas {
+public class MetalLinkAtlas {
     private let link: MetalLink
     private let builder: AtlasBuilder
-    let nodeCache: MetalLinkGlyphNodeCache
-    var uvPairCache: TextureUVCache
-    var currentAtlas: MTLTexture { builder.atlasTexture }
+    public let nodeCache: MetalLinkGlyphNodeCache
+    public var uvPairCache: TextureUVCache
+    public var currentAtlas: MTLTexture { builder.atlasTexture }
     private var insertionLock = DispatchSemaphore(value: 1)
     
-    init(_ link: MetalLink) throws {
+    public init(_ link: MetalLink) throws {
         self.link = link
         self.uvPairCache = TextureUVCache()
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
@@ -32,7 +32,7 @@ class MetalLinkAtlas {
     }
 }
 
-extension MetalLinkAtlas {
+public extension MetalLinkAtlas {
     func newGlyph(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
         // TODO: Can't I just reuse the constants on the nodes themselves?
         addGlyphToAtlasIfMissing(key)

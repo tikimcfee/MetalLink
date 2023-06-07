@@ -8,21 +8,21 @@
 import MetalKit
 import BitHandling
 
-class TextureUVCache {
-    struct Pair {
-        let u: LFloat4
-        let v: LFloat4
+public class TextureUVCache {
+    public struct Pair {
+        public let u: LFloat4
+        public let v: LFloat4
     }
 
-    var map = ConcurrentDictionary<GlyphCacheKey, Pair>()
+    public var map = ConcurrentDictionary<GlyphCacheKey, Pair>()
     
-    subscript(_ key: GlyphCacheKey) -> Pair? {
+    public subscript(_ key: GlyphCacheKey) -> Pair? {
         get { map[key] }
         set { map[key] = newValue }
     }
 }
 
-class AtlasBuilder {
+public class AtlasBuilder {
     private let link: MetalLink
     private let textureCache: MetalLinkGlyphTextureCache
     private let meshCache: MetalLinkGlyphNodeMeshCache
@@ -37,7 +37,7 @@ class AtlasBuilder {
     private let sourceOrigin = MTLOrigin()
     private var targetOrigin = MTLOrigin()
     
-    init(
+    public init(
         _ link: MetalLink,
         textureCache: MetalLinkGlyphTextureCache,
         meshCache: MetalLinkGlyphNodeMeshCache
@@ -54,7 +54,7 @@ class AtlasBuilder {
     }
 }
 
-extension AtlasBuilder {
+public extension AtlasBuilder {
     struct BuildBlock {
         let commandBuffer: MTLCommandBuffer
         let blitEncoder: MTLBlitCommandEncoder
@@ -88,7 +88,7 @@ extension AtlasBuilder {
     }
 }
     
-extension AtlasBuilder {
+public extension AtlasBuilder {
     typealias UpdatedAtlas = (
         atlas: MTLTexture,
         uvCache: TextureUVCache
@@ -179,7 +179,7 @@ private extension AtlasBuilder {
     }
 }
 
-extension AtlasBuilder {
+public extension AtlasBuilder {
     // atlas texture size canvas buffer space length
     static var canvasSize = LInt2(4096 * 3, 4096 * 3)
     static var canvasDescriptor: MTLTextureDescriptor = {

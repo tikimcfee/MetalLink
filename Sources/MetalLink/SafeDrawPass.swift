@@ -11,9 +11,9 @@ import MetalKit
 public class SafeDrawPass {
     private static var reusedPassContainer: SafeDrawPass?
     
-    var renderPassDescriptor: MTLRenderPassDescriptor
-    var renderCommandEncoder: MTLRenderCommandEncoder
-    var commandBuffer: MTLCommandBuffer
+    public var renderPassDescriptor: MTLRenderPassDescriptor
+    public var renderCommandEncoder: MTLRenderCommandEncoder
+    public var commandBuffer: MTLCommandBuffer
         
     private init(
         renderPassDescriptor: MTLRenderPassDescriptor,

@@ -9,9 +9,9 @@ import MetalKit
 import MetalLinkHeaders
 //import Algorithms
 
-public class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
-    let link: MetalLink
-    var mesh: MetalLinkMesh
+open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
+    public let link: MetalLink
+    public var mesh: MetalLinkMesh
     
     private lazy var pipelineState: MTLRenderPipelineState
         = link.pipelineStateLibrary[.Instanced]
@@ -22,14 +22,14 @@ public class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLi
     private var material = MetalLinkMaterial()
     
     // TODO: Use regular constants for root, not instanced
-    var rootConstants = BasicModelConstants() {
+    public var rootConstants = BasicModelConstants() {
         didSet { rebuildSelf = true }
     }
     
-    var rebuildSelf: Bool = true
-    var rebuildInstances: Bool = false
-    var rootState = State()
-    let instanceState: InstanceState<InstancedNodeType>
+    public var rebuildSelf: Bool = true
+    public var rebuildInstances: Bool = false
+    public var rootState = State()
+    public let instanceState: InstanceState<InstancedNodeType>
 
     public init(
         _ link: MetalLink,
@@ -45,17 +45,17 @@ public class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLi
         super.init()
     }
     
-    public override func update(deltaTime: Float) {
+    open override func update(deltaTime: Float) {
         rootState.time += deltaTime
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
     
-    public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         
     }
     
-    func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
+    open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
         // override to do stuff right before instance buffer updates
     }
 }

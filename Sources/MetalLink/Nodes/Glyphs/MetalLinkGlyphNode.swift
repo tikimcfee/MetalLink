@@ -57,9 +57,9 @@ public extension MetalLinkGlyphNode {
     // flexibility and adding cohesion (coupling?). This is basically what I
     // encoded into SCNNode.name. This is more explicit.
     struct Meta {
-        var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
-        var instanceID: InstanceIDType?
-        var instanceBufferIndex: Int?
+        public var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
+        public var instanceID: InstanceIDType?
+        public var instanceBufferIndex: Int?
         
         public init(
             syntaxID: String? = nil,

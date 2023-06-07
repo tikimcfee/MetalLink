@@ -10,23 +10,23 @@ import Metal
 import BitHandling
 import MetalLinkHeaders
 
-class InstanceState<InstancedNodeType> {
-    let link: MetalLink
+public class InstanceState<InstancedNodeType> {
+    public let link: MetalLink
         
-    var nodes = ConcurrentArray<InstancedNodeType>()
-    var didSetRoot = false
+    public var nodes = ConcurrentArray<InstancedNodeType>()
+    public var didSetRoot = false
     
     private let constants: BackingBuffer<InstancedConstants>
-    private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
+    public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
     
-    var instanceBufferCount: Int { constants.currentEndIndex }
-    var instanceBuffer: MTLBuffer { constants.buffer }
-    var rawPointer: UnsafeMutablePointer<InstancedConstants> {
+    public var instanceBufferCount: Int { constants.currentEndIndex }
+    public var instanceBuffer: MTLBuffer { constants.buffer }
+    public var rawPointer: UnsafeMutablePointer<InstancedConstants> {
         get { constants.pointer }
         set { constants.pointer = newValue }
     }
     
-    init(
+    public init(
         link: MetalLink,
         bufferSize: Int = BackingBufferDefaultSize
     ) throws {
@@ -37,7 +37,7 @@ class InstanceState<InstancedNodeType> {
         )
     }
     
-    func indexValid(_ index: Int) -> Bool {
+    public func indexValid(_ index: Int) -> Bool {
         return index >= 0
             && index < instanceBufferCount
     }
@@ -49,24 +49,24 @@ class InstanceState<InstancedNodeType> {
         return newConstants
     }
     
-    func makeAndUpdateConstants(_ operation: (inout InstancedConstants) -> Void) throws {
+    public func makeAndUpdateConstants(_ operation: (inout InstancedConstants) -> Void) throws {
         var newConstants = try makeConstants()
         operation(&newConstants)
         rawPointer[newConstants.arrayIndex] = newConstants
     }
     
     // Appends info and returns last index
-    func appendToState(node newNode: InstancedNodeType) {
+    public func appendToState(node newNode: InstancedNodeType) {
         nodes.append(newNode)
     }
     
-    typealias BufferOperator = (
+    public typealias BufferOperator = (
         InstancedNodeType,
         InstancedConstants,
         UnsafeMutablePointer<InstancedConstants>
     ) -> Void
     
-    func zipUpdate(_ nodeUpdateFunction: BufferOperator)  {
+    public func zipUpdate(_ nodeUpdateFunction: BufferOperator)  {
 //        guard bufferCache.willRebuild else {
 //            return
 //        }

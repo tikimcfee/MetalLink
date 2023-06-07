@@ -8,11 +8,11 @@
 import MetalKit
 import Combine
 
-enum MetalLinkCameraType {
+public enum MetalLinkCameraType {
     case Debug
 }
 
-protocol MetalLinkCamera: AnyObject {
+public protocol MetalLinkCamera: AnyObject {
     var type: MetalLinkCameraType { get }
     var position: LFloat3 { get set }
     var rotation: LFloat3 { get set }
@@ -25,55 +25,55 @@ protocol MetalLinkCamera: AnyObject {
     func moveCameraLocation(_ dX: Float, _ dY: Float, _ dZ: Float)
 }
 
-extension MetalLinkCamera {
+public extension MetalLinkCamera {
     func moveCameraLocation(_ delta: LFloat3) {
         moveCameraLocation(delta.x, delta.y, delta.z)
     }
 }
 
-class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
-    let type: MetalLinkCameraType = .Debug
+public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
+    public let type: MetalLinkCameraType = .Debug
     
     private lazy var currentProjection = matrix_cached_float4x4(update: self.buildProjectionMatrix)
     private lazy var currentView = matrix_cached_float4x4(update: self.buildViewMatrix)
     
-    var position: LFloat3 = .zero { didSet {
+    public var position: LFloat3 = .zero { didSet {
         currentProjection.dirty()
         currentView.dirty()
     } }
     
-    var rotation: LFloat3 = .zero { didSet {
+    public var rotation: LFloat3 = .zero { didSet {
         currentProjection.dirty()
         currentView.dirty()
     } }
     
-    var worldUp: LFloat3 { LFloat3(0, 1, 0) }
-    var worldRight: LFloat3 { LFloat3(1, 0, 0) }
-    var worldFront: LFloat3 { LFloat3(0, 0, -1) }
+    public var worldUp: LFloat3 { LFloat3(0, 1, 0) }
+    public var worldRight: LFloat3 { LFloat3(1, 0, 0) }
+    public var worldFront: LFloat3 { LFloat3(0, 0, -1) }
     
-    let link: MetalLink
-    let interceptor = KeyboardInterceptor()
+    public let link: MetalLink
+    public let interceptor = KeyboardInterceptor()
     private var cancellables = Set<AnyCancellable>()
     
-    enum ScrollLock: String, CaseIterable, Identifiable, Hashable {
-        var id: Self { self }
+    public enum ScrollLock: String, CaseIterable, Identifiable, Hashable {
+        public var id: Self { self }
         case horizontal
         case vertical
         case transverse
     }
-    var holdingOption: Bool = false
-    var startRotate: Bool = false
+    public var holdingOption: Bool = false
+    public var startRotate: Bool = false
     
-    var scrollLock: Set<ScrollLock> = []
-    var notBlockingFromScroll: Bool { scrollLock.isEmpty }
+    public var scrollLock: Set<ScrollLock> = []
+    public var notBlockingFromScroll: Bool { scrollLock.isEmpty }
     
-    init(link: MetalLink) {
+    public init(link: MetalLink) {
         self.link = link
         bindToLink()
         bindToInterceptor()
     }
     
-    func bindToLink() {
+    public func bindToLink() {
         link.input.sharedKeyEvent.sink { event in
             self.interceptor.onNewKeyEvent(event)
         }.store(in: &cancellables)
@@ -125,7 +125,7 @@ class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
         }.store(in: &cancellables)
     }
     
-    func bindToInterceptor() {
+    public func bindToInterceptor() {
         interceptor.positionSource = self
         
         interceptor.positions.$travelOffset.sink { total in
@@ -145,7 +145,7 @@ class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
     }
 }
 
-extension DebugCamera {
+public extension DebugCamera {
     func moveCameraLocation(_ dX: Float, _ dY: Float, _ dZ: Float) {
         var initialDirection = LFloat3(dX, dY, dZ)
         var rotationTransform = simd_mul(
@@ -161,7 +161,7 @@ extension DebugCamera {
     }
 }
 
-extension DebugCamera {
+public extension DebugCamera {
     var projectionMatrix: matrix_float4x4 {
         currentProjection.get()
     }

@@ -9,19 +9,19 @@ import MetalKit
 import MetalLinkHeaders
 import Combine
 
-class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
+public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
 
-    var linkAtlas: MetalLinkAtlas
-    lazy var renderer = Renderer(collection: self)
+    public var linkAtlas: MetalLinkAtlas
+    public lazy var renderer = Renderer(collection: self)
     
-    override var contentSize: LFloat3 {
+    public override var contentSize: LFloat3 {
         return BoundsSize(rectPos)
     }
 
     // TODO: See MetalLinkNode info about why this is here and not at the root node.
     // It's basically too many updates.
     private var internalParent: MetalLinkNode?
-    override var parent: MetalLinkNode? {
+    public override var parent: MetalLinkNode? {
         get { internalParent }
         set { setNewParent(newValue) }
     }
@@ -37,7 +37,7 @@ class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
         internalParent = newParent
     }
     
-    init(
+    public init(
         link: MetalLink,
         linkAtlas: MetalLinkAtlas,
         bufferSize: Int = BackingBufferDefaultSize
@@ -56,39 +56,39 @@ class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
         return _time
     }
     
-    override func update(deltaTime dT: Float) {
+    public override func update(deltaTime dT: Float) {
         super.update(deltaTime: dT)
     }
     
-    override func render(in sdp: inout SafeDrawPass) {
+    public override func render(in sdp: inout SafeDrawPass) {
         sdp.renderCommandEncoder.setFragmentTexture(linkAtlas.currentAtlas, index: 5)
         super.render(in: &sdp)
     }
     
-    override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         enumerateInstanceChildren(action)
     }
     
-    func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {
+    public func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {
         for instance in instanceState.nodes.values {
             action(instance)
         }
     }
     
-    override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
+    open override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
 //        node.rotation.x -= 0.0167 * 2
 //        node.rotation.y -= 0.0167 * 2
 //        node.position.z = cos(time(0.0167) / 500)
     }
 }
 
-extension GlyphCollection {
+public extension GlyphCollection {
     subscript(glyphID: InstanceIDType) -> MetalLinkGlyphNode? {
         instanceState.instanceIdNodeLookup[glyphID]
     }
 }
 
-extension MetalLinkInstancedObject
+public extension MetalLinkInstancedObject
 where InstancedNodeType == MetalLinkGlyphNode {
     func updatePointer(
         _ operation: (inout UnsafeMutablePointer<InstancedConstants>) throws -> Void
@@ -125,7 +125,7 @@ where InstancedNodeType == MetalLinkGlyphNode {
     }
 }
 
-extension GlyphCollection {
+public extension GlyphCollection {
     func setRootMesh() {
         // ***********************************************************************************
         // TODO: mesh instance hack

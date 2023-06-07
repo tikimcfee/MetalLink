@@ -6,11 +6,11 @@
 //
 import simd
 
-let X_AXIS = LFloat3(1, 0, 0)
-let Y_AXIS = LFloat3(0, 1, 0)
-let Z_AXIS = LFloat3(0, 0, 1)
+public let X_AXIS = LFloat3(1, 0, 0)
+public let Y_AXIS = LFloat3(0, 1, 0)
+public let Z_AXIS = LFloat3(0, 0, 1)
 
-extension LFloat3 {
+public extension LFloat3 {
     func translated(dX: Float = 0, dY: Float = 0, dZ: Float = 0) -> LFloat3 {
         LFloat3(x + dX, y + dY, z + dZ)
     }
@@ -22,7 +22,7 @@ extension LFloat3 {
     }
 }
 
-extension matrix_float4x4 {
+public extension matrix_float4x4 {
     mutating func scale(amount: LFloat3) {
         self = matrix_multiply(self, .init(scaleBy: amount))
     }
@@ -36,7 +36,7 @@ extension matrix_float4x4 {
     }
 }
 
-extension matrix_float4x4 {
+public extension matrix_float4x4 {
     init(scaleBy s: SIMD3<Float>) {
         self.init(SIMD4(s.x,  0,   0, 0),
                   SIMD4(0,  s.y,   0, 0),
@@ -83,15 +83,15 @@ extension matrix_float4x4 {
     }
 }
 
-extension SIMD3 where Scalar == Int {
+public extension SIMD3 where Scalar == Int {
     var volume: Int { x * y * z }
 }
 
-extension SIMD2 where Scalar == Int {
+public extension SIMD2 where Scalar == Int {
     var area: Int { x * y }
 }
 
-extension simd_float4x4 {
+public extension simd_float4x4 {
     init(orthographicProjectionWithLeft left: Float, top: Float, right: Float, bottom: Float, near: Float, far: Float) {
         let xs = 2 / (right - left)
         let ys = 2 / (top - bottom)

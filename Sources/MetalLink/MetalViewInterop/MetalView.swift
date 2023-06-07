@@ -6,12 +6,12 @@ import Foundation
 import MetalKit
 import SwiftUI
 
-struct MetalView: NSUIViewRepresentable {
-    var mtkView: CustomMTKView
-    var link: MetalLink
-    var renderer: MetalLinkRenderer
+public struct MetalView: NSUIViewRepresentable {
+    public var mtkView: CustomMTKView
+    public var link: MetalLink
+    public var renderer: MetalLinkRenderer
     
-    init(
+    public init(
         mtkView: CustomMTKView,
         link: MetalLink,
         renderer: MetalLinkRenderer
@@ -22,7 +22,7 @@ struct MetalView: NSUIViewRepresentable {
     }
     
     #if os(iOS)
-    func makeUIView(context: Context) -> some UIView {
+    public func makeUIView(context: Context) -> some UIView {
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
@@ -31,11 +31,11 @@ struct MetalView: NSUIViewRepresentable {
         return mtkView
     }
     
-    func updateUIView(_ uiView: UIViewType, context: Context) {
+    public func updateUIView(_ uiView: UIViewType, context: Context) {
         
     }
     #elseif os(macOS)
-    func makeNSView(context: NSViewRepresentableContext<MetalView>) -> CustomMTKView {
+    public func makeNSView(context: NSViewRepresentableContext<MetalView>) -> CustomMTKView {
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
@@ -44,23 +44,23 @@ struct MetalView: NSUIViewRepresentable {
         return mtkView
     }
     
-    func updateNSView(_ nsView: CustomMTKView, context: NSViewRepresentableContext<MetalView>) {
+    public func updateNSView(_ nsView: CustomMTKView, context: NSViewRepresentableContext<MetalView>) {
         
     }
     #endif
     
-    func makeCoordinator() -> Coordinator {
+    public func makeCoordinator() -> Coordinator {
         try! Coordinator(self, mtkView: mtkView)
     }
 }
 
 import Combine
-extension MetalView {
+public extension MetalView {
     class Coordinator {
-        var parent: MetalView
-        var renderer: MetalLinkRenderer
+        public var parent: MetalView
+        public var renderer: MetalLinkRenderer
         
-        init(
+        public init(
             _ parent: MetalView,
             mtkView: CustomMTKView
         ) throws {

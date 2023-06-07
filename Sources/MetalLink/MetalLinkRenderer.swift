@@ -2,20 +2,20 @@
 import Foundation
 import MetalKit
 
-class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
-    let link: MetalLink
+public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
+    public let link: MetalLink
 
-    init(link: MetalLink) throws {
+    public init(link: MetalLink) throws {
         self.link = link
         super.init()
         link.view.delegate = self
     }
     
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
+    public func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         link.onSizeChange(view, drawableSizeWillChange: size)
     }
     
-    func draw(in view: MTKView) {
+    public func draw(in view: MTKView) {
         guard var sdp = SafeDrawPass.wrap(link)
         else {
             print("Cannot create SafeDrawPass")

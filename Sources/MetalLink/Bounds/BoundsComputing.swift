@@ -22,6 +22,10 @@ public class BoundsComputing {
     public var maxY: VectorFloat = -.infinity
     public var maxZ: VectorFloat = -.infinity
     
+    public init() {
+        
+    }
+    
     public func consumeBounds(_ bounds: Bounds) {
         didSetInitial = true
         minX = min(bounds.min.x, minX)

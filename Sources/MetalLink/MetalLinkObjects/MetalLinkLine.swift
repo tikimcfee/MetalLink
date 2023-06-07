@@ -7,21 +7,24 @@
 
 import MetalKit
 
-class MetalLinkLineMesh: MetalLinkBaseMesh {
-    var width = 2.0.float; var halfWidth: Float { width / 2.0 }
-    var height = 2.0.float; var halfHeight: Float { height / 2.0 }
+public class MetalLinkLineMesh: MetalLinkBaseMesh {
+    public var width = 2.0.float
+    public var halfWidth: Float { width / 2.0 }
     
-    override var name: String { "MetalLinkLineMesh" }
-    override func createVertices() -> [Vertex] { [] }
+    public var height = 2.0.float
+    public var halfHeight: Float { height / 2.0 }
+    
+    public override var name: String { "MetalLinkLineMesh" }
+    public override func createVertices() -> [Vertex] { [] }
     
     // TODO: All segments imply an origin position for the line.
     // No line offsetting here; drop the line at the origin and set the vertices
     // to parent's space to get the desired effect. If there's a hiearchy... do the math.
-    func addSegment(at point: LFloat3) {
+    public func addSegment(at point: LFloat3) {
         vertices.append(contentsOf: constructSegment(around: point))
     }
     
-    func popSegment() {
+    public func popSegment() {
         guard vertices.count > 1 else { return }
         vertices.removeLast(2)
     }
@@ -38,25 +41,25 @@ class MetalLinkLineMesh: MetalLinkBaseMesh {
     ] }
 }
 
-class MetalLinkLine: MetalLinkObject {
+public class MetalLinkLine: MetalLinkObject {
     var lineMesh: MetalLinkLineMesh
 
-    init(_ link: MetalLink) {
+    public init(_ link: MetalLink) {
         self.lineMesh = MetalLinkLineMesh(link)
         super.init(link, mesh: lineMesh)
     }
     
     // Render mesh as triangle strip
-    override func drawPrimitives(_ sdp: inout SafeDrawPass) {
+    public override func drawPrimitives(_ sdp: inout SafeDrawPass) {
         sdp.renderCommandEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: mesh.vertexCount)
     }
     
-    func appendSegment(about point: LFloat3) {
+    public func appendSegment(about point: LFloat3) {
         lineMesh.addSegment(at: point)
         mesh.deallocateVertexBuffer()
     }
     
-    func popSegment() {
+    public func popSegment() {
         lineMesh.popSegment()
         mesh.deallocateVertexBuffer()
     }

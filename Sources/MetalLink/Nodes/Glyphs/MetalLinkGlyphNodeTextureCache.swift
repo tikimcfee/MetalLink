@@ -8,7 +8,7 @@
 import MetalKit
 import BitHandling
 
-private struct Size: Hashable, Equatable {
+public struct Size: Hashable, Equatable {
     let width: Int
     let height: Int
     init(_ bitmaps: BitmapImages) {
@@ -18,12 +18,12 @@ private struct Size: Hashable, Equatable {
     var text: String { "(\(width), \(height))" }
 }
 
-class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGlyphTextureCache.Bundle?> {
+public class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGlyphTextureCache.Bundle?> {
     let link: MetalLink
     let bitmapCache: MetalLinkGlyphNodeBitmapCache
     private var sizes = Set<Size>()
 
-    init(link: MetalLink) {
+    public init(link: MetalLink) {
         self.link = link
         self.bitmapCache = MetalLinkGlyphNodeBitmapCache()
         super.init()
@@ -36,7 +36,7 @@ class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGlyphText
         return index
     }
     
-    override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
+    public override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
         guard let bitmaps = bitmapCache[key]
         else { return nil }
         reportSize(Size(bitmaps))
@@ -57,7 +57,7 @@ class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGlyphText
     }
 }
 
-extension MetalLinkGlyphTextureCache {
+public extension MetalLinkGlyphTextureCache {
     struct Bundle: Equatable {
         let texture: MTLTexture
         let textureIndex: TextureIndex
@@ -66,7 +66,7 @@ extension MetalLinkGlyphTextureCache {
             hasher.combine(textureIndex)
         }
         
-        static func == (_ l: Bundle, _ r: Bundle) -> Bool {
+        public static func == (_ l: Bundle, _ r: Bundle) -> Bool {
             l.textureIndex == r.textureIndex
         }
     }

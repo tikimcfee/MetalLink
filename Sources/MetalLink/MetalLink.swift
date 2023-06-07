@@ -35,7 +35,7 @@ public class MetalLink {
     private lazy var sizeSubject = PassthroughSubject<CGSize, Never>()
     private(set) lazy var sizeSharedUpdates = sizeSubject.share()
     
-    init(view: CustomMTKView) throws {
+    public init(view: CustomMTKView) throws {
         self.view = view
         guard let device = view.device else { throw CoreError.noMetalDevice }
         guard let queue = device.makeCommandQueue() else { throw CoreError.noCommandQueue }

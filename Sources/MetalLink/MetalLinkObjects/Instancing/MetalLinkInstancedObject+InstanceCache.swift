@@ -9,8 +9,8 @@ import Foundation
 import BitHandling
 
 // TODO: Make a smarter / safer glyph instance counter
-class InstanceCounter {
-    enum Kind {
+public class InstanceCounter {
+    public enum Kind {
         case glyph
         case grid
         case generic
@@ -18,8 +18,8 @@ class InstanceCounter {
     
     // Starting at 10 to avoid conflict with picking texture color
     // start value (1 when .black)
-    static let startingGeneratedID: InstanceIDType = 10
-    static let shared = InstanceCounter()
+    public static let startingGeneratedID: InstanceIDType = 10
+    public static let shared = InstanceCounter()
     
     private let gridLock = UnfairLock()
     private lazy var gridId = Self.startingGeneratedID
@@ -29,7 +29,7 @@ class InstanceCounter {
     
     private init() { }
     
-    func nextGridId() -> InstanceIDType {
+    public func nextGridId() -> InstanceIDType {
         gridLock.withAcquiredLock {
             let id = gridId
             gridId += 1
@@ -37,7 +37,7 @@ class InstanceCounter {
         }
     }
     
-    func nextGlyphId() -> InstanceIDType {
+    public func nextGlyphId() -> InstanceIDType {
         glyphLock.withAcquiredLock {
             let id = glyphId
             glyphId += 1

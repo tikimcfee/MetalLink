@@ -8,18 +8,18 @@
 import SceneKit
 import Combine
 
-let default_MovementSpeed: VectorFloat = 500
-let default_ModifiedMovementSpeed: VectorFloat = 1000
+public let default_MovementSpeed: VectorFloat = 500
+public let default_ModifiedMovementSpeed: VectorFloat = 1000
 private let default_UpdateDeltaMillis = 16
 
-typealias FileOperationReceiver = (FileOperation) -> Void
-enum FileOperation {
+public typealias FileOperationReceiver = (FileOperation) -> Void
+public enum FileOperation {
     case openDirectory
 }
 
-typealias FocusChangeReceiver = (SelfRelativeDirection) -> Void
+public typealias FocusChangeReceiver = (SelfRelativeDirection) -> Void
 
-extension KeyboardInterceptor {
+public extension KeyboardInterceptor {
     class State: ObservableObject {
         @Published var directions: Set<SelfRelativeDirection> = []
 #if os(iOS)
@@ -47,23 +47,23 @@ extension KeyboardInterceptor {
     }
 }
 
-protocol KeyboardPositionSource {
+public protocol KeyboardPositionSource {
     var worldUp: LFloat3 { get }
     var worldRight: LFloat3 { get }
     var worldFront: LFloat3 { get }
     var rotation: LFloat3 { get }
 }
 
-extension KeyboardInterceptor {
+public extension KeyboardInterceptor {
     struct CameraTarget: KeyboardPositionSource {
         var targetCamera: MetalLinkCamera
         var bag = Set<AnyCancellable>()
 
-        var worldUp: LFloat3 { targetCamera.worldUp }
-        var worldRight: LFloat3 { targetCamera.worldRight }
-        var worldFront: LFloat3 { targetCamera.worldFront }
-        var current: LFloat3 { targetCamera.position }
-        var rotation: LFloat3 { targetCamera.rotation }
+        public var worldUp: LFloat3 { targetCamera.worldUp }
+        public var worldRight: LFloat3 { targetCamera.worldRight }
+        public var worldFront: LFloat3 { targetCamera.worldFront }
+        public var current: LFloat3 { targetCamera.position }
+        public var rotation: LFloat3 { targetCamera.rotation }
         
         init(targetCamera: MetalLinkCamera,
              interceptor: KeyboardInterceptor
@@ -77,7 +77,7 @@ extension KeyboardInterceptor {
     }
 }
 
-class KeyboardInterceptor {
+public class KeyboardInterceptor {
 
     private let movementQueue = DispatchQueue(label: "KeyboardCamera", qos: .userInteractive)
     
@@ -85,24 +85,24 @@ class KeyboardInterceptor {
     private(set) var positions = Positions()
     private(set) var running: Bool = false
     
-    var onNewFileOperation: FileOperationReceiver?
-    var onNewFocusChange: FocusChangeReceiver?
-    var positionSource: KeyboardPositionSource?
+    public var onNewFileOperation: FileOperationReceiver?
+    public var onNewFocusChange: FocusChangeReceiver?
+    public var positionSource: KeyboardPositionSource?
     
     private var dispatchTimeNext: DispatchTime {
         let next = DispatchTime.now() + .milliseconds(default_UpdateDeltaMillis)
         return next
     }
     
-    init(onNewFileOperation: FileOperationReceiver? = nil) {
+    public init(onNewFileOperation: FileOperationReceiver? = nil) {
         self.onNewFileOperation = onNewFileOperation
     }
     
-    func resetPositions() {
+    public func resetPositions() {
         positions.reset()
     }
     
-    func onNewKeyEvent(_ event: OSEvent) {
+    public func onNewKeyEvent(_ event: OSEvent) {
         movementQueue.sync {
             self.enqueuedKeyConsume(event)
         }

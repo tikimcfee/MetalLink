@@ -16,7 +16,11 @@ public class ObservableMatrix: ObservableObject {
     lazy var sharedObservable: Publisher = $matrix.share().eraseToAnyPublisher()
 }
 
-public class MetalLinkNode: Measures {
+open class MetalLinkNode: Measures {
+    
+    public init() {
+        
+    }
     
     private let currentModel = ObservableMatrix()
     public lazy var eventBag = Set<AnyCancellable>()
@@ -26,10 +30,10 @@ public class MetalLinkNode: Measures {
     
     public lazy var nodeId = UUID().uuidString
 
-    public var parent: MetalLinkNode?
+    open var parent: MetalLinkNode?
         { didSet { rebuildModelMatrix(includeChildren: true) } }
     
-    public var children: [MetalLinkNode] = []
+    open var children: [MetalLinkNode] = []
         { didSet { rebuildModelMatrix(includeChildren: true) } }
     
     // MARK: - Model params
@@ -52,9 +56,9 @@ public class MetalLinkNode: Measures {
     
     // MARK: - Overridable Measures
     
-    public var hasIntrinsicSize: Bool { false }
-    public var contentSize: LFloat3 { .zero }
-    public var contentOffset: LFloat3 { .zero }
+    open var hasIntrinsicSize: Bool { false }
+    open var contentSize: LFloat3 { .zero }
+    open var contentOffset: LFloat3 { .zero }
     
     // MARK: Bounds / Position
     
@@ -109,7 +113,7 @@ public class MetalLinkNode: Measures {
     
     // MARK: Rendering
     
-    public func render(in sdp: inout SafeDrawPass) {
+    open func render(in sdp: inout SafeDrawPass) {
         for child in children {
             child.render(in: &sdp)
         }

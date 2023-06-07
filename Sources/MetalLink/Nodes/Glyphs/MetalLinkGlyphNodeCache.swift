@@ -8,13 +8,13 @@
 import Foundation
 import Metal
 
-class MetalLinkGlyphNodeCache {
+public class MetalLinkGlyphNodeCache {
     let link: MetalLink
     
     let meshCache: MetalLinkGlyphNodeMeshCache
     let textureCache: MetalLinkGlyphTextureCache
     
-    init(link: MetalLink) {
+    public init(link: MetalLink) {
         self.link = link
         self.meshCache = MetalLinkGlyphNodeMeshCache(link: link)
         self.textureCache = MetalLinkGlyphTextureCache(link: link)
