@@ -8,7 +8,7 @@
 
 import MetalKit
 
-class SafeDrawPass {
+public class SafeDrawPass {
     private static var reusedPassContainer: SafeDrawPass?
     
     var renderPassDescriptor: MTLRenderPassDescriptor

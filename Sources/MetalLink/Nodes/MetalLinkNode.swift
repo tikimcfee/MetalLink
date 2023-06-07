@@ -8,57 +8,57 @@
 import MetalKit
 import Combine
 
-class ObservableMatrix: ObservableObject {
-    typealias ModelMatrix = matrix_float4x4
-    typealias Publisher = AnyPublisher<ObservableMatrix.ModelMatrix, Never>
+public class ObservableMatrix: ObservableObject {
+    public typealias ModelMatrix = matrix_float4x4
+    public typealias Publisher = AnyPublisher<ObservableMatrix.ModelMatrix, Never>
     
     @Published var matrix: ModelMatrix = matrix_identity_float4x4
     lazy var sharedObservable: Publisher = $matrix.share().eraseToAnyPublisher()
 }
 
-class MetalLinkNode: Measures {
+public class MetalLinkNode: Measures {
     
     private let currentModel = ObservableMatrix()
-    lazy var eventBag = Set<AnyCancellable>()
-    var modelEvents: ObservableMatrix.Publisher {
+    public lazy var eventBag = Set<AnyCancellable>()
+    public var modelEvents: ObservableMatrix.Publisher {
         currentModel.sharedObservable
     }
     
-    lazy var nodeId = UUID().uuidString
+    public lazy var nodeId = UUID().uuidString
 
-    var parent: MetalLinkNode?
+    public var parent: MetalLinkNode?
         { didSet { rebuildModelMatrix(includeChildren: true) } }
     
-    var children: [MetalLinkNode] = []
+    public var children: [MetalLinkNode] = []
         { didSet { rebuildModelMatrix(includeChildren: true) } }
     
     // MARK: - Model params
     
-    var position: LFloat3 = .zero
+    public var position: LFloat3 = .zero
         { didSet {
             rebuildModelMatrix(includeChildren: true)
         } }
     
-    var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
+    public var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
         { didSet {
             rebuildModelMatrix(includeChildren: true)
             BoundsCaching.Set(self, nil)
         } }
     
-    var rotation: LFloat3 = .zero
+    public var rotation: LFloat3 = .zero
         { didSet {
             rebuildModelMatrix(includeChildren: true)
         } }
     
     // MARK: - Overridable Measures
     
-    var hasIntrinsicSize: Bool { false }
-    var contentSize: LFloat3 { .zero }
-    var contentOffset: LFloat3 { .zero }
+    public var hasIntrinsicSize: Bool { false }
+    public var contentSize: LFloat3 { .zero }
+    public var contentOffset: LFloat3 { .zero }
     
     // MARK: Bounds / Position
     
-    var bounds: Bounds {
+    public var bounds: Bounds {
         let rectPos = rectPos
         return (
             min: rectPos.min + position,
@@ -66,63 +66,63 @@ class MetalLinkNode: Measures {
         )
     }
 
-    var rectPos: Bounds {
+    public var rectPos: Bounds {
         if let cached = BoundsCaching.get(self) { return cached }
         let box = computeBoundingBox(convertParent: true)
         BoundsCaching.Set(self, box)
         return box
     }
     
-    var lengthX: VectorFloat {
+    public var lengthX: VectorFloat {
         let box = bounds
         return abs(box.max.x - box.min.x)
     }
     
-    var lengthY: VectorFloat {
+    public var lengthY: VectorFloat {
         let box = bounds
         return abs(box.max.y - box.min.y)
     }
     
-    var lengthZ: VectorFloat {
+    public var lengthZ: VectorFloat {
         let box = bounds
         return abs(box.max.z - box.min.z)
     }
     
-    var centerX: VectorFloat {
+    public var centerX: VectorFloat {
         let box = bounds
         return lengthX / 2.0 + box.min.x
     }
     
-    var centerY: VectorFloat {
+    public var centerY: VectorFloat {
         let box = bounds
         return lengthY / 2.0 + box.min.y
     }
     
-    var centerZ: VectorFloat {
+    public var centerZ: VectorFloat {
         let box = bounds
         return lengthZ / 2.0 + box.min.z
     }
     
-    var centerPosition: LFloat3 {
+    public var centerPosition: LFloat3 {
         return LFloat3(x: centerX, y: centerY, z: centerZ)
     }
     
     // MARK: Rendering
     
-    func render(in sdp: inout SafeDrawPass) {
+    public func render(in sdp: inout SafeDrawPass) {
         for child in children {
             child.render(in: &sdp)
         }
         asRenderable?.doRender(in: &sdp)
     }
     
-    func update(deltaTime: Float) {
+    public func update(deltaTime: Float) {
         children.forEach { $0.update(deltaTime: deltaTime) }
     }
     
     // MARK: Children
     
-    func add(child: MetalLinkNode) {
+    public func add(child: MetalLinkNode) {
         children.append(child)
         if let parent = child.parent {
             print("[\(child.nodeId)] parent already set to [\(parent.nodeId)]")
@@ -130,26 +130,26 @@ class MetalLinkNode: Measures {
         child.parent = self
     }
     
-    func remove(child: MetalLinkNode) {
+    public func remove(child: MetalLinkNode) {
         children.removeAll(where: { $0.nodeId == child.nodeId })
         child.parent = nil
     }
     
-    func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    public func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         for child in children {
             action(child)
             child.enumerateChildren(action)
         }
     }
     
-    func bindToModelEvents(_ action: @escaping (ObservableMatrix.ModelMatrix) -> Void) {
+    public func bindToModelEvents(_ action: @escaping (ObservableMatrix.ModelMatrix) -> Void) {
         modelEvents.sink {
             action($0)
         }
         .store(in: &eventBag)
     }
     
-    func bindAsVirtualParentOf(_ node: MetalLinkNode) {
+    public func bindAsVirtualParentOf(_ node: MetalLinkNode) {
         modelEvents.sink { _ in
             node.rebuildModelMatrix()
         }
@@ -158,7 +158,7 @@ class MetalLinkNode: Measures {
 }
 
 extension MetalLinkNode {
-    func localFacingTranslate(_ dX: Float, _ dY: Float, _ dZ: Float) {
+    public func localFacingTranslate(_ dX: Float, _ dY: Float, _ dZ: Float) {
         var initialDirection = LFloat3(dX, dY, dZ)
         var rotationTransform = simd_mul(
             simd_quatf(angle: rotation.x, axis: X_AXIS),
@@ -174,16 +174,16 @@ extension MetalLinkNode {
 }
 
 extension MetalLinkNode: Hashable, Equatable {
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(nodeId)
     }
     
-    static func == (_ left: MetalLinkNode, _ right: MetalLinkNode) -> Bool {
+    public static func == (_ left: MetalLinkNode, _ right: MetalLinkNode) -> Bool {
         return left.nodeId == right.nodeId
     }
 }
 
-extension MetalLinkNode {
+public extension MetalLinkNode {
     func rebuildModelMatrix(includeChildren: Bool = false) {
         currentModel.matrix = buildModelMatrix()
     }
@@ -245,7 +245,7 @@ private extension MetalLinkNode {
     }
 }
 
-struct matrix_cached_float4x4 {
+public struct matrix_cached_float4x4 {
     private(set) var rebuildModel = true // implicit rebuild on first call
     private(set) var currentModel = matrix_identity_float4x4
     
@@ -261,7 +261,7 @@ struct matrix_cached_float4x4 {
     }
 }
 
-class Cached<T> {
+public class Cached<T> {
     private(set) var builtInitial = false
     private(set) var willRebuild = true   // implicit rebuild on first call
     private var current: T
