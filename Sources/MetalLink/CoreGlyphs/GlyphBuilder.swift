@@ -11,18 +11,18 @@ import MetalKit
 
 public typealias SizedText = (SCNGeometry, SCNGeometry, CGSize)
 
-class GlyphBuilder {
-    static let device: MTLDevice = MTLCreateSystemDefaultDevice()!
-    static let loader: MTKTextureLoader = MTKTextureLoader(device: device)
+public class GlyphBuilder {
+//    public static let device: MTLDevice = MTLCreateSystemDefaultDevice()!
+//    public static let loader: MTKTextureLoader = MTKTextureLoader(device: device)
     
-    let fontRenderer = FontRenderer.shared
+    public let fontRenderer = FontRenderer.shared
     
-    func makeBitmaps(_ key: GlyphCacheKey) -> BitmapImages? {
+    public func makeBitmaps(_ key: GlyphCacheKey) -> BitmapImages? {
         let textLayer = makeTextLayer(key)
         return textLayer.getBitmapImage(using: key)
     }
     
-    func makeTextLayer(_ key: GlyphCacheKey) -> CATextLayer {
+    public func makeTextLayer(_ key: GlyphCacheKey) -> CATextLayer {
         let safeString = key.glyph
         let (_, wordSizeScaled) = fontRenderer.measure(safeString)
         

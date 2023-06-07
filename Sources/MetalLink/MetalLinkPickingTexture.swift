@@ -23,7 +23,7 @@ extension MetalLinkPickingTexture {
     }
 }
 
-class MetalLinkPickingTexture: MetalLinkReader {
+public class MetalLinkPickingTexture: MetalLinkReader {
     let link: MetalLink
     var pickingTexture: MTLTexture?
     var generateNewTexture: Bool = false

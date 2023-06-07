@@ -10,13 +10,13 @@ import Foundation
 import CoreServices
 import AppKit
 
-struct BitmapImages: Hashable {
+public struct BitmapImages: Hashable {
     let requested: NSUIImage
     let requestedCG: CGImage
     let template: NSUIImage
     let templateCG: CGImage
     
-    init(_ requested: NSUIImage,
+    public init(_ requested: NSUIImage,
          _ requestedCG: CGImage,
          _ template: NSUIImage,
          _ templateCG: CGImage) {
@@ -27,7 +27,7 @@ struct BitmapImages: Hashable {
     }
 }
 
-extension CALayer {
+public extension CALayer {
     var cgSize: CGSize {
         CGSize(width: frame.width, height: frame.height)
     }

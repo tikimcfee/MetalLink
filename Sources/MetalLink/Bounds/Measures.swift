@@ -10,7 +10,7 @@ import SceneKit
 
 // MARK: -- Measuring and layout
 
-protocol Measures: AnyObject {
+public protocol Measures: AnyObject {
     var nodeId: String { get }
     
     var rectPos: Bounds { get }
@@ -29,7 +29,7 @@ protocol Measures: AnyObject {
 
 // MARK: - Position
 
-extension Measures {
+public extension Measures {
     var xpos: VectorFloat {
         get { position.x }
         set { position.x = newValue }
@@ -47,7 +47,7 @@ extension Measures {
 }
 
 // MARK: - Size
-extension Measures {
+public extension Measures {
     var contentHalfWidth: Float { contentSize.x / 2.0 }
     var contentHalfHeight: Float { contentSize.y / 2.0 }
     var contentHalfLength: Float { contentSize.z / 2.0 }
@@ -55,7 +55,7 @@ extension Measures {
 
 // MARK: - Bounds
 
-extension Measures {
+public extension Measures {
     var boundsWidth: VectorFloat {
         let currentBounds = bounds
         return BoundsWidth(currentBounds)
@@ -95,7 +95,7 @@ extension Measures {
 
 // MARK: - Named positions
 
-extension Measures {
+public extension Measures {
     var localLeading: VectorFloat { bounds.min.x }
     var localTrailing: VectorFloat { bounds.max.x }
     var localTop: VectorFloat { bounds.max.y }
@@ -118,7 +118,7 @@ extension Measures {
     var back: VectorFloat { localBack }
 }
 
-extension Measures {
+public extension Measures {
     @discardableResult
     func setLeading(_ newValue: VectorFloat) -> Self {
 //        let delta = abs(leading - newValue)
@@ -171,7 +171,7 @@ extension Measures {
     }
 }
 
-extension Measures {
+public extension Measures {
     func computeBoundingBox(convertParent: Bool = true) -> Bounds {
         let computing = BoundsComputing()
         
@@ -203,7 +203,7 @@ extension Measures {
     }
 }
 
-extension Measures {
+public extension Measures {
     var dumpstats: String {
         """
         ContentSizeX:                    \(contentSize.x)

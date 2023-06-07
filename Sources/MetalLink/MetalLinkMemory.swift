@@ -8,12 +8,12 @@
 
 import simd
 
-protocol MemoryLayoutSizable {
+public protocol MemoryLayoutSizable {
     static func memSize(of count: Int) -> Int
     static func memStride(of count: Int) -> Int
 }
 
-extension MemoryLayoutSizable {
+public extension MemoryLayoutSizable {
     static var memSize: Int {
         MemoryLayout<Self>.size
     }
@@ -23,7 +23,7 @@ extension MemoryLayoutSizable {
     }
 }
 
-extension MemoryLayoutSizable {
+public extension MemoryLayoutSizable {
     static func memSize(of count: Int) -> Int {
         memSize * count
     }

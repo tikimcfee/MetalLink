@@ -7,12 +7,12 @@
 
 import Foundation
 
-protocol QuadSizable: AnyObject {
+public protocol QuadSizable: AnyObject {
     var node: MetalLinkNode { get }
     var quad: MetalLinkQuadMesh { get set }
 }
 
-extension QuadSizable {
+public extension QuadSizable {
     var quadSize: LFloat2 {
         get { LFloat2(x: quad.width, y: quad.height) }
         set { quad.setSize(newValue) }

@@ -8,7 +8,7 @@ typealias TapReceiver = (GestureEvent) -> Void
 
 #if os(OSX)
 
-class GestureShim {
+public class GestureShim {
     lazy var panRecognizer =
         ModifiersPanGestureRecognizer(target: self, action: #selector(pan))
     var onPan: PanReceiver
@@ -46,7 +46,7 @@ class GestureShim {
 
 #elseif os(iOS)
 
-class GestureShim {
+public class GestureShim {
     lazy var panRecognizer =
         PanGestureRecognizer(target: self, action: #selector(pan))
     var onPan: PanReceiver
@@ -82,7 +82,7 @@ class GestureShim {
 
 #endif
 
-extension CGPoint {
+public extension CGPoint {
     func distance(to point: CGPoint) -> CGFloat {
         return sqrt(pow(point.x - x, 2) + pow(point.y - y, 2))
     }
@@ -94,16 +94,24 @@ extension CGPoint {
     var asSimd: LFloat2 { LFloat2(x.float, y.float) }
 }
 
-class TouchState {
-    var magnify = MagnifyStart()
-    var mouse = Mouse()
+public class TouchState {
+    public var magnify: MagnifyStart
+    public var mouse: Mouse
+    
+    init(
+        magnify: MagnifyStart = MagnifyStart(),
+        mouse: Mouse = Mouse()
+    ) {
+        self.magnify = magnify
+        self.mouse = mouse
+    }
 }
 
-class Mouse {
-    var currentPosition = CGPoint()
+public class Mouse {
+    public var currentPosition = CGPoint()
 }
 
-class MagnifyStart {
-    var lastScaleZ = CGFloat(1.0)
+public class MagnifyStart {
+    public var lastScaleZ = CGFloat(1.0)
 }
 

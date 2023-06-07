@@ -9,8 +9,7 @@ import Foundation
 import MetalKit
 import SwiftUI
 
-
-class CustomMTKView: MTKView {
+public class CustomMTKView: MTKView {
     weak var positionReceiver: MousePositionReceiver?
     weak var keyDownReceiver: KeyDownReceiver?
     
@@ -30,7 +29,7 @@ class CustomMTKView: MTKView {
 #if os(macOS)
     var trackingArea : NSTrackingArea?
     
-    override func scrollWheel(with event: NSEvent) {
+    public override func scrollWheel(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
@@ -40,7 +39,7 @@ class CustomMTKView: MTKView {
         receiver.scrollEvent = event.copy() as! NSEvent
     }
     
-    override func updateTrackingAreas() {
+    public override func updateTrackingAreas() {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
@@ -61,7 +60,7 @@ class CustomMTKView: MTKView {
         self.addTrackingArea(trackingArea!)
     }
     
-    override func mouseMoved(with event: NSEvent) {
+    public override func mouseMoved(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
@@ -70,7 +69,7 @@ class CustomMTKView: MTKView {
         receiver.mousePosition = event.copy() as! NSEvent
     }
     
-    override func mouseDown(with event: NSEvent) {
+    public override func mouseDown(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
@@ -79,39 +78,39 @@ class CustomMTKView: MTKView {
         receiver.mouseDownEvent = event.copy() as! NSEvent
     }
     
-    override func mouseUp(with event: NSEvent) {
+    public override func mouseUp(with event: NSEvent) {
         super.mouseUp(with: event)
         guard let receiver = positionReceiver else { return }
         receiver.mouseUpEvent = event.copy() as! NSEvent
     }
     
-    override func keyDown(with event: NSEvent) {
+    public override func keyDown(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
         keyDownReceiver?.lastKeyEvent = event.copy() as! NSEvent
     }
     
-    override func keyUp(with event: NSEvent) {
+    public override func keyUp(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
         keyDownReceiver?.lastKeyEvent = event.copy() as! NSEvent
     }
     
-    override func otherMouseDragged(with event: NSEvent) {
+    public override func otherMouseDragged(with event: NSEvent) {
         super.otherMouseDragged(with: event)
         guard let receiver = positionReceiver else { return }
         receiver.mousePosition = event.copy() as! NSEvent
     }
     
-    override func rightMouseDragged(with event: NSEvent) {
+    public override func rightMouseDragged(with event: NSEvent) {
         super.rightMouseDragged(with: event)
         guard let receiver = positionReceiver else { return }
         receiver.mousePosition = event.copy() as! NSEvent
     }
     
-    override func mouseDragged(with event: NSEvent) {
+    public override func mouseDragged(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
@@ -120,14 +119,14 @@ class CustomMTKView: MTKView {
         receiver.mousePosition = event.copy() as! NSEvent
     }
     
-    override func flagsChanged(with event: NSEvent) {
+    public override func flagsChanged(with event: NSEvent) {
         // WARNING
         // DO NOT access NSEvents off of the main thread. Copy whatever information you need.
         // It is NOT SAFE to access these objects outside of this call scope.
         keyDownReceiver?.lastKeyEvent = event.copy() as! NSEvent
     }
     
-    override var acceptsFirstResponder: Bool {
+    public override var acceptsFirstResponder: Bool {
         true
     }
 #endif

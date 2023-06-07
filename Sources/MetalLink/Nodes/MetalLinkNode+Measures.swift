@@ -9,7 +9,7 @@ import Foundation
 import Metal
 
 extension MetalLinkNode {
-    func convertPosition(_ convertTarget: LFloat3, to final: MetalLinkNode?) -> LFloat3 {
+    public func convertPosition(_ convertTarget: LFloat3, to final: MetalLinkNode?) -> LFloat3 {
         var position: LFloat3 = convertTarget
         var nodeParent = parent
         while !(nodeParent == final || nodeParent == nil) {
@@ -22,7 +22,7 @@ extension MetalLinkNode {
         return position
     }
     
-    var worldPosition: LFloat3 {
+    public var worldPosition: LFloat3 {
         get {
             var finalPosition: LFloat3 = position
             var nodeParent = parent

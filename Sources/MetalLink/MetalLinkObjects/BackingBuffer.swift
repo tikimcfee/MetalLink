@@ -7,19 +7,19 @@
 
 import Metal
 
-protocol BackingIndexed {
+public protocol BackingIndexed {
     var bufferIndex: IndexedBufferType { get set }
     mutating func reset()
 }
 
-extension BackingIndexed {
+public extension BackingIndexed {
     var arrayIndex: Int { Int(bufferIndex) }
 }
 
 // More memory, less rebuilding. 10K fits nicely for reducing rebuilds in LAT.
-let BackingBufferDefaultSize = 31_415
+public let BackingBufferDefaultSize = 31_415
 
-class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
+public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     let link: MetalLink
     private(set) var buffer: MTLBuffer
     var pointer: UnsafeMutablePointer<Stored>
@@ -89,11 +89,11 @@ class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
 }
 
 extension BackingBuffer: RandomAccessCollection {
-    subscript(position: Int) -> Stored {
+    public subscript(position: Int) -> Stored {
         get { pointer[position] }
         set { pointer[position] = newValue }
     }
     
-    var startIndex: Int { 0 }
-    var endIndex: Int { currentEndIndex }
+    public var startIndex: Int { 0 }
+    public var endIndex: Int { currentEndIndex }
 }

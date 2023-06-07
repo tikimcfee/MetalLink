@@ -8,11 +8,11 @@
 import MetalKit
 import BitHandling
 
-enum MetalLinkDepthStencilStateType {
+public enum MetalLinkDepthStencilStateType {
     case Less
 }
 
-class DepthStencilStateLibrary: LockingCache<MetalLinkDepthStencilStateType, MTLDepthStencilState> {
+public class DepthStencilStateLibrary: LockingCache<MetalLinkDepthStencilStateType, MTLDepthStencilState> {
     let link: MetalLink
     
     init(link: MetalLink) {
@@ -20,7 +20,7 @@ class DepthStencilStateLibrary: LockingCache<MetalLinkDepthStencilStateType, MTL
         super.init()
     }
     
-    override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
         switch key {
         case .Less:
             return try! Less(link).depthStencilState
@@ -28,7 +28,7 @@ class DepthStencilStateLibrary: LockingCache<MetalLinkDepthStencilStateType, MTL
     }
 }
 
-extension DepthStencilStateLibrary {
+public extension DepthStencilStateLibrary {
     class Less {
         var depthStencilState: MTLDepthStencilState
         

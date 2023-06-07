@@ -9,19 +9,19 @@
 import MetalKit
 import BitHandling
 
-enum MetalLinkVertexType {
+public enum MetalLinkVertexType {
     case Basic
     case Instanced
 }
 
-class VertexDescriptorLibrary: LockingCache<MetalLinkVertexType, MTLVertexDescriptor> {
+public class VertexDescriptorLibrary: LockingCache<MetalLinkVertexType, MTLVertexDescriptor> {
     let link: MetalLink
     
-    init(link: MetalLink) {
+    public init(link: MetalLink) {
         self.link = link
     }
     
-    override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
         switch key {
         case .Basic:
             return Basic().descriptor

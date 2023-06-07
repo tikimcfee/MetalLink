@@ -12,17 +12,17 @@ public typealias Bounds = (
     max: LFloat3
 )
 
-class BoundsComputing {
-    var didSetInitial: Bool = false
-    var minX: VectorFloat = .infinity
-    var minY: VectorFloat = .infinity
-    var minZ: VectorFloat = .infinity
+public class BoundsComputing {
+    public var didSetInitial: Bool = false
+    public var minX: VectorFloat = .infinity
+    public var minY: VectorFloat = .infinity
+    public var minZ: VectorFloat = .infinity
     
-    var maxX: VectorFloat = -.infinity
-    var maxY: VectorFloat = -.infinity
-    var maxZ: VectorFloat = -.infinity
+    public var maxX: VectorFloat = -.infinity
+    public var maxY: VectorFloat = -.infinity
+    public var maxZ: VectorFloat = -.infinity
     
-    func consumeBounds(_ bounds: Bounds) {
+    public func consumeBounds(_ bounds: Bounds) {
         didSetInitial = true
         minX = min(bounds.min.x, minX)
         minY = min(bounds.min.y, minY)
@@ -33,7 +33,7 @@ class BoundsComputing {
         maxZ = max(bounds.max.z, maxZ)
     }
     
-    func consumeNodeSet(
+    public func consumeNodeSet(
         _ nodes: Set<MetalLinkNode>,
         convertingTo node: MetalLinkNode?
     ) {
@@ -44,7 +44,7 @@ class BoundsComputing {
         }
     }
     
-    func pad(_ pad: VectorFloat) {
+    public func pad(_ pad: VectorFloat) {
         minX -= pad
         minY -= pad
         minZ -= pad
@@ -54,7 +54,7 @@ class BoundsComputing {
         maxZ += pad
     }
     
-    var bounds: Bounds {
+    public var bounds: Bounds {
         guard didSetInitial else {
             print("Bounds were never set; returning safe default")
             return (min: .zero, max: .zero)
@@ -66,9 +66,9 @@ class BoundsComputing {
     }
 }
 
-func BoundsWidth(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.x - bounds.min.x) }
-func BoundsHeight(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.y - bounds.min.y) }
-func BoundsLength(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.z - bounds.min.z) }
-func BoundsSize(_ bounds: Bounds) -> LFloat3 {
+public func BoundsWidth(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.x - bounds.min.x) }
+public func BoundsHeight(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.y - bounds.min.y) }
+public func BoundsLength(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.z - bounds.min.z) }
+public func BoundsSize(_ bounds: Bounds) -> LFloat3 {
     LFloat3(BoundsWidth(bounds), BoundsHeight(bounds), BoundsLength(bounds))
 }

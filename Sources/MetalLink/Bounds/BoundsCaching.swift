@@ -10,10 +10,10 @@ import SceneKit
 import BitHandling
 
 //typealias BoundsKey = String
-typealias BoundsKey = MetalLinkNode
+public typealias BoundsKey = MetalLinkNode
 
 // MARK: Bounds caching
-class BoundsCaching {
+public class BoundsCaching {
     private static var boundsCache = ConcurrentDictionary<BoundsKey, Bounds>()
     private static let BoundsZero: Bounds = (min: .zero, max: .zero)
     
@@ -21,15 +21,15 @@ class BoundsCaching {
         boundsCache.removeAll()
     }
 
-    internal static func get(_ node: MetalLinkNode) -> Bounds? {
+    public static func get(_ node: MetalLinkNode) -> Bounds? {
         return boundsCache[node]
     }
     
-    internal static func Set(_ node: MetalLinkNode, _ bounds: Bounds?) {
+    public static func Set(_ node: MetalLinkNode, _ bounds: Bounds?) {
         boundsCache[node] = bounds
     }
     
-    internal static func ClearRoot(_ root: MetalLinkNode) {
+    public static func ClearRoot(_ root: MetalLinkNode) {
         boundsCache[root] = nil
         root.enumerateChildren { node in
             boundsCache[node] = nil

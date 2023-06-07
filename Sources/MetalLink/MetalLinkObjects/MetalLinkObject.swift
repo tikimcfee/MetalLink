@@ -9,9 +9,9 @@
 import MetalKit
 import MetalLinkHeaders
 
-class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
-    let link: MetalLink
-    var mesh: MetalLinkMesh
+public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
+    public let link: MetalLink
+    public var mesh: MetalLinkMesh
     
     private lazy var pipelineState: MTLRenderPipelineState
         = link.pipelineStateLibrary[.Basic]
@@ -19,17 +19,17 @@ class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
     private lazy var stencilState: MTLDepthStencilState
         = link.depthStencilStateLibrary[.Less]
     
-    var state = State()
-    var constants = BasicModelConstants()
+    public var state = State()
+    public var constants = BasicModelConstants()
     private var material = MetalLinkMaterial()
     
-    init(_ link: MetalLink, mesh: MetalLinkMesh) {
+    public init(_ link: MetalLink, mesh: MetalLinkMesh) {
         self.link = link
         self.mesh = mesh
         super.init()
     }
     
-    override func update(deltaTime: Float) {
+    public override func update(deltaTime: Float) {
         super.update(deltaTime: deltaTime)        
         updateModelConstants()
     }
@@ -71,7 +71,7 @@ extension MetalLinkObject {
 }
 
 extension MetalLinkObject {
-    func updateModelConstants() {
+    public func updateModelConstants() {
         // Pull matrix from node position
         constants.modelMatrix = modelMatrix
     }

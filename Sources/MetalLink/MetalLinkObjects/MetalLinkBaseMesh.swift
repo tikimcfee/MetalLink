@@ -9,7 +9,7 @@
 import MetalKit
 import BitHandling
 
-protocol MetalLinkMesh {
+public protocol MetalLinkMesh {
     func getVertexBuffer() -> MTLBuffer?
     func deallocateVertexBuffer()  // TODO: Don't deallocate the entire buffer.. at least pool it... clear it?
     var vertexCount: Int { get }
@@ -17,7 +17,7 @@ protocol MetalLinkMesh {
     var name: String { get }
 }
 
-class MetalLinkBaseMesh: MetalLinkMesh {
+public class MetalLinkBaseMesh: MetalLinkMesh {
     private let link: MetalLink
     private var vertexBuffer: MTLBuffer?
     
@@ -25,16 +25,16 @@ class MetalLinkBaseMesh: MetalLinkMesh {
     // to a lock on meshes, but I'm still testing.. is what
     // I'm telling myself.
     
-    var vertices: [Vertex] {
+    public var vertices: [Vertex] {
         get { concurrenctVertices.values }
         set {
             concurrenctVertices.removeAll(keepingCapacity: true)
             newValue.forEach { concurrenctVertices.append($0) }
         }
     }
-    var concurrenctVertices = ConcurrentArray<Vertex>()
-    var vertexCount: Int { concurrenctVertices.count }
-    var name: String { "BaseMesh" }
+    public var concurrenctVertices = ConcurrentArray<Vertex>()
+    public var vertexCount: Int { concurrenctVertices.count }
+    public var name: String { "BaseMesh" }
 
     init(_ link: MetalLink) {
         self.link = link
@@ -43,7 +43,7 @@ class MetalLinkBaseMesh: MetalLinkMesh {
         }
     }
     
-    func getVertexBuffer() -> MTLBuffer? {
+    public func getVertexBuffer() -> MTLBuffer? {
         guard !vertices.isEmpty else { return nil }
         if let buffer = vertexBuffer { return buffer }
         concurrenctVertices.directWriteAccess {
@@ -53,7 +53,7 @@ class MetalLinkBaseMesh: MetalLinkMesh {
         return vertexBuffer
     }
     
-    func deallocateVertexBuffer() {
+    public func deallocateVertexBuffer() {
         vertexBuffer = nil
     }
     

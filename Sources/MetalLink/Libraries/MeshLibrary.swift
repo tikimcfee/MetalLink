@@ -8,19 +8,19 @@
 import MetalKit
 import BitHandling
 
-enum MeshType {
+public enum MeshType {
     case Triangle
     case Quad
 }
 
-class MeshLibrary: LockingCache<MeshType, MetalLinkMesh> {
+public class MeshLibrary: LockingCache<MeshType, MetalLinkMesh> {
     let link: MetalLink
     
     init(_ link: MetalLink) {
         self.link = link
     }
     
-    override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
         switch key {
         case .Triangle:
             return MetalLinkTriangleMesh(link)

@@ -9,7 +9,7 @@
 import MetalKit
 import BitHandling
 
-class MetalLinkShaderCache {
+public class MetalLinkShaderCache {
     let link: MetalLink
     private lazy var shaderFunctionCache = ShaderFunctionCache(link)
     

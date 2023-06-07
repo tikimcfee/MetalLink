@@ -12,9 +12,17 @@ import MetalLinkHeaders
 // MARK: - Bridging header extensions
 
 // TODO: Find a nice way to push this into bridging header
-struct Vertex {
-    var position: LFloat3
-    var uvTextureIndex: TextureIndex /* (left, top, width, height) */
+public struct Vertex {
+    public var position: LFloat3
+    public var uvTextureIndex: TextureIndex /* (left, top, width, height) */
+    
+    public init(
+        position: LFloat3,
+        uvTextureIndex: TextureIndex
+    ) {
+        self.position = position
+        self.uvTextureIndex = uvTextureIndex
+    }
 }
 
 extension SceneConstants: MemoryLayoutSizable { }
@@ -22,7 +30,7 @@ extension SceneConstants: MemoryLayoutSizable { }
 extension BasicModelConstants: MemoryLayoutSizable { }
 
 extension VirtualParentConstants: MemoryLayoutSizable, BackingIndexed {
-    mutating func reset() {
+    public mutating func reset() {
         modelMatrix = matrix_identity_float4x4
         bufferIndex = .zero
 //        useParentBuffer = 0
@@ -31,7 +39,7 @@ extension VirtualParentConstants: MemoryLayoutSizable, BackingIndexed {
 }
 
 extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
-    mutating func reset() {
+    public mutating func reset() {
         modelMatrix = matrix_identity_float4x4
         textureDescriptorU = .zero
         textureDescriptorV = .zero
@@ -44,19 +52,19 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
 
 // MARK: - Extensions
 
-extension Vertex {
+public extension Vertex {
     var positionString: String {
         "(\(position.x), \(position.y), \(position.z))"
     }
 }
 
-extension MetalLinkInstancedObject {
+public extension MetalLinkInstancedObject {
     class State {
         var time: Float = 0
     }
 }
 
-extension MetalLinkObject {
+public extension MetalLinkObject {
     class State {
         var time: Float = 0
     }

@@ -8,8 +8,8 @@
 import Foundation
 import SceneKit
 
-typealias GlyphNode = MetalLinkGlyphNode
+public typealias GlyphNode = MetalLinkGlyphNode
 
-extension GlyphNode {
+public extension GlyphNode {
 
 }

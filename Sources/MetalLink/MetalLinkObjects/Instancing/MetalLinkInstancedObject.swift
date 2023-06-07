@@ -9,7 +9,7 @@ import MetalKit
 import MetalLinkHeaders
 //import Algorithms
 
-class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
+public class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
     let link: MetalLink
     var mesh: MetalLinkMesh
     
@@ -31,7 +31,7 @@ class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode 
     var rootState = State()
     let instanceState: InstanceState<InstancedNodeType>
 
-    init(
+    public init(
         _ link: MetalLink,
         mesh: MetalLinkMesh,
         bufferSize: Int = BackingBufferDefaultSize
@@ -45,13 +45,13 @@ class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode 
         super.init()
     }
     
-    override func update(deltaTime: Float) {
+    public override func update(deltaTime: Float) {
         rootState.time += deltaTime
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
     
-    override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         
     }
     

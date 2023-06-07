@@ -7,16 +7,16 @@
 
 import Foundation
 
-struct FontRenderer {
-    static let shared: FontRenderer = FontRenderer()
+public struct FontRenderer {
+    public static let shared: FontRenderer = FontRenderer()
     
-    let measuringFont: NSUIFont = MONOSPACE_FONT
-    let renderingFont: NSUIFont = UNIT_FONT
+    public let measuringFont: NSUIFont = MONOSPACE_FONT
+    public let renderingFont: NSUIFont = UNIT_FONT
     
     private init() { }
 }
 
-extension FontRenderer {
+public extension FontRenderer {
     func measure(_ text: String) -> (LFloat2, LFloat2) {
         let measureSize = text.size(withAttributes: [.font: measuringFont])
         let textSize = LFloat2(measureSize.width.float, measureSize.height.float)

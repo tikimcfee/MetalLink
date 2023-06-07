@@ -10,14 +10,14 @@ import Foundation
 import CoreServices
 import UIKit
 
-typealias BitmapImages = (
+public typealias BitmapImages = (
     requested: NSUIImage,
     requestedCG: CGImage,
     template: NSUIImage,
     templateCG: CGImage
 )
 
-extension CALayer {
+public extension CALayer {
     func getBitmapImage(
         using key: GlyphCacheKey
     ) -> BitmapImages? {

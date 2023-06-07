@@ -9,24 +9,24 @@
 import MetalKit
 import BitHandling
 
-protocol RenderPipelineState {
+public protocol RenderPipelineState {
     var name: String { get }
     var renderPipelineState: MTLRenderPipelineState { get }
 }
 
-enum MetalLinkRenderPipelineState {
+public enum MetalLinkRenderPipelineState {
     case Basic
     case Instanced
 }
 
-class RenderPipelineStateLibrary: LockingCache<MetalLinkRenderPipelineState, RenderPipelineState> {
+public class RenderPipelineStateLibrary: LockingCache<MetalLinkRenderPipelineState, RenderPipelineState> {
     let link: MetalLink
     
-    init(link: MetalLink) {
+    public init(link: MetalLink) {
         self.link = link
     }
     
-    override func make(_ key: Key, _ store: inout [Key: Value]) -> RenderPipelineState {
+    public override func make(_ key: Key, _ store: inout [Key: Value]) -> RenderPipelineState {
         switch key {
         case .Basic:
             return try! Basic(link)
@@ -35,7 +35,7 @@ class RenderPipelineStateLibrary: LockingCache<MetalLinkRenderPipelineState, Ren
         }
     }
     
-    subscript(_ pipelineState: MetalLinkRenderPipelineState) -> MTLRenderPipelineState {
+    public subscript(_ pipelineState: MetalLinkRenderPipelineState) -> MTLRenderPipelineState {
         self[pipelineState].renderPipelineState
     }
 }

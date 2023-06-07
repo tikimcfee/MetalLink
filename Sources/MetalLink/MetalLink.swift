@@ -10,27 +10,27 @@ import Foundation
 import MetalKit
 import Combine
 
-class MetalLink {
-    let view: CustomMTKView
-    let device: MTLDevice
-    let commandQueue: MTLCommandQueue
-    let defaultLibrary: MTLLibrary
-    let input: DefaultInputReceiver
+public class MetalLink {
+    public let view: CustomMTKView
+    public let device: MTLDevice
+    public let commandQueue: MTLCommandQueue
+    public let defaultLibrary: MTLLibrary
+    public let input: DefaultInputReceiver
     
-    lazy var textureLoader: MTKTextureLoader = MTKTextureLoader(device: device)
+    public lazy var textureLoader: MTKTextureLoader = MTKTextureLoader(device: device)
     
     // TODO: Move these classes into a hierarchy
     // They all use MetalLink._library to fetch, and could be fields instead
-    lazy var meshLibrary = MeshLibrary(self)
-    lazy var shaderLibrary = MetalLinkShaderCache(link: self)
-    lazy var vertexDescriptorLibrary = VertexDescriptorLibrary(link: self)
-    lazy var renderPipelineDescriptorLibrary = RenderPipelineDescriptorLibrary(link: self)
-    lazy var pipelineStateLibrary = RenderPipelineStateLibrary(link: self)
-    lazy var depthStencilStateLibrary = DepthStencilStateLibrary(link: self)
+    public lazy var meshLibrary = MeshLibrary(self)
+    public lazy var shaderLibrary = MetalLinkShaderCache(link: self)
+    public lazy var vertexDescriptorLibrary = VertexDescriptorLibrary(link: self)
+    public lazy var renderPipelineDescriptorLibrary = RenderPipelineDescriptorLibrary(link: self)
+    public lazy var pipelineStateLibrary = RenderPipelineStateLibrary(link: self)
+    public lazy var depthStencilStateLibrary = DepthStencilStateLibrary(link: self)
     
     // TODO: Make these color indices named to match their descriptor usages
-    lazy var glyphPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 1)
-    lazy var gridPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 2)
+    public lazy var glyphPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 1)
+    public lazy var gridPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 2)
     
     private lazy var sizeSubject = PassthroughSubject<CGSize, Never>()
     private(set) lazy var sizeSharedUpdates = sizeSubject.share()

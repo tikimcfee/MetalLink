@@ -7,25 +7,25 @@
 
 import MetalKit
 
-class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
-    let key: GlyphCacheKey
-    let texture: MTLTexture
-    var meta: Meta
+public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
+    public let key: GlyphCacheKey
+    public let texture: MTLTexture
+    public var meta: Meta
     
-    var quad: MetalLinkQuadMesh
-    var node: MetalLinkNode { self }
+    public var quad: MetalLinkQuadMesh
+    public var node: MetalLinkNode { self }
     
-    override var hasIntrinsicSize: Bool { true }
+    public override var hasIntrinsicSize: Bool { true }
     
-    override var contentSize: LFloat3 {
+    public override var contentSize: LFloat3 {
         LFloat3(quad.width, quad.height, 1)
     }
     
-    override var contentOffset: LFloat3 {
+    public override var contentOffset: LFloat3 {
         LFloat3(-quad.width / 2.0, quad.height / 2.0, 0)
     }
     
-    init(_ link: MetalLink,
+    public init(_ link: MetalLink,
          key: GlyphCacheKey,
          texture: MTLTexture,
          quad: MetalLinkQuadMesh) {
@@ -37,7 +37,7 @@ class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
         setQuadSize()
     }
     
-    func setQuadSize() {
+    public func setQuadSize() {
         guard !quad.initialSizeSet else { return }
         let size = UnitSize.from(texture.simdSize)
         quad.setSize(size)
@@ -45,12 +45,12 @@ class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     
     // TODO: This isn't really used anymore, glyphs are done with instancing now.
     // This allow glyphs to be drawing without said instancing though.
-    override func applyTextures(_ sdp: inout SafeDrawPass) {
+    public override func applyTextures(_ sdp: inout SafeDrawPass) {
         sdp.renderCommandEncoder.setFragmentTexture(texture, index: 0)
     }
 }
 
-extension MetalLinkGlyphNode {
+public extension MetalLinkGlyphNode {
     // Optional meta on nodes; I think I'm shifting to using these as the
     // carrier of truth since I have more control of where they come from.
     // I think SCNNode made it trickier to know what was what. I'm decreasing
@@ -60,10 +60,20 @@ extension MetalLinkGlyphNode {
         var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
         var instanceID: InstanceIDType?
         var instanceBufferIndex: Int?
+        
+        public init(
+            syntaxID: String? = nil,
+            instanceID: InstanceIDType? = nil,
+            instanceBufferIndex: Int? = nil
+        ) {
+            self.syntaxID = syntaxID
+            self.instanceID = instanceID
+            self.instanceBufferIndex = instanceBufferIndex
+        }
     }
 }
 
-extension MetalLinkGlyphNode {
+public extension MetalLinkGlyphNode {
     enum GroupType {
         case glyphCollection(instanceID: InstanceIDType)
         case standardGroup

@@ -9,24 +9,24 @@
 import MetalKit
 import BitHandling
 
-protocol RenderPipelineDescriptor {
+public protocol RenderPipelineDescriptor {
     var name: String { get }
     var renderPipelineDescriptor: MTLRenderPipelineDescriptor { get }
 }
 
-enum MetalLinkDescriptorPipeline {
+public enum MetalLinkDescriptorPipeline {
     case BasicPipelineDescriptor
     case Instanced
 }
 
-class RenderPipelineDescriptorLibrary: LockingCache<MetalLinkDescriptorPipeline, RenderPipelineDescriptor> {
+public class RenderPipelineDescriptorLibrary: LockingCache<MetalLinkDescriptorPipeline, RenderPipelineDescriptor> {
     let link: MetalLink
     
     init(link: MetalLink) {
         self.link = link
     }
     
-    override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
+    public override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
         switch key {
         case .BasicPipelineDescriptor:
             return Basic(link)
@@ -38,10 +38,10 @@ class RenderPipelineDescriptorLibrary: LockingCache<MetalLinkDescriptorPipeline,
 
 // MARK: - Descriptors
 
-extension RenderPipelineDescriptorLibrary {
+public extension RenderPipelineDescriptorLibrary {
     struct Basic: RenderPipelineDescriptor {
-        var name = "Basic RenderPipelineDescriptor"
-        var renderPipelineDescriptor: MTLRenderPipelineDescriptor
+        public var name = "Basic RenderPipelineDescriptor"
+        public var renderPipelineDescriptor: MTLRenderPipelineDescriptor
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.BasicVertex]
@@ -63,8 +63,8 @@ extension RenderPipelineDescriptorLibrary {
 
 extension RenderPipelineDescriptorLibrary {
     struct Instanced: RenderPipelineDescriptor {
-        var name = "Instanced RenderPipelineDescriptor"
-        var renderPipelineDescriptor: MTLRenderPipelineDescriptor
+        public var name = "Instanced RenderPipelineDescriptor"
+        public var renderPipelineDescriptor: MTLRenderPipelineDescriptor
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.InstancedVertex]

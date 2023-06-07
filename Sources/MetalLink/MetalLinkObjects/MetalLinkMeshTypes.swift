@@ -8,7 +8,7 @@
 
 import MetalKit
 
-enum UVIndex: TextureIndex {
+public enum UVIndex: TextureIndex {
     case topRight = 0
     case topLeft = 1
     case bottomLeft = 2
@@ -34,18 +34,18 @@ private func vertex(
     )
 }
 
-class MetalLinkTriangleMesh: MetalLinkBaseMesh {
-    override var name: String { "MetalLinkTriangle>" }
-    override func createVertices() -> [Vertex] { [
+public class MetalLinkTriangleMesh: MetalLinkBaseMesh {
+    public override var name: String { "MetalLinkTriangle>" }
+    public override func createVertices() -> [Vertex] { [
         vertex( 0, 1, 0, .topMiddle),
         vertex(-1,-1, 0, .bottomLeft),
         vertex( 1,-1, 0, .bottomRight)
     ] }
 }
 
-class MetalLinkQuadMesh: MetalLinkBaseMesh {
-    override var name: String { "MetalLinkQuad" }
-    var initialSizeSet: Bool = false
+public class MetalLinkQuadMesh: MetalLinkBaseMesh {
+    public override var name: String { "MetalLinkQuad" }
+    public var initialSizeSet: Bool = false
     
     // Texture coordinate order:
     override func createVertices() -> [Vertex] { [
@@ -58,7 +58,7 @@ class MetalLinkQuadMesh: MetalLinkBaseMesh {
     ] }
 }
 
-extension MetalLinkQuadMesh {
+public extension MetalLinkQuadMesh {
     static let TopRight = (0, 3)
     static let TopLeft = 1
     static let BotLeft = (2, 4)
