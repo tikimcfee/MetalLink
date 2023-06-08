@@ -45,7 +45,7 @@ public class MetalLink {
         self.device = device
         self.commandQueue = queue
         self.defaultLibrary = library
-        self.input = DefaultInputReceiver.shared   
+        self.input = DefaultInputReceiver.shared
     }
 }
 
