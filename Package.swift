@@ -20,13 +20,21 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "MetalLinkResources",
+            dependencies: ["MetalLinkHeaders"],
+            resources: [
+                .process("Sources/Shaders"),
+            ],
+            publicHeadersPath: "."
+        ),
+        .target(
             name: "MetalLinkHeaders",
             publicHeadersPath: "."
         ),
         .target(
             name: "MetalLink",
             dependencies: [
-                "MetalLinkHeaders",
+                "MetalLinkResources",
                 "BitHandling"
             ]
         ),

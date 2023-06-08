@@ -9,7 +9,7 @@
 import MetalKit
 import MetalLinkHeaders
 
-enum MetalLinkShaderType {
+public enum MetalLinkShaderType {
     case BasicVertex
     case BasicFragment
     

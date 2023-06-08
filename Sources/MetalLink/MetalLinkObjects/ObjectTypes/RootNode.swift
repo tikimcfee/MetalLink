@@ -9,26 +9,26 @@ import Combine
 import MetalKit
 import MetalLinkHeaders
 
-class RootNode: MetalLinkNode, MetalLinkReader {
-    let camera: DebugCamera
-    var link: MetalLink { camera.link }
+public class RootNode: MetalLinkNode, MetalLinkReader {
+    public let camera: DebugCamera
+    public var link: MetalLink { camera.link }
     
-    var constants = SceneConstants()
-    var cancellables = Set<AnyCancellable>()
+    public var constants = SceneConstants()
+    public var cancellables = Set<AnyCancellable>()
     
-    init(_ camera: DebugCamera) {
+    public init(_ camera: DebugCamera) {
         self.camera = camera
         super.init()
     }
     
-    override func update(deltaTime: Float) {
+    public override func update(deltaTime: Float) {
         constants.viewMatrix = camera.viewMatrix
         constants.projectionMatrix = camera.projectionMatrix
         constants.totalGameTime += deltaTime
         super.update(deltaTime: deltaTime)
     }
     
-    override func render(in sdp: inout SafeDrawPass) {
+    public override func render(in sdp: inout SafeDrawPass) {
         sdp.renderCommandEncoder.setVertexBytes(&constants, length: SceneConstants.memStride, index: 1)
         
         super.render(in: &sdp)

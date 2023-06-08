@@ -2,8 +2,13 @@
 import Foundation
 import MetalKit
 
+public protocol MetalLinkRendererDelegate {
+    func performDelegatedEncode(with pass: inout SafeDrawPass)
+}
+
 public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     public let link: MetalLink
+    public var renderDelegate: MetalLinkRendererDelegate?
 
     public init(link: MetalLink) throws {
         self.link = link
@@ -22,8 +27,7 @@ public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
             return
         }
         
-        // TODO: - To encode to the draw pass, add a receiver for the renderer (receivers?)
-//        twoETutorial.delegatedEncode(in: &sdp)
+        renderDelegate?.performDelegatedEncode(with: &sdp)
         
         // Produce drawable from current render state post-encoding
         sdp.renderCommandEncoder.endEncoding()

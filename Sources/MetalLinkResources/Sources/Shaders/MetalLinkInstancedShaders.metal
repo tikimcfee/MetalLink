@@ -9,7 +9,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#include "../MetalLinkHeaders.h"
+#include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
 

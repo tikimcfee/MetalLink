@@ -1,7 +1,7 @@
 import Foundation
 import SceneKit
 
-extension MetalLinkNode {
+public extension MetalLinkNode {
 
     func translate(dX: Float = 0,
                    dY: Float = 0,

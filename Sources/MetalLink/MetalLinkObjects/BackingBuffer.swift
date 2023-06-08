@@ -20,8 +20,8 @@ public extension BackingIndexed {
 public let BackingBufferDefaultSize = 31_415
 
 public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
-    let link: MetalLink
-    private(set) var buffer: MTLBuffer
+    public let link: MetalLink
+    public private(set) var buffer: MTLBuffer
     public var pointer: UnsafeMutablePointer<Stored>
     
     let enlargeMultiplier = 2.01

@@ -13,7 +13,7 @@ public class MetalLinkShaderCache {
     let link: MetalLink
     private lazy var shaderFunctionCache = ShaderFunctionCache(link)
     
-    init (link: MetalLink) {
+    public init (link: MetalLink) {
         self.link = link
     }
     

@@ -8,6 +8,8 @@
 
 import Foundation
 import MetalKit
+import MetalLinkResources
+import MetalLinkHeaders
 import Combine
 
 public class MetalLink {
@@ -39,11 +41,11 @@ public class MetalLink {
         self.view = view
         guard let device = view.device else { throw CoreError.noMetalDevice }
         guard let queue = device.makeCommandQueue() else { throw CoreError.noCommandQueue }
-        guard let library = device.makeDefaultLibrary() else { throw CoreError.noDefaultLibrary }
+        guard let library = MetalLinkResources.getDefaultLibrary(from: device) else { throw CoreError.noDefaultLibrary }
         self.device = device
         self.commandQueue = queue
         self.defaultLibrary = library
-        self.input = DefaultInputReceiver.shared
+        self.input = DefaultInputReceiver.shared   
     }
 }
 
@@ -55,7 +57,7 @@ extension MetalLink {
 
 // MetalLink reads itself lol
 extension MetalLink: MetalLinkReader {
-    var link: MetalLink { self }
+    public var link: MetalLink { self }
 }
 
 #if os(iOS)

@@ -9,11 +9,11 @@ import Foundation
 import MetalKit
 import Combine
 
-protocol MetalLinkReader {
+public protocol MetalLinkReader {
     var link: MetalLink { get }
 }
 
-extension MetalLinkReader {
+public extension MetalLinkReader {
     var view: CustomMTKView { link.view }
     var device: MTLDevice { link.device }
     var library: MTLLibrary { link.defaultLibrary }
@@ -23,7 +23,7 @@ extension MetalLinkReader {
     var input: DefaultInputReceiver { link.input }
 }
 
-extension MetalLinkReader {
+public extension MetalLinkReader {
     func convertToDrawablePosition(windowX x: Float, windowY y: Float) -> LFloat2 {
         let drawableSize = link.viewDrawableFloatSize
         let viewSize = link.viewPercentagePosition(x: x, y: y)

@@ -10,7 +10,7 @@ import simd
 import MetalLinkHeaders
 
 public extension GlyphCollection {
-    public class Pointer {
+    class Pointer {
         var position: LFloat3 = .zero
         
         func right(_ dX: Float) { position.x += dX }
@@ -23,7 +23,7 @@ public extension GlyphCollection {
         func reset() { position = .zero }
     }
     
-    public class Renderer {
+    class Renderer {
         struct Config {
             static let newLineSizeRatio: Float = 1.10
         }
