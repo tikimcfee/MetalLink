@@ -27,7 +27,26 @@ public struct Vertex {
 
 extension SceneConstants: MemoryLayoutSizable { }
 
+extension SceneConstants: Equatable {
+    public static func == (lhs: SceneConstants, rhs: SceneConstants) -> Bool {
+        lhs.totalGameTime == rhs.totalGameTime
+        && lhs.projectionMatrix == rhs.projectionMatrix
+        && lhs.pointerMatrix == rhs.pointerMatrix
+        && lhs.viewMatrix == rhs.viewMatrix
+    }
+    
+}
+
 extension BasicModelConstants: MemoryLayoutSizable { }
+
+extension BasicModelConstants: Equatable {
+    public static func == (lhs: BasicModelConstants, rhs: BasicModelConstants) -> Bool {
+        lhs.color == rhs.color
+        && lhs.modelMatrix == rhs.modelMatrix
+        && lhs.pickingId == rhs.pickingId
+        && lhs.textureIndex == rhs.textureIndex
+    }
+}
 
 extension VirtualParentConstants: MemoryLayoutSizable, BackingIndexed {
     public mutating func reset() {

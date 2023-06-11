@@ -29,7 +29,7 @@ public class RootNode: MetalLinkNode, MetalLinkReader {
     }
     
     public override func render(in sdp: inout SafeDrawPass) {
-        sdp.renderCommandEncoder.setVertexBytes(&constants, length: SceneConstants.memStride, index: 1)
+        sdp.setCurrentVertexBytes(&constants, SceneConstants.memStride, 1)
         
         super.render(in: &sdp)
     }

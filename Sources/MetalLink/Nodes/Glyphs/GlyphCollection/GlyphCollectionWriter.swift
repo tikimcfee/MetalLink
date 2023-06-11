@@ -8,17 +8,21 @@
 import Foundation
 import MetalLinkHeaders
 
-struct GlyphCollectionWriter {
+public struct GlyphCollectionWriter {
     private static let locked_worker = DispatchQueue(label: "WriterWritingWritely", qos: .userInteractive)
     
     let target: GlyphCollection
     var linkAtlas: MetalLinkAtlas { target.linkAtlas }
     
+    public init(target: GlyphCollection) {
+        self.target = target
+    }
+    
     // TODO: Add a 'render all of this' function to avoid
     // potentially recreating the buffer hundreds of times.
     // Buffer *should* only reset when the texture is called,
     // but that's a fragile guarantee.
-    func addGlyph(
+    public func addGlyph(
         _ key: GlyphCacheKey,
         _ action: (GlyphNode, inout InstancedConstants) -> Void
     ) {

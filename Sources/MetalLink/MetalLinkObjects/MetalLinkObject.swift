@@ -38,15 +38,15 @@ public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
         guard let meshVertexBuffer = mesh.getVertexBuffer() else { return }
         
         // Setup rendering states for next draw pass
-        sdp.renderCommandEncoder.setRenderPipelineState(pipelineState)
-        sdp.renderCommandEncoder.setDepthStencilState(stencilState)
+        sdp.currentPipeline = pipelineState
+        sdp.currentDepthStencil = stencilState
         
         // Set small <4kb buffered constants and main mesh buffer
-        sdp.renderCommandEncoder.setVertexBuffer(meshVertexBuffer, offset: 0, index: 0)
-        sdp.renderCommandEncoder.setVertexBytes(&constants, length: BasicModelConstants.memStride, index: 4)
+        sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
+        sdp.setCurrentVertexBytes(&constants, BasicModelConstants.memStride, 4)
         
         // Update fragment shader
-        sdp.renderCommandEncoder.setFragmentBytes(&material, length: MetalLinkMaterial.memStride, index: 1)
+        sdp.currentBasicMaterial = material
         applyTextures(&sdp)
         
         // Do the draw
@@ -76,18 +76,3 @@ extension MetalLinkObject {
         constants.modelMatrix = modelMatrix
     }
 }
-
-//extension MTLRenderCommandEncoder {
-//    func setVertexBytes<T>(_ buffer: [T], index: Int) {
-//        buffer.withUnsafeBytes {
-//            setVertexBytes($0.baseAddress!, length: $0.count, index: index)
-//        }
-//    }
-//
-//    func setFragmentBytes<T>(_ buffer: [T], index: Int) {
-//        buffer.withUnsafeBytes {
-//            setFragmentBytes($0.baseAddress!, length: $0.count, index: index)
-//        }
-//    }
-//}
-//

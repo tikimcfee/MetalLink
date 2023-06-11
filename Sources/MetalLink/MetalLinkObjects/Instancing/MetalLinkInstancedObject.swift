@@ -103,17 +103,13 @@ extension MetalLinkInstancedObject: MetalLinkRenderable {
         let constantsBuffer = instanceState.instanceBuffer
         
         // Setup rendering states for next draw pass
-        sdp.renderCommandEncoder.setRenderPipelineState(pipelineState)
-        sdp.renderCommandEncoder.setDepthStencilState(stencilState)
+        sdp.currentPipeline = pipelineState
+        sdp.currentDepthStencil = stencilState
         
         // Set small buffered constants and main mesh buffer
-        sdp.renderCommandEncoder.setVertexBuffer(meshVertexBuffer, offset: 0, index: 0)
-        sdp.renderCommandEncoder.setVertexBuffer(constantsBuffer, offset: 0, index: 2)
-        
-//        // Update fragment shader
-//        // TODO: Think of something to do with fragment buffer
-//        sdp.renderCommandEncoder.setFragmentBytes(&material, length: MetalLinkMaterial.memStride, index: 1)
-        
+        sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
+        sdp.setCurrentVertexBuffer(constantsBuffer, 0, 2)
+                
         // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
         // Constants need to capture vertex transforms for emoji/nonstandard.
         // OR, use multiple draw calls for sizes (noooo...)

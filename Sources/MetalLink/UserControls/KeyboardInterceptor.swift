@@ -328,8 +328,8 @@ func focusDirectionForKey(_ key: String, _ event: OSEvent) -> SelfRelativeDirect
     switch key {
     case "h", "H": return .left
     case "l", "L": return .right
-    case "j", "J": return .up
-    case "k", "K": return .down
+    case "j", "J": return .down
+    case "k", "K": return .up
     case "n", "N": return .forward
     case "m", "M": return .backward
     #if os(macOS)

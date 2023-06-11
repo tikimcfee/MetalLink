@@ -9,6 +9,9 @@ import MetalKit
 import MetalLinkHeaders
 import Combine
 
+// There's some kind of `GlyphCollection` in Foundation that gets picked up sometimes.. need to alias
+public typealias MetalLinkGlyphCollection = GlyphCollection
+
 public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
 
     public var linkAtlas: MetalLinkAtlas
@@ -61,7 +64,12 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     }
     
     public override func render(in sdp: inout SafeDrawPass) {
-        sdp.renderCommandEncoder.setFragmentTexture(linkAtlas.currentAtlas, index: 5)
+        sdp.oncePerPass("glyph-collection-atlas") {
+            $0.renderCommandEncoder.setFragmentTexture(
+                linkAtlas.currentAtlas, index: 5
+            )
+        }
+        
         super.render(in: &sdp)
     }
     
