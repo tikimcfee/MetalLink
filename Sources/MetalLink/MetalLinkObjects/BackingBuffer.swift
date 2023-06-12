@@ -16,7 +16,6 @@ public extension BackingIndexed {
     var arrayIndex: Int { Int(bufferIndex) }
 }
 
-// More memory, less rebuilding. 10K fits nicely for reducing rebuilds in LAT.
 public let BackingBufferDefaultSize = 31_415
 
 public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
@@ -29,6 +28,9 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     private(set) var currentEndIndex = 0
     private var shouldRebuild: Bool {
         currentEndIndex == currentBufferSize
+    }
+    private var defaultEnlargeNextSize: Int {
+        Int(ceil(currentBufferSize.cg * enlargeMultiplier.cg))
     }
     private var enlargeSemaphore = DispatchSemaphore(value: 1)
     private var createSemaphore = DispatchSemaphore(value: 1)
@@ -50,7 +52,9 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         createSemaphore.wait()
         defer { createSemaphore.signal() }
         
-        if shouldRebuild { try expandBuffer() }
+        if shouldRebuild {
+            try expandBuffer(nextSize: defaultEnlargeNextSize)
+        }
         
         var next = pointer[currentEndIndex]
         next.reset() // Memory is unitialized; call reset to clean up
@@ -64,7 +68,9 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         return next
     }
     
-    private func expandBuffer() throws {
+    private func expandBuffer(
+        nextSize: Int
+    ) throws {
         enlargeSemaphore.wait()
         defer { enlargeSemaphore.signal() }
         guard shouldRebuild else {
@@ -73,7 +79,6 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         }
         
         let oldSize = currentBufferSize
-        let nextSize = Int(ceil(currentBufferSize.cg * enlargeMultiplier.cg))
         print("Enlarging buffer for '\(Stored.self)': \(currentBufferSize) -> \(nextSize)")
         currentBufferSize = nextSize
         

@@ -11,7 +11,7 @@ import MetalLinkHeaders
 
 public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
     public let link: MetalLink
-    public var mesh: MetalLinkMesh
+    public var mesh: any MetalLinkMesh
     
     private lazy var pipelineState: MTLRenderPipelineState
         = link.pipelineStateLibrary[.Basic]
@@ -23,7 +23,7 @@ public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
     public var constants = BasicModelConstants()
     private var material = MetalLinkMaterial()
     
-    public init(_ link: MetalLink, mesh: MetalLinkMesh) {
+    public init(_ link: MetalLink, mesh: any MetalLinkMesh) {
         self.link = link
         self.mesh = mesh
         super.init()

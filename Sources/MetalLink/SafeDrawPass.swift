@@ -30,29 +30,31 @@ public class SafeDrawPass {
     }
     
     func reset() {
-        currents = Currents()
+        currents.reset()
     }
     
     public func oncePerPass(_ key: String, _ action: (SafeDrawPass) -> Void) {
-        guard currents.renderFlags[key] == nil else { return }
+        guard !currents.oneTimeFlags.contains(key) else { return }
         action(self)
-        currents.renderFlags[key] = "did-execute-once-\(key)"
+        currents.oneTimeFlags.insert(key)
     }
 }
 
 extension SafeDrawPass {
-    struct Currents {
+    class Currents {
         var pipeline: MTLRenderPipelineState?
         var depthStencil: MTLDepthStencilState?
-        var renderFlags = [String: Any]()
-        
         var material: MetalLinkMaterial?
         
-        // [Length: [Index: Buffer]]
-        var vertexBuffer = [Int: [Int: MTLBuffer]]()
+        var oneTimeFlags = Set<String>()
         
-        // [Offset: [Index: Buffer]]
-        var vertexBytes = [Int: [Int: any Equatable]]()
+        func reset() {
+            pipeline = nil
+            depthStencil = nil
+            material = nil
+            
+            oneTimeFlags.removeAll(keepingCapacity: true)
+        }
     }
     
     public var currentPipeline: MTLRenderPipelineState? {
@@ -94,39 +96,24 @@ extension SafeDrawPass {
                     length: MetalLinkMaterial.memStride,
                     index: 1
                 )
-                
             }
         }
     }
     
-    public func setCurrentVertexBuffer<T: MTLBuffer>(
-        _ buffer: T,
+    public func setCurrentVertexBuffer(
+        _ buffer: MTLBuffer,
         _ offset: Int,
         _ index: Int
     ) {
-        let current = currents.vertexBuffer[offset]?[index]
-        guard
-            (current as? T)?.contents() != buffer.contents() else
-        {
-            return
-        }
-        currents.vertexBuffer[offset, default: [:]][index] = buffer
         renderCommandEncoder.setVertexBuffer(buffer, offset: offset, index: index)
     }
     
-    public func setCurrentVertexBytes<T: Equatable>(
-        _ bytes: inout T,
+    public func setCurrentVertexBytes(
+        _ bytes: UnsafeRawPointer,
         _ length: Int,
         _ index: Int
     ) {
-        let current = currents.vertexBytes[length]?[index]
-        guard
-            (current as? T) != bytes
-        else {
-            return
-        }
-        currents.vertexBytes[length, default: [:]][index] = bytes
-        renderCommandEncoder.setVertexBytes(&bytes, length: length, index: index)
+        renderCommandEncoder.setVertexBytes(bytes, length: length, index: index)
     }
 }
 

@@ -11,7 +11,7 @@ import MetalLinkHeaders
 
 open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
     public let link: MetalLink
-    public var mesh: MetalLinkMesh
+    public var mesh: any MetalLinkMesh
     
     private lazy var pipelineState: MTLRenderPipelineState
         = link.pipelineStateLibrary[.Instanced]
@@ -33,7 +33,7 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
 
     public init(
         _ link: MetalLink,
-        mesh: MetalLinkMesh,
+        mesh: any MetalLinkMesh,
         bufferSize: Int = BackingBufferDefaultSize
     ) throws {
         self.link = link
@@ -73,26 +73,21 @@ extension MetalLinkInstancedObject {
             rootConstants.modelMatrix = modelMatrix
             rebuildSelf = false
         }
-        
-        if rebuildInstances {
-            iterativePush()
-        }
-    }
-    
-    private func iterativePush() {
-        print("\n\n\t\t Nothing is being pushed (\(instanceState.instanceBufferCount) items) -- did you expect this?\n\n")
-        
-//        instanceState.zipUpdate { node, constants, pointer in
-//            self.performJITInstanceBufferUpdate(node)
-//
-//            pointer.pointee.modelMatrix = matrix_multiply(self.modelMatrix, node.modelMatrix)
-//            pointer.pointee.textureDescriptorU = constants.textureDescriptorU
-//            pointer.pointee.textureDescriptorV = constants.textureDescriptorV
-//            pointer.pointee.instanceID = constants.instanceID
-//            pointer.pointee.addedColor = constants.addedColor
-//        }
     }
 }
+
+protocol DrawPassVertexProvider {
+    var vertexID: UUID { get }
+    var vertexLength: Int { get }
+    var vertexIndex: Int { get }
+}
+
+protocol DrawPassConstantsProvider {
+    var constantsID: UUID { get }
+    var constantsOffset: Int { get }
+    var constantsIndex: Int { get }
+}
+
 
 extension MetalLinkInstancedObject: MetalLinkRenderable {
     func doRender(in sdp: inout SafeDrawPass) {
