@@ -58,6 +58,32 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
         // override to do stuff right before instance buffer updates
     }
+    
+    override public func doRender(in sdp: inout SafeDrawPass) {
+        guard !instanceState.nodes.isEmpty,
+              let meshVertexBuffer = mesh.getVertexBuffer()
+        else { return }
+        
+        let constantsBuffer = instanceState.instanceBuffer
+        
+        // Setup rendering states for next draw pass
+        sdp.currentPipeline = pipelineState
+        sdp.currentDepthStencil = stencilState
+        
+        // Set small buffered constants and main mesh buffer
+        sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
+        sdp.setCurrentVertexBuffer(constantsBuffer, 0, 2)
+                
+        // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
+        // Constants need to capture vertex transforms for emoji/nonstandard.
+        // OR, use multiple draw calls for sizes (noooo...)
+        sdp.renderCommandEncoder.drawPrimitives(
+            type: .triangle,
+            vertexStart: 0,
+            vertexCount: mesh.vertexCount,
+            instanceCount: instanceState.instanceBufferCount
+        )
+    }
 }
 
 extension MetalLinkInstancedObject {
@@ -86,35 +112,6 @@ protocol DrawPassConstantsProvider {
     var constantsID: UUID { get }
     var constantsOffset: Int { get }
     var constantsIndex: Int { get }
-}
-
-
-extension MetalLinkInstancedObject: MetalLinkRenderable {
-    func doRender(in sdp: inout SafeDrawPass) {
-        guard !instanceState.nodes.isEmpty,
-              let meshVertexBuffer = mesh.getVertexBuffer()
-        else { return }
-        
-        let constantsBuffer = instanceState.instanceBuffer
-        
-        // Setup rendering states for next draw pass
-        sdp.currentPipeline = pipelineState
-        sdp.currentDepthStencil = stencilState
-        
-        // Set small buffered constants and main mesh buffer
-        sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
-        sdp.setCurrentVertexBuffer(constantsBuffer, 0, 2)
-                
-        // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
-        // Constants need to capture vertex transforms for emoji/nonstandard.
-        // OR, use multiple draw calls for sizes (noooo...)
-        sdp.renderCommandEncoder.drawPrimitives(
-            type: .triangle,
-            vertexStart: 0,
-            vertexCount: mesh.vertexCount,
-            instanceCount: instanceState.instanceBufferCount
-        )
-    }
 }
 
 enum LinkInstancingError: String, Error {

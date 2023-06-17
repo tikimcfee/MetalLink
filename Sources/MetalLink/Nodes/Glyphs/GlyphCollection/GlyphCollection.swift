@@ -16,6 +16,7 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
 
     public var linkAtlas: MetalLinkAtlas
     public lazy var renderer = Renderer(collection: self)
+    public var enumerateNonInstancedChildren: Bool = false
     
     public override var contentSize: LFloat3 {
         return BoundsSize(rectPos)
@@ -34,9 +35,7 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     // There needs to be a complete chain from this parent to to whatever is being
     // mutated, or you likely won't see all changes.
     private func setNewParent(_ newParent: MetalLinkNode?) {
-        newParent?.bindToModelEvents { _ in
-            self.rebuildModelMatrix(includeChildren: true)
-        }
+        newParent?.bindAsVirtualParentOf(self)
         internalParent = newParent
     }
     
@@ -74,7 +73,12 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     }
     
     public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
-        enumerateInstanceChildren(action)
+        if enumerateNonInstancedChildren {
+//            enumerateInstanceChildren(action)
+            children.forEach(action)
+        } else {
+            enumerateInstanceChildren(action)
+        }
     }
     
     public func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {

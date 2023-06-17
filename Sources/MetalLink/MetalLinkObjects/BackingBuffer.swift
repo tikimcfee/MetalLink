@@ -23,9 +23,9 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     public private(set) var buffer: MTLBuffer
     public var pointer: UnsafeMutablePointer<Stored>
     
-    let enlargeMultiplier = 2.01
-    private(set) var currentBufferSize: Int
-    private(set) var currentEndIndex = 0
+    public let enlargeMultiplier = 2.01
+    private(set) public var currentBufferSize: Int
+    private(set) public var currentEndIndex = 0
     private var shouldRebuild: Bool {
         currentEndIndex == currentBufferSize
     }

@@ -196,20 +196,20 @@ private extension KeyboardInterceptor {
 }
 
 #if os(iOS)
-extension OSEvent {
+public extension OSEvent {
     class ModifierFlags: Equatable {
-        static let none = ModifierFlags(-1)
-        static let shift = ModifierFlags(0)
-        static let command = ModifierFlags(1)
-        static let options = ModifierFlags(2)
+        public static let none = ModifierFlags(-1)
+        public static let shift = ModifierFlags(0)
+        public static let command = ModifierFlags(1)
+        public static let options = ModifierFlags(2)
         let id: Int
         private init(_ id: Int) { self.id = id }
         
-        static func == (lhs: UIEvent.ModifierFlags, rhs: UIEvent.ModifierFlags) -> Bool {
+        public static func == (lhs: UIEvent.ModifierFlags, rhs: UIEvent.ModifierFlags) -> Bool {
             return lhs.id == rhs.id
         }
         
-        func contains(_ flags: ModifierFlags) -> Bool {
+        public func contains(_ flags: ModifierFlags) -> Bool {
             id == flags.id
         }
     }

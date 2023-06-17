@@ -59,10 +59,10 @@ public class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGl
 
 public extension MetalLinkGlyphTextureCache {
     struct Bundle: Equatable {
-        let texture: MTLTexture
-        let textureIndex: TextureIndex
+        public let texture: MTLTexture
+        public let textureIndex: TextureIndex
         
-        func hash(into hasher: inout Hasher) {
+        public func hash(into hasher: inout Hasher) {
             hasher.combine(textureIndex)
         }
         

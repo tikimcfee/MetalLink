@@ -14,14 +14,14 @@ public class CustomMTKView: MTKView {
     weak var keyDownReceiver: KeyDownReceiver?
     
 #if os(iOS)
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
 //        touches.forEach { touch in
 //
 //        }
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
     }
 #endif

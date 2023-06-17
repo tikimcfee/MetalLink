@@ -70,7 +70,7 @@ extension MetalLinkNode {
 //        LFloat3(worldTrailing, worldTop, worldFront)
 //    }
     
-    var worldBounds: Bounds {
+    public var worldBounds: Bounds {
         let rectPos = rectPos
         return (
             min: rectPos.min + worldPosition,

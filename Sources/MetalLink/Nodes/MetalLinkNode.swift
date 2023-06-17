@@ -24,6 +24,9 @@ open class MetalLinkNode: Measures {
     
     private let currentModel = ObservableMatrix()
     public lazy var eventBag = Set<AnyCancellable>()
+    public var modelEventToken: Any?
+    public var modelEventParentToken: Any?
+    public var modelEventTargets: Set<MetalLinkNode> = []
     public var modelEvents: ObservableMatrix.Publisher {
         currentModel.sharedObservable
     }
@@ -31,27 +34,27 @@ open class MetalLinkNode: Measures {
     public lazy var nodeId = UUID().uuidString
 
     open var parent: MetalLinkNode?
-        { didSet { rebuildModelMatrix(includeChildren: true) } }
+        { didSet { rebuildModelMatrix() } }
     
     open var children: [MetalLinkNode] = []
-        { didSet { rebuildModelMatrix(includeChildren: true) } }
+        { didSet { rebuildModelMatrix() } }
     
     // MARK: - Model params
     
     public var position: LFloat3 = .zero
         { didSet {
-            rebuildModelMatrix(includeChildren: true)
+            rebuildModelMatrix()
         } }
     
     public var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
         { didSet {
-            rebuildModelMatrix(includeChildren: true)
+            rebuildModelMatrix()
             BoundsCaching.Set(self, nil)
         } }
     
     public var rotation: LFloat3 = .zero
         { didSet {
-            rebuildModelMatrix(includeChildren: true)
+            rebuildModelMatrix()
         } }
     
     // MARK: - Overridable Measures
@@ -75,6 +78,10 @@ open class MetalLinkNode: Measures {
         let box = computeBoundingBox(convertParent: true)
         BoundsCaching.Set(self, box)
         return box
+    }
+    
+    public var planeAreaXY: VectorFloat {
+        return lengthX * lengthY
     }
     
     public var lengthX: VectorFloat {
@@ -117,7 +124,11 @@ open class MetalLinkNode: Measures {
         for child in children {
             child.render(in: &sdp)
         }
-        asRenderable?.doRender(in: &sdp)
+        doRender(in: &sdp)
+    }
+    
+    open func doRender(in sdp: inout SafeDrawPass) {
+        
     }
     
     public func update(deltaTime: Float) {
@@ -146,18 +157,24 @@ open class MetalLinkNode: Measures {
         }
     }
     
-    public func bindToModelEvents(_ action: @escaping (ObservableMatrix.ModelMatrix) -> Void) {
-        modelEvents.sink {
-            action($0)
-        }
-        .store(in: &eventBag)
+    public func bindAsVirtualParentOf(_ node: MetalLinkNode) {
+        guard modelEventTargets.insert(node).inserted else { return }
+        guard modelEventToken == nil else { return }
+        setEventToken()
     }
     
-    public func bindAsVirtualParentOf(_ node: MetalLinkNode) {
-        modelEvents.sink { _ in
-            node.rebuildModelMatrix()
+    public func unbindAsVirtualParentOf(_ node: MetalLinkNode) {
+        guard let _ = modelEventTargets.remove(node) else { return }
+        guard modelEventTargets.isEmpty else { return }
+        modelEventToken = nil
+    }
+    
+    private func setEventToken() {
+        modelEventToken = modelEvents.sink { _ in
+            for target in self.modelEventTargets {
+                target.rebuildModelMatrix()
+            }
         }
-        .store(in: &eventBag)
     }
 }
 
@@ -188,7 +205,7 @@ extension MetalLinkNode: Hashable, Equatable {
 }
 
 public extension MetalLinkNode {
-    func rebuildModelMatrix(includeChildren: Bool = false) {
+    func rebuildModelMatrix() {
         currentModel.matrix = buildModelMatrix()
     }
     
@@ -240,12 +257,6 @@ public extension MetalLinkNode {
             matrix = matrix_multiply(parentMatrix, matrix)
         }
         return matrix
-    }
-}
-
-private extension MetalLinkNode {
-    var asRenderable: MetalLinkRenderable? {
-        self as? MetalLinkRenderable
     }
 }
 

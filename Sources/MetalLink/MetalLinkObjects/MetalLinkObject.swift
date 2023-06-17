@@ -9,7 +9,7 @@
 import MetalKit
 import MetalLinkHeaders
 
-public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
+public class MetalLinkObject: MetalLinkNode {
     public let link: MetalLink
     public var mesh: any MetalLinkMesh
     
@@ -34,7 +34,7 @@ public class MetalLinkObject: MetalLinkNode, MetalLinkRenderable {
         updateModelConstants()
     }
     
-    func doRender(in sdp: inout SafeDrawPass) {
+    override public func doRender(in sdp: inout SafeDrawPass) {
         guard let meshVertexBuffer = mesh.getVertexBuffer() else { return }
         
         // Setup rendering states for next draw pass

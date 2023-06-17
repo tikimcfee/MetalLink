@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum CoreError: String, Error {
+public enum CoreError: String, Error {
     case noMetalDevice
     case noCommandQueue
     case noDefaultLibrary
@@ -16,6 +16,6 @@ enum CoreError: String, Error {
     case noStencilDescriptor
 }
 
-enum CoreShaderError: Error {
+public enum CoreShaderError: Error {
     case missingLibraryFunction(name: String)
 }

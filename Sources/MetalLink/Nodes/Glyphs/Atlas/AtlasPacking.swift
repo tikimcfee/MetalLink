@@ -10,7 +10,7 @@
 
 import Foundation
 
-protocol AtlasPackable: AnyObject {
+public protocol AtlasPackable: AnyObject {
     associatedtype Number: AdditiveArithmetic & Comparable
     var x: Number { get set }
     var y: Number { get set }
@@ -19,23 +19,27 @@ protocol AtlasPackable: AnyObject {
     var wasPacked: Bool { get set }
 }
 
-class UVRect: AtlasPackable {
-    var x: Float = .zero
-    var y: Float = .zero
-    var width: Float = .zero
-    var height: Float = .zero
-    var wasPacked = false
+public class UVRect: AtlasPackable {
+    public var x: Float = .zero
+    public var y: Float = .zero
+    public var width: Float = .zero
+    public var height: Float = .zero
+    public var wasPacked = false
+    
+    public init() { }
 }
 
-class VertexRect: AtlasPackable {
-    var x: Int = .zero
-    var y: Int = .zero
-    var width: Int = .zero
-    var height: Int = .zero
-    var wasPacked = false
+public class VertexRect: AtlasPackable {
+    public var x: Int = .zero
+    public var y: Int = .zero
+    public var width: Int = .zero
+    public var height: Int = .zero
+    public var wasPacked = false
+    
+    public init() { }
 }
 
-class AtlasPacking<T: AtlasPackable> {
+public class AtlasPacking<T: AtlasPackable> {
     let canvasWidth: T.Number
     let canvasHeight: T.Number
     
@@ -43,7 +47,7 @@ class AtlasPacking<T: AtlasPackable> {
     private(set) var currentY: T.Number = .zero
     private var largestHeightThisRow: T.Number = .zero
     
-    init(
+    public init(
         width: T.Number,
         height: T.Number
     ) {
@@ -51,7 +55,7 @@ class AtlasPacking<T: AtlasPackable> {
         self.canvasHeight = height
     }
     
-    func packNextRect(_ rect: T) {
+    public func packNextRect(_ rect: T) {
         // If this rectangle will go past the width of the image
         // Then loop around to next row, using the largest height from the previous row
         if (currentX + rect.width) > canvasWidth {

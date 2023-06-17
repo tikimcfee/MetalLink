@@ -65,6 +65,9 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     public var startRotate: Bool = false
     
     public var scrollLock: Set<ScrollLock> = []
+    
+    public var scrollBounds: Bounds?
+    
     public var notBlockingFromScroll: Bool { scrollLock.isEmpty }
     
     public init(link: MetalLink) {
@@ -95,6 +98,12 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
         
         #if os(macOS)
         link.input.sharedScroll.sink { event in
+            let (horizontalLock, verticalLock, transverseLock) = (
+                self.scrollLock.contains(.horizontal),
+                self.scrollLock.contains(.vertical),
+                self.scrollLock.contains(.transverse)
+            )
+            
             let sensitivity: Float = default_MovementSpeed
             let sensitivityModified = default_ModifiedMovementSpeed
             
@@ -102,15 +111,29 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
             let inOutModifier = self.interceptor.state.currentModifiers.contains(.option)
             let multiplier = speedModified ? sensitivityModified : sensitivity
             
-            var dX: Float { -event.scrollingDeltaX.float * multiplier }
-            var dY: Float { inOutModifier ? 0 : event.scrollingDeltaY.float * multiplier }
-            var dZ: Float { inOutModifier ? -event.scrollingDeltaY.float * multiplier : 0 }
+            var dX: Float {
+                let final = -event.scrollingDeltaX.float * multiplier
+                return final
+            }
+            var dY: Float {
+                let final = inOutModifier ? 0 : event.scrollingDeltaY.float * multiplier
+                return final
+            }
+            var dZ: Float {
+                let final = inOutModifier ? -event.scrollingDeltaY.float * multiplier : 0
+                return final
+            }
             
             let delta = LFloat3(
-                self.scrollLock.contains(.horizontal) ? 0.0 : dX,
-                self.scrollLock.contains(.vertical) ? 0.0 : dY,
-                self.scrollLock.contains(.transverse) ? 0.0 : dZ
+                horizontalLock ? 0.0 : dX,
+                verticalLock ? 0.0 : dY,
+                transverseLock ? 0.0 : dZ
             )
+            
+            print("--")
+            print("camera: ", self.position)
+            print("delta: ", delta)
+            print("sbounds: ", self.scrollBounds.map { "\($0.min), \($0.max)" } ?? "none" )
             
             self.interceptor.positions.travelOffset = delta
         }.store(in: &cancellables)

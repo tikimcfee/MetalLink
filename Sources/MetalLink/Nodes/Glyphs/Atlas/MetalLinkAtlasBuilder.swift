@@ -12,9 +12,18 @@ public class TextureUVCache {
     public struct Pair {
         public let u: LFloat4
         public let v: LFloat4
+        
+        public init(u: LFloat4, v: LFloat4) {
+            self.u = u
+            self.v = v
+        }
     }
 
     public var map = ConcurrentDictionary<GlyphCacheKey, Pair>()
+    
+    public init() {
+        
+    }
     
     public subscript(_ key: GlyphCacheKey) -> Pair? {
         get { map[key] }

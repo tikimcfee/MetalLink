@@ -8,13 +8,13 @@
 import MetalKit
 import System
 
-extension MTLTexture {
+public extension MTLTexture {
     var simdSize: LFloat2 {
         LFloat2(Float(width), Float(height))
     }
 }
 
-struct UnitSize {
+public struct UnitSize {
     static func from(_ source: LFloat2) -> LFloat2 {
         let unitWidth = 1 / source.x
         let unitHeight = 1 / source.y
@@ -23,17 +23,17 @@ struct UnitSize {
     }
 }
 
-extension LFloat2 {
+public extension LFloat2 {
     var coordString: String { "(\(x), \(y))" }
 }
 
-extension MTLBuffer {
+public extension MTLBuffer {
     func boundPointer<T>(as type: T.Type, count: Int) -> UnsafeMutablePointer<T> {
         contents().bindMemory(to: type.self, capacity: count)
     }
 }
 
-extension MetalLink {
+public extension MetalLink {
     func makeBuffer<T: MemoryLayoutSizable>(
         of type: T.Type,
         count: Int

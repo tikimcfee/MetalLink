@@ -9,10 +9,10 @@ import Foundation
 import Metal
 
 public class MetalLinkGlyphNodeCache {
-    let link: MetalLink
+    public let link: MetalLink
     
-    let meshCache: MetalLinkGlyphNodeMeshCache
-    let textureCache: MetalLinkGlyphTextureCache
+    public let meshCache: MetalLinkGlyphNodeMeshCache
+    public let textureCache: MetalLinkGlyphTextureCache
     
     public init(link: MetalLink) {
         self.link = link
@@ -20,7 +20,7 @@ public class MetalLinkGlyphNodeCache {
         self.textureCache = MetalLinkGlyphTextureCache(link: link)
     }
     
-    func create(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
+    public func create(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
         do {
             guard let glyphTexture = textureCache[key]
             else { throw MetalGlyphError.noTextures }
