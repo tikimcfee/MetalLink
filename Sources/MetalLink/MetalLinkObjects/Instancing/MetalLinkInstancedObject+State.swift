@@ -11,12 +11,18 @@ import BitHandling
 import MetalLinkHeaders
 
 public class InstanceState<InstancedNodeType> {
+    public typealias BufferOperator = (
+        InstancedNodeType,
+        InstancedConstants,
+        UnsafeMutablePointer<InstancedConstants>
+    ) -> Void
+    
     public let link: MetalLink
         
     public var nodes = ConcurrentArray<InstancedNodeType>()
     public var didSetRoot = false
     
-    private let constants: BackingBuffer<InstancedConstants>
+    public let constants: BackingBuffer<InstancedConstants>
     public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
     
     public var instanceBufferCount: Int { constants.currentEndIndex }
@@ -42,40 +48,20 @@ public class InstanceState<InstancedNodeType> {
             && index < instanceBufferCount
     }
     
-    private func makeConstants() throws -> InstancedConstants {
-        let newConstants = try constants.createNext {
-            $0.instanceID = InstanceCounter.shared.nextGlyphId() // TODO: generic is bad, be specific or change enum thing
-        }
-        return newConstants
-    }
-    
     public func makeAndUpdateConstants(_ operation: (inout InstancedConstants) -> Void) throws {
         var newConstants = try makeConstants()
         operation(&newConstants)
         rawPointer[newConstants.arrayIndex] = newConstants
     }
     
-    // Appends info and returns last index
     public func appendToState(node newNode: InstancedNodeType) {
         nodes.append(newNode)
     }
     
-    public typealias BufferOperator = (
-        InstancedNodeType,
-        InstancedConstants,
-        UnsafeMutablePointer<InstancedConstants>
-    ) -> Void
-    
-    public func zipUpdate(_ nodeUpdateFunction: BufferOperator)  {
-//        guard bufferCache.willRebuild else {
-//            return
-//        }
-        
-        var pointerCopy = rawPointer
-        zip(nodes.values, constants).forEach { node, constant in
-            nodeUpdateFunction(node, constant, pointerCopy)
-            pointerCopy = pointerCopy.advanced(by: 1)
+    private func makeConstants() throws -> InstancedConstants {
+        let newConstants = try constants.createNext {
+            $0.instanceID = InstanceCounter.shared.nextGlyphId() // TODO: generic is bad, be specific or change enum thing
         }
+        return newConstants
     }
-
 }

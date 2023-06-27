@@ -60,7 +60,7 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
     }
     
     override public func doRender(in sdp: inout SafeDrawPass) {
-        guard !instanceState.nodes.isEmpty,
+        guard instanceState.instanceBufferCount > 0,
               let meshVertexBuffer = mesh.getVertexBuffer()
         else { return }
         

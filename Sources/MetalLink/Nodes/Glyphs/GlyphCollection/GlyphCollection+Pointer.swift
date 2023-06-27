@@ -23,6 +23,12 @@ public extension GlyphCollection {
         func reset() { position = .zero }
     }
     
+    class RenderState {
+        var lines: [[MetalLinkGlyphNode]] = []
+        
+        
+    }
+    
     class Renderer {
         struct Config {
             static let newLineSizeRatio: Float = 1.10
@@ -41,10 +47,7 @@ public extension GlyphCollection {
             _ letterNode: MetalLinkGlyphNode,
             _ constants: inout InstancedConstants
         ) {
-            let size = LFloat2(
-                letterNode.quadWidth,
-                letterNode.quadHeight
-            )
+            let size = letterNode.quadSize
             
             // *Must set initial model matrix on constants*.
             // Nothing directly updates this in the normal render flow.

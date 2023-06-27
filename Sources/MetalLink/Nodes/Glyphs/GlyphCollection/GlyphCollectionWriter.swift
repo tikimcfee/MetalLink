@@ -8,6 +8,56 @@
 import Foundation
 import MetalLinkHeaders
 
+class RopeNode {
+    var value: String
+    var weight: Int
+    var left: RopeNode?
+    var right: RopeNode?
+
+    init(value: String) {
+        self.value = value
+        self.weight = value.count
+    }
+}
+
+class Rope {
+    var root: RopeNode
+
+    init(value: String) {
+        self.root = RopeNode(value: value)
+    }
+
+    func index(_ i: Int) -> Character? {
+        return index(i, node: root)
+    }
+
+    private func index(_ i: Int, node: RopeNode?) -> Character? {
+        guard let node = node else { return nil }
+        let value = node.value
+        
+        if i < node.weight {
+            return i < value.count
+                ? value[value.index(value.startIndex, offsetBy: i)]
+                : index(i - node.weight, node: node.right)
+        } else {
+            return index(i - node.weight, node: node.right)
+        }
+    }
+
+    // Insertion and deletion methods would go here.
+}
+
+public actor AsyncCollectionWriter {
+    let target: GlyphCollection
+    var linkAtlas: MetalLinkAtlas { target.linkAtlas }
+    
+    public init(target: GlyphCollection) {
+        self.target = target
+    }
+    
+    
+}
+
 public struct GlyphCollectionWriter {
     private static let locked_worker = DispatchQueue(label: "WriterWritingWritely", qos: .userInteractive)
     
@@ -41,9 +91,7 @@ public struct GlyphCollectionWriter {
         }
         
         newGlyph.parent = target
-        target.instanceState.appendToState(
-            node: newGlyph
-        )
+        target.instanceState.appendToState(node: newGlyph)
         
         do {
             try target.instanceState.makeAndUpdateConstants { constants in
