@@ -73,6 +73,9 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
         // Set small buffered constants and main mesh buffer
         sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
         sdp.setCurrentVertexBuffer(constantsBuffer, 0, 2)
+        
+        // Set our constants so the instancing shader can do the multiplication itself so we don't have to.
+        sdp.setCurrentVertexBytes(&rootConstants, BasicModelConstants.memStride, 9)
                 
         // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
         // Constants need to capture vertex transforms for emoji/nonstandard.
@@ -97,6 +100,7 @@ extension MetalLinkInstancedObject {
     func updateModelConstants() {
         if rebuildSelf {
             rootConstants.modelMatrix = modelMatrix
+            
             rebuildSelf = false
         }
     }

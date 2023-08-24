@@ -21,23 +21,6 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     public override var contentSize: LFloat3 {
         return BoundsSize(rectPos)
     }
-
-    // TODO: See MetalLinkNode info about why this is here and not at the root node.
-    // It's basically too many updates.
-    private var internalParent: MetalLinkNode?
-    public override var parent: MetalLinkNode? {
-        get { internalParent }
-        set { setNewParent(newValue) }
-    }
-    
-    // Better explanation why this works:
-    // Rebuild calls parent's build, which walks up the chain (every time).
-    // There needs to be a complete chain from this parent to to whatever is being
-    // mutated, or you likely won't see all changes.
-    private func setNewParent(_ newParent: MetalLinkNode?) {
-        newParent?.bindAsVirtualParentOf(self)
-        internalParent = newParent
-    }
     
     public init(
         link: MetalLink,

@@ -22,7 +22,7 @@ open class MetalLinkNode: Measures {
         
     }
     
-    private let currentModel = ObservableMatrix()
+    public let currentModel = ObservableMatrix()
     public lazy var eventBag = Set<AnyCancellable>()
     public var modelEventToken: Any?
     public var modelEventParentToken: Any?
@@ -120,6 +120,10 @@ open class MetalLinkNode: Measures {
     
     // MARK: Rendering
     
+    open func rebuildModelMatrix() {
+        currentModel.matrix = buildModelMatrix()
+    }
+    
     open func render(in sdp: inout SafeDrawPass) {
         for child in children {
             child.render(in: &sdp)
@@ -205,10 +209,6 @@ extension MetalLinkNode: Hashable, Equatable {
 }
 
 public extension MetalLinkNode {
-    func rebuildModelMatrix() {
-        currentModel.matrix = buildModelMatrix()
-    }
-    
     var modelMatrix: matrix_float4x4 {
         // ***********************************************************************************
         // TODO: build matrix hack
@@ -235,14 +235,6 @@ public extension MetalLinkNode {
         // ... anyway. Matrices.
         // ***********************************************************************************
         return buildModelMatrix()
-        
-//        return currentModel.matrix
-        
-//        var matrix = currentModel.matrix
-//        if let parentMatrix = parent?.modelMatrix {
-//            matrix = matrix_multiply(parentMatrix, matrix)
-//        }
-//        return matrix
     }
     
     private func buildModelMatrix() -> matrix_float4x4 {

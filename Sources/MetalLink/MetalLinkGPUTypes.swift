@@ -27,15 +27,6 @@ public struct Vertex {
 extension SceneConstants: MemoryLayoutSizable { }
 extension BasicModelConstants: MemoryLayoutSizable { }
 
-extension VirtualParentConstants: MemoryLayoutSizable, BackingIndexed {
-    public mutating func reset() {
-        modelMatrix = matrix_identity_float4x4
-        bufferIndex = .zero
-//        useParentBuffer = 0
-//        parentBufferIndex = 0
-    }
-}
-
 extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
     public mutating func reset() {
         modelMatrix = matrix_identity_float4x4
@@ -43,7 +34,6 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         textureDescriptorV = .zero
         instanceID = .zero
         addedColor = .zero
-        parentIndex = .zero
         bufferIndex = .zero
     }
 }

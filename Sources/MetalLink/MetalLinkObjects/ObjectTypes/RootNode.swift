@@ -29,6 +29,7 @@ public class RootNode: MetalLinkNode, MetalLinkReader {
     }
     
     public override func render(in sdp: inout SafeDrawPass) {
+        // TODO: This sets global constants, would be nice to get all these things vended or something to avoid settping on buffer indices
         sdp.setCurrentVertexBytes(&constants, SceneConstants.memStride, 1)
         
         super.render(in: &sdp)
