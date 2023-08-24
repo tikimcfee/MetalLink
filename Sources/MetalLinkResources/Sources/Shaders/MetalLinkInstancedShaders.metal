@@ -47,7 +47,7 @@ float4x4 rotateAboutZ(float angleRadians) {
 vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage_in ]],
                                                 constant SceneConstants &sceneConstants [[ buffer(1) ]],
                                                 constant InstancedConstants *modelConstants [[ buffer(2) ]],
-                                                constant BasicModelConstants &parentConstants [[ buffer(9) ]],
+                                                constant BasicModelConstants &parentConstants [[ buffer(9) ]], // Constants of the parent rendered object this instance is attached to
                                                 uint instanceId [[ instance_id ]] ) {
     RasterizerData rasterizerData;
     InstancedConstants constants = modelConstants[instanceId];

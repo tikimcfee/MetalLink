@@ -130,10 +130,10 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
                 transverseLock ? 0.0 : dZ
             )
             
-            print("--")
-            print("camera: ", self.position)
-            print("delta: ", delta)
-            print("sbounds: ", self.scrollBounds.map { "\($0.min), \($0.max)" } ?? "none" )
+//            print("--")
+//            print("camera: ", self.position)
+//            print("delta: ", delta)
+//            print("sbounds: ", self.scrollBounds.map { "\($0.min), \($0.max)" } ?? "none" )
             
             self.interceptor.positions.travelOffset = delta
         }.store(in: &cancellables)
