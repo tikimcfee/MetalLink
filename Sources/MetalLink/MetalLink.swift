@@ -49,11 +49,13 @@ public class MetalLink {
     }
 }
 
+#if !os(xrOS)
 extension MetalLink {
     func onSizeChange(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         sizeSubject.send(size)
     }
 }
+#endif
 
 // MetalLink reads itself lol
 extension MetalLink: MetalLinkReader {

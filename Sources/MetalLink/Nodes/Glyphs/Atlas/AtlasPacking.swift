@@ -11,7 +11,7 @@
 import Foundation
 
 public protocol AtlasPackable: AnyObject {
-    associatedtype Number: AdditiveArithmetic & Comparable
+    associatedtype Number: AdditiveArithmetic & Comparable & Codable
     var x: Number { get set }
     var y: Number { get set }
     var width: Number { get set }
@@ -40,6 +40,12 @@ public class VertexRect: AtlasPackable {
 }
 
 public class AtlasPacking<T: AtlasPackable> {
+    struct State: Codable {
+        var currentX: T.Number = .zero
+        var currentY: T.Number = .zero
+        var largestHeightThisRow: T.Number = .zero
+    }
+    
     let canvasWidth: T.Number
     let canvasHeight: T.Number
     
@@ -84,5 +90,19 @@ public class AtlasPacking<T: AtlasPackable> {
         
         // Success!
         rect.wasPacked = true;
+    }
+    
+    func save() -> State {
+        State(
+            currentX: currentX,
+            currentY: currentY,
+            largestHeightThisRow: largestHeightThisRow
+        )
+    }
+    
+    func load(_ state: State) {
+        self.currentX = state.currentX
+        self.currentY = state.currentY
+        self.largestHeightThisRow = state.largestHeightThisRow
     }
 }

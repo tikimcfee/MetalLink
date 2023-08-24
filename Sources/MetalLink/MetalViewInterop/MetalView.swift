@@ -23,11 +23,13 @@ public struct MetalView: NSUIViewRepresentable {
     
     #if os(iOS)
     public func makeUIView(context: Context) -> some UIView {
+        #if !os(xrOS)
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
         mtkView.colorPixelFormat = .bgra8Unorm
         mtkView.depthStencilPixelFormat = .depth32Float
+        #endif
         return mtkView
     }
     
@@ -79,12 +81,13 @@ public extension MetalView {
 //            mtkView.addGestureRecognizer(link.input.gestureShim.panRecognizer)
 //            print("-------------------------------")
             
+            #if !os(xrOS)
             mtkView.delegate = renderer
             mtkView.framebufferOnly = false
             mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             mtkView.drawableSize = mtkView.frame.size
             mtkView.enableSetNeedsDisplay = true
+            #endif
         }
     }
 }
-

@@ -9,11 +9,13 @@ import Foundation
 import MetalKit
 import SwiftUI
 
+#if !os(xrOS)
+
 public class CustomMTKView: MTKView {
     weak var positionReceiver: MousePositionReceiver?
     weak var keyDownReceiver: KeyDownReceiver?
     
-#if os(iOS)
+    #if os(iOS)
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
 //        touches.forEach { touch in
@@ -24,9 +26,9 @@ public class CustomMTKView: MTKView {
     public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
     }
-#endif
+    #endif
     
-#if os(macOS)
+    #if os(macOS)
     var trackingArea : NSTrackingArea?
     
     public override func scrollWheel(with event: NSEvent) {
@@ -129,5 +131,19 @@ public class CustomMTKView: MTKView {
     public override var acceptsFirstResponder: Bool {
         true
     }
+    #endif
+}
+
 #endif
+
+
+extension CustomMTKView {
+    var defaultOrthographicProjection: simd_float4x4 {
+        simd_float4x4(orthographicProjectionWithLeft: 0.0,
+                      top: 0.0,
+                      right: Float(drawableSize.width),
+                      bottom: Float(drawableSize.height),
+                      near: 0.0,
+                      far: 1.0)
+    }
 }

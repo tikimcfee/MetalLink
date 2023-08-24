@@ -9,9 +9,10 @@ import UIKit
 import AppKit
 #endif
 
-public struct GlyphCacheKey: Hashable, Equatable {
+public struct GlyphCacheKey: Hashable, Equatable, Codable {
     public let source: Character
     public let glyph: String
+    
     public let foreground: NSUIColor
     public let background: NSUIColor
     
@@ -24,5 +25,48 @@ public struct GlyphCacheKey: Hashable, Equatable {
         self.glyph = String(source)
         self.foreground = foreground
         self.background = background
+    }
+    
+    enum Keys: CodingKey {
+        case source
+        case glyph
+        case foreground
+        case background
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: Keys.self)
+        try container.encode(glyph, forKey: Keys.glyph)
+        
+        #if !os(macOS)
+        try container.encode(foreground.ciColor.stringRepresentation, forKey: Keys.foreground)
+        try container.encode(background.ciColor.stringRepresentation, forKey: Keys.background)
+        #else
+        try container.encode(foreground.cgColor.components ?? [], forKey: Keys.foreground)
+        try container.encode(background.cgColor.components ?? [], forKey: Keys.background)
+        #endif
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: Keys.self)
+        let glyph = try container.decode(String.self, forKey: Keys.glyph)
+        self.glyph = glyph
+        self.source = Character(glyph)
+        
+        #if !os(macOS)
+        let foreground = try container.decode(String.self, forKey: Keys.foreground)
+        let background = try container.decode(String.self, forKey: Keys.background)
+        self.foreground = NSUIColor(ciColor: CIColor(string: foreground))
+        self.background = NSUIColor(ciColor: CIColor(string: background))
+        #else
+        let foreground = try container.decode([CGFloat].self, forKey: Keys.foreground)
+        let background = try container.decode([CGFloat].self, forKey: Keys.background)
+        self.foreground = NSUIColor(
+            cgColor: CGColor(red: foreground[0], green: foreground[1], blue: foreground[2], alpha: foreground[3])
+        )!
+        self.background = NSUIColor(
+            cgColor: CGColor(red: background[0], green: background[1], blue: background[2], alpha: background[3])
+        )!
+        #endif
     }
 }

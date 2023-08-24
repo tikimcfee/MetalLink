@@ -26,9 +26,12 @@ public class MetalLinkAtlas {
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
         self.builder = try AtlasBuilder(
             link,
-            textureCache: nodeCache.textureCache,
-            meshCache: nodeCache.meshCache
+            textureCache: nodeCache.textureCache
         )
+    }
+    
+    public func serialize() {
+        builder.serialize()
     }
 }
 

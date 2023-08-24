@@ -6,6 +6,17 @@ public protocol MetalLinkRendererDelegate {
     func performDelegatedEncode(with pass: inout SafeDrawPass)
 }
 
+#if os(xrOS)
+public class MetalLinkRenderer : NSObject, MetalLinkReader {
+    public var link: MetalLink
+    
+    public init(link: MetalLink) {
+        self.link = link
+    }
+}
+#endif
+
+#if !os(xrOS)
 public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     public let link: MetalLink
     public var renderDelegate: MetalLinkRendererDelegate?
@@ -38,3 +49,4 @@ public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
         sdp.commandBuffer.commit()
     }
 }
+#endif
