@@ -72,6 +72,14 @@ open class MetalLinkNode: Measures {
             max: rectPos.max + position
         )
     }
+    
+    public var liveBounds: Bounds {
+        let rectPos = computeBoundingBox(convertParent: true)
+        return (
+            min: rectPos.min + position,
+            max: rectPos.max + position
+        )
+    }
 
     public var rectPos: Bounds {
         if let cached = BoundsCaching.get(self) { return cached }
