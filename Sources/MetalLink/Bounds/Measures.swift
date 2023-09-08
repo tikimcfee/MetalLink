@@ -102,14 +102,7 @@ public extension Measures {
     var localBottom: VectorFloat { bounds.min.y }
     var localFront: VectorFloat { bounds.max.z }
     var localBack: VectorFloat { bounds.min.z }
-    
-//    var leading: VectorFloat { rectPos.min.x }
-//    var trailing: VectorFloat { rectPos.max.x }
-//    var top: VectorFloat { rectPos.max.y }
-//    var bottom: VectorFloat { rectPos.min.y }
-//    var front: VectorFloat { rectPos.max.z }
-//    var back: VectorFloat { rectPos.min.z }
-    
+
     var leading: VectorFloat { localLeading }
     var trailing: VectorFloat { localTrailing }
     var top: VectorFloat { localTop }
@@ -172,19 +165,14 @@ public extension Measures {
 }
 
 public extension Measures {
-    func computeBoundingBox(convertParent: Bool = true) -> Bounds {
+    func computeSize() -> Bounds {
         let computing = BoundsComputing()
-        
         enumerateChildren { childNode in
-//            var safeBox = childNode.computeBoundingBox(convertParent: convertParent)
-            var safeBox = childNode.rectPos
-            if convertParent {
-                safeBox.min = convertPosition(safeBox.min, to: parent)
-                safeBox.max = convertPosition(safeBox.max, to: parent)
-            }
-            computing.consumeBounds(safeBox)
+            var childSize = childNode.computeSize()
+            childSize.min = convertPosition(childSize.min, to: parent)
+            childSize.max = convertPosition(childSize.max, to: parent)
+            computing.consumeBounds(childSize)
         }
-        
         if hasIntrinsicSize {
             let size = contentSize
             let offset = contentOffset
@@ -194,12 +182,21 @@ public extension Measures {
             var max = LFloat3(position.x + offset.x + size.x,
                               position.y + offset.y,
                               position.z + offset.z + size.z)
-            min = convertParent ? convertPosition(min, to: parent) : min
-            max = convertParent ? convertPosition(max, to: parent) : max
+            min = convertPosition(min, to: parent)
+            max = convertPosition(max, to: parent)
             computing.consumeBounds((min, max))
         }
-        
-        return computing.bounds
+        let finalBounds = computing.bounds
+        return finalBounds
+    }
+    
+    func computeBoundingBox(convertParent: Bool = true) -> Bounds {
+        var size = computeSize()
+        if convertParent {
+            size.min = convertPosition(size.min, to: parent)
+            size.max = convertPosition(size.max, to: parent)
+        }
+        return size
     }
 }
 

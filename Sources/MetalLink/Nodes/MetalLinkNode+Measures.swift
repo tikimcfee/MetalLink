@@ -43,33 +43,6 @@ extension MetalLinkNode {
         }
     }
     
-//    var worldLeading: VectorFloat {
-//        get { worldPosition.x - abs(rectPos.min.x) }
-//    }
-//    var worldTrailing: VectorFloat {
-//        get { worldPosition.x + abs(rectPos.max.x) }
-//    }
-//    var worldTop: VectorFloat {
-//        get { worldPosition.y + abs(rectPos.max.y) }
-//    }
-//    var worldBottom: VectorFloat {
-//        get { worldPosition.y - abs(rectPos.min.y) }
-//    }
-//    var worldFront: VectorFloat {
-//        get { worldPosition.z + abs(rectPos.max.z) }
-//    }
-//    var worldBack: VectorFloat {
-//        get { worldPosition.z - abs(rectPos.min.z) }
-//    }
-//
-//    var worldBoundsMin: LFloat3 {
-//        LFloat3(worldLeading, worldBottom, worldBack)
-//    }
-//
-//    var worldBoundsMax: LFloat3 {
-//        LFloat3(worldTrailing, worldTop, worldFront)
-//    }
-    
     public var worldBounds: Bounds {
         let rectPos = rectPos
         return (

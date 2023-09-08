@@ -8,36 +8,27 @@
 import MetalKit
 import Combine
 
-public class ObservableMatrix: ObservableObject {
-    public typealias ModelMatrix = matrix_float4x4
-    public typealias Publisher = AnyPublisher<ObservableMatrix.ModelMatrix, Never>
-    
-    @Published var matrix: ModelMatrix = matrix_identity_float4x4
-    lazy var sharedObservable: Publisher = $matrix.share().eraseToAnyPublisher()
-}
-
 open class MetalLinkNode: Measures {
     
     public init() {
         
     }
     
-    public let currentModel = ObservableMatrix()
-    public lazy var eventBag = Set<AnyCancellable>()
-    public var modelEventToken: Any?
-    public var modelEventParentToken: Any?
-    public var modelEventTargets: Set<MetalLinkNode> = []
-    public var modelEvents: ObservableMatrix.Publisher {
-        currentModel.sharedObservable
-    }
+    public lazy var currentModel = CachedMatrix4x4(update: { self.buildModelMatrix() })
+    public lazy var cachedBounds = CachedBounds(update: { self.computeBoundingBox() })
+    public lazy var cachedSize = CachedBounds(update: { self.computeSize() })
     
     public lazy var nodeId = UUID().uuidString
 
     open var parent: MetalLinkNode?
-        { didSet { rebuildModelMatrix() } }
+        { didSet {
+            rebuildModelMatrix()
+        } }
     
     open var children: [MetalLinkNode] = []
-        { didSet { rebuildModelMatrix() } }
+        { didSet {
+            rebuildModelMatrix()
+        } }
     
     // MARK: - Model params
     
@@ -49,7 +40,6 @@ open class MetalLinkNode: Measures {
     public var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
         { didSet {
             rebuildModelMatrix()
-            BoundsCaching.Set(self, nil)
         } }
     
     public var rotation: LFloat3 = .zero
@@ -66,26 +56,11 @@ open class MetalLinkNode: Measures {
     // MARK: Bounds / Position
     
     public var bounds: Bounds {
-        let rectPos = rectPos
-        return (
-            min: rectPos.min + position,
-            max: rectPos.max + position
-        )
-    }
-    
-    public var liveBounds: Bounds {
-        let rectPos = computeBoundingBox(convertParent: true)
-        return (
-            min: rectPos.min + position,
-            max: rectPos.max + position
-        )
+        cachedBounds.get()
     }
 
     public var rectPos: Bounds {
-        if let cached = BoundsCaching.get(self) { return cached }
-        let box = computeBoundingBox(convertParent: true)
-        BoundsCaching.Set(self, box)
-        return box
+        cachedSize.get()
     }
     
     public var planeAreaXY: VectorFloat {
@@ -129,7 +104,12 @@ open class MetalLinkNode: Measures {
     // MARK: Rendering
     
     open func rebuildModelMatrix() {
-        currentModel.matrix = buildModelMatrix()
+        currentModel.dirty()
+//        cachedBounds.dirty()
+//        cachedSize.dirty()
+        enumerateChildren {
+            $0.rebuildModelMatrix()
+        }
     }
     
     open func render(in sdp: inout SafeDrawPass) {
@@ -168,26 +148,6 @@ open class MetalLinkNode: Measures {
             child.enumerateChildren(action)
         }
     }
-    
-    public func bindAsVirtualParentOf(_ node: MetalLinkNode) {
-        guard modelEventTargets.insert(node).inserted else { return }
-        guard modelEventToken == nil else { return }
-        setEventToken()
-    }
-    
-    public func unbindAsVirtualParentOf(_ node: MetalLinkNode) {
-        guard let _ = modelEventTargets.remove(node) else { return }
-        guard modelEventTargets.isEmpty else { return }
-        modelEventToken = nil
-    }
-    
-    private func setEventToken() {
-        modelEventToken = modelEvents.sink { _ in
-            for target in self.modelEventTargets {
-                target.rebuildModelMatrix()
-            }
-        }
-    }
 }
 
 extension MetalLinkNode {
@@ -218,31 +178,7 @@ extension MetalLinkNode: Hashable, Equatable {
 
 public extension MetalLinkNode {
     var modelMatrix: matrix_float4x4 {
-        // ***********************************************************************************
-        // TODO: build matrix hack
-        // I've lost sight of exactly how the rebuild process works. When modelMatrix is called,
-        // it causes a parent matrix calculation storm all the way to the hierarchy. We want that,
-        // but it's expensive.
-        //
-        // The new currenModel() thing is a fine change in terms of cleanliness, but it's not
-        // what I intended. I had hoped I could hook in to an immediate parent and update from it.
-        // That's kinda happening, except it really only effects the virtual buffer update which
-        // points into it directly from CodeGrid. I want to replace that with a direct sync to the
-        // buffer on the collection. This means that observers get updates (the node parent buffer),
-        // and Node.modelMatrix can be called at any time to get the same computation. The trick is
-        // the observable doesn't always hold the latest value because.. bad code.
-        //
-        // How do I fix the buildModelMatrix() problem? Do I just leave it for now and wait for
-        // performance problems again? Probably. Feels like I'm too tired to come up with more
-        // clever stuff, and this whole thing is on the verge of being abandoned anyway. I just
-        // want to see stuff in space to help my brain understand things. I guess if I had tried
-        // harder earlier to learn the fundamentals with tools that hide this stuff I'd be better off.
-        // But this whole thing kept me fascinated, but that is starting to die down to a slog.
-        // It's fun but.. I hope it lasts.
-        //
-        // ... anyway. Matrices.
-        // ***********************************************************************************
-        return buildModelMatrix()
+        return currentModel.get()
     }
     
     private func buildModelMatrix() -> matrix_float4x4 {
@@ -260,40 +196,34 @@ public extension MetalLinkNode {
     }
 }
 
-public struct matrix_cached_float4x4 {
+public struct CachedMatrix4x4 {
     private(set) var rebuildModel = true // implicit rebuild on first call
-    private(set) var currentModel = matrix_identity_float4x4
+    private(set) var matrix = matrix_identity_float4x4
     
     var update: () -> matrix_float4x4
     
     mutating func dirty() { rebuildModel = true }
     
     mutating func get() -> matrix_float4x4 {
-        guard rebuildModel else { return currentModel }
+        guard rebuildModel else { return matrix }
         rebuildModel = false
-        currentModel = update()
-        return currentModel
+        matrix = update()
+        return matrix
     }
 }
 
-public class Cached<T> {
-    private(set) var builtInitial = false
-    private(set) var willRebuild = true   // implicit rebuild on first call
-    private var current: T
-    var update: () -> T
+public struct CachedBounds {
+    private(set) var rebuildBounds = true // implicit rebuild on first call
+    private(set) var bounds = BoundsZero
     
-    init(current: T, update: @escaping () -> T) {
-        self.current = current
-        self.update = update
-    }
+    var update: () -> Bounds
     
-    func dirty() { willRebuild = true }
-
-    func get() -> T {
-        guard willRebuild else { return current }
-        builtInitial = true
-        willRebuild = false
-        current = update()
-        return current
+    mutating func dirty() { rebuildBounds = true }
+    
+    mutating func get() -> Bounds {
+        guard rebuildBounds else { return bounds }
+        rebuildBounds = false
+        bounds = update()
+        return bounds
     }
 }

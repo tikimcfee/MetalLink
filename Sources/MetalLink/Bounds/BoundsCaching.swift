@@ -11,11 +11,11 @@ import BitHandling
 
 //typealias BoundsKey = String
 public typealias BoundsKey = MetalLinkNode
+public let BoundsZero: Bounds = (min: .zero, max: .zero)
 
 // MARK: Bounds caching
 public class BoundsCaching {
     private static var boundsCache = ConcurrentDictionary<BoundsKey, Bounds>()
-    private static let BoundsZero: Bounds = (min: .zero, max: .zero)
     
     public static func Clear() {
         boundsCache.removeAll()
@@ -33,6 +33,29 @@ public class BoundsCaching {
         boundsCache[root] = nil
         root.enumerateChildren { node in
             boundsCache[node] = nil
+        }
+    }
+}
+
+public class SizeCaching {
+    private static var sizeCache = ConcurrentDictionary<BoundsKey, Bounds>()
+    
+    public static func Clear() {
+        sizeCache.removeAll()
+    }
+
+    public static func Get(_ node: MetalLinkNode) -> Bounds? {
+        return sizeCache[node]
+    }
+    
+    public static func Set(_ node: MetalLinkNode, _ bounds: Bounds?) {
+        sizeCache[node] = bounds
+    }
+    
+    public static func ClearRoot(_ root: MetalLinkNode) {
+        sizeCache[root] = nil
+        root.enumerateChildren { node in
+            sizeCache[node] = nil
         }
     }
 }

@@ -34,8 +34,8 @@ public extension MetalLinkCamera {
 public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
     public let type: MetalLinkCameraType = .Debug
     
-    private lazy var currentProjection = matrix_cached_float4x4(update: self.buildProjectionMatrix)
-    private lazy var currentView = matrix_cached_float4x4(update: self.buildViewMatrix)
+    private lazy var currentProjection = CachedMatrix4x4(update: self.buildProjectionMatrix)
+    private lazy var currentView = CachedMatrix4x4(update: self.buildViewMatrix)
     
     public var position: LFloat3 = .zero { didSet {
         currentProjection.dirty()

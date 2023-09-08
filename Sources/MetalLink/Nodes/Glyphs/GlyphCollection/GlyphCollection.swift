@@ -16,12 +16,13 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
 
     public var linkAtlas: MetalLinkAtlas
     public lazy var renderer = Renderer(collection: self)
-    public var enumerateNonInstancedChildren: Bool = false
     
     public override var contentSize: LFloat3 {
+        // TODO: contentSize in GlyphCollection sucks. It uses rectPos, but rectPos uses computeSise() which uses contentSize, so there's a loop.
+        // TODO: Collection can maybe maintain its own size?
         return BoundsSize(rectPos)
     }
-    
+        
     public init(
         link: MetalLink,
         linkAtlas: MetalLinkAtlas,
@@ -56,12 +57,15 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     }
     
     public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
-        if enumerateNonInstancedChildren {
+        enumerateInstanceChildren(action)
+        children.forEach(action)
+        
+//        if enumerateNonInstancedChildren {
 //            enumerateInstanceChildren(action)
-            children.forEach(action)
-        } else {
-            enumerateInstanceChildren(action)
-        }
+//            children.forEach(action)
+//        } else {
+//            enumerateInstanceChildren(action)
+//        }
     }
     
     public func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {
@@ -94,6 +98,7 @@ where InstancedNodeType == MetalLinkGlyphNode {
             print("pointer operation update failed")
             print(error)
         }
+        
     }
     
     func updateConstants(
