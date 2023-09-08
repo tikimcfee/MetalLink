@@ -102,14 +102,17 @@ open class MetalLinkNode: Measures {
     }
     
     // MARK: Rendering
+    open func isParentDirty() -> Bool {
+        return currentModel.rebuildModel
+            || cachedBounds.rebuildBounds
+            || cachedSize.rebuildBounds
+            || (parent?.isParentDirty() ?? false)
+    }
     
     open func rebuildModelMatrix() {
         currentModel.dirty()
-//        cachedBounds.dirty()
-//        cachedSize.dirty()
-        enumerateChildren {
-            $0.rebuildModelMatrix()
-        }
+        cachedBounds.dirty()
+        cachedSize.dirty()
     }
     
     open func render(in sdp: inout SafeDrawPass) {
@@ -178,6 +181,9 @@ extension MetalLinkNode: Hashable, Equatable {
 
 public extension MetalLinkNode {
     var modelMatrix: matrix_float4x4 {
+        if isParentDirty() {
+            currentModel.dirty()
+        }
         return currentModel.get()
     }
     

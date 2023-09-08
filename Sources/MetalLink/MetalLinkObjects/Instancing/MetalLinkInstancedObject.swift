@@ -55,6 +55,11 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
         
     }
     
+//    open override func rebuildModelMatrix() {
+//        super.rebuildModelMatrix()
+//        self.rootConstants.modelMatrix = modelMatrix
+//    }
+    
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
         // override to do stuff right before instance buffer updates
     }
@@ -98,11 +103,9 @@ extension MetalLinkInstancedObject {
 
 extension MetalLinkInstancedObject {
     func updateModelConstants() {
-        if rebuildSelf {
-            rootConstants.modelMatrix = modelMatrix
-            
-            rebuildSelf = false
-        }
+        // TODO: Warning! We need to set the rootConstants matrix so the instances get a fresh update...
+        // override rebuild and set there instead? How expensive is it to keep setting the same value?
+        rootConstants.modelMatrix = modelMatrix
     }
 }
 
