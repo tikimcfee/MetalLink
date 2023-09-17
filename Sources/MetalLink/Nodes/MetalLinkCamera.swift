@@ -64,7 +64,12 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     public var holdingOption: Bool = false
     public var startRotate: Bool = false
     
-    public var scrollLock: Set<ScrollLock> = []
+    public var scrollLock: Set<ScrollLock> = [] {
+        didSet {
+            print("-- removing scroll bounds: \(String(describing: scrollBounds))")
+            scrollBounds = nil
+        }
+    }
     
     public var scrollBounds: Bounds?
     
@@ -145,6 +150,7 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
             
             self.interceptor.positions.rotationDelta.y = event.deltaX.float / 5
             self.interceptor.positions.rotationDelta.x = event.deltaY.float / 5
+            self.scrollBounds = nil
         }.store(in: &cancellables)
     }
     
@@ -177,10 +183,23 @@ public extension DebugCamera {
         )
         rotationTransform = simd_mul(
             rotationTransform,
-            simd_quatf(angle: rotation.z, axis: Z_AXIS))
-        
+            simd_quatf(angle: rotation.z, axis: Z_AXIS)
+        )
         initialDirection = simd_act(rotationTransform.inverse, initialDirection)
         position += initialDirection
+        
+        // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
+//        if let bounds = scrollBounds {
+//            if !(bounds.min.x...bounds.max.x).contains(position.x) {
+//                position.x = max(bounds.min.x, min(position.x, bounds.max.x))
+//            }
+//            if !(bounds.min.y - 10...bounds.max.y + 10).contains(position.y) {
+//                position.y = max(bounds.min.y - 10, min(position.y, bounds.max.y + 10))
+//            }
+//            if !(bounds.min.z...bounds.max.z + 200).contains(position.z) {
+//                position.z = max(bounds.min.z, min(position.z, bounds.max.z + 200))
+//            }
+//        }
     }
 }
 

@@ -73,6 +73,12 @@ public class BoundsComputing {
 public func BoundsWidth(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.x - bounds.min.x) }
 public func BoundsHeight(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.y - bounds.min.y) }
 public func BoundsLength(_ bounds: Bounds) -> VectorFloat { abs(bounds.max.z - bounds.min.z) }
+public func BoundsTop(_ bounds: Bounds) -> VectorFloat { bounds.max.y }
+public func BoundsBot(_ bounds: Bounds) -> VectorFloat { bounds.min.y }
+public func BoundsLeading(_ bounds: Bounds) -> VectorFloat { bounds.min.x }
+public func BoundsTrailing(_ bounds: Bounds) -> VectorFloat { bounds.max.x }
+public func BoundsFront(_ bounds: Bounds) -> VectorFloat { bounds.max.z }
+public func BoundsBack(_ bounds: Bounds) -> VectorFloat { bounds.min.z }
 public func BoundsSize(_ bounds: Bounds) -> LFloat3 {
     LFloat3(BoundsWidth(bounds), BoundsHeight(bounds), BoundsLength(bounds))
 }

@@ -43,11 +43,29 @@ extension MetalLinkNode {
         }
     }
     
+    // This is so.. not right, but it seems to work? I think it's because `rectPos`
+    // already converts to parent when building size. So if we use it to compute `worldBounds`,
+    // we're counting it multiple times. So.. get the parent, and then *it's* parent's position.
+    // That is the starting position for the already transformed bounds. E.g., my bounds are in my
+    // parent's coordinate space, and their bounds (position) are in their parent's. If I'm already
+    // converted up, then I just need to convert to my parent's position to get the rest of the
+    // hiearchy transforms.
+    // This is what I'm telling myself to believe it.
+    public var _worldPositionForBounds: LFloat3 {
+        var finalPosition: LFloat3 = parent?.parent?.position ?? .zero
+        var nodeParent = parent?.parent?.parent
+        while let parent = nodeParent {
+            finalPosition += parent.position
+            nodeParent = parent.parent
+        }
+        return finalPosition
+    }
+    
     public var worldBounds: Bounds {
         let rectPos = rectPos
         return (
-            min: rectPos.min + worldPosition,
-            max: rectPos.max + worldPosition
+            min: rectPos.min + _worldPositionForBounds,
+            max: rectPos.max + _worldPositionForBounds
         )
     }
 }

@@ -17,6 +17,7 @@ public protocol Measures: AnyObject {
     var bounds: Bounds { get }
     var position: LFloat3 { get set }
     var worldPosition: LFloat3 { get set }
+    var worldBounds: Bounds { get }
     
     var hasIntrinsicSize: Bool { get }
     var contentSize: LFloat3 { get }
