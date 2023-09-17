@@ -208,9 +208,9 @@ public struct CachedMatrix4x4 {
     
     var update: () -> matrix_float4x4
     
-    mutating func dirty() { rebuildModel = true }
+    public mutating func dirty() { rebuildModel = true }
     
-    mutating func get() -> matrix_float4x4 {
+    public mutating func get() -> matrix_float4x4 {
         guard rebuildModel else { return matrix }
         rebuildModel = false
         matrix = update()
@@ -222,11 +222,11 @@ public struct CachedBounds {
     private(set) var rebuildBounds = true // implicit rebuild on first call
     private(set) var bounds = BoundsZero
     
-    var update: () -> Bounds
+    public var update: () -> Bounds
     
-    mutating func dirty() { rebuildBounds = true }
+    public mutating func dirty() { rebuildBounds = true }
     
-    mutating func get() -> Bounds {
+    public mutating func get() -> Bounds {
         guard rebuildBounds else { return bounds }
         rebuildBounds = false
         bounds = update()
