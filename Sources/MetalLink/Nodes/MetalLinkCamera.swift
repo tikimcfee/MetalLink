@@ -66,8 +66,10 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     
     public var scrollLock: Set<ScrollLock> = [] {
         didSet {
-            print("-- removing scroll bounds: \(String(describing: scrollBounds))")
-            scrollBounds = nil
+            if scrollLock.isEmpty {
+                print("-- removing scroll bounds: \(String(describing: scrollBounds))")
+                scrollBounds = nil
+            }
         }
     }
     
@@ -188,18 +190,20 @@ public extension DebugCamera {
         initialDirection = simd_act(rotationTransform.inverse, initialDirection)
         position += initialDirection
         
+        BoundsCaching.Clear()
+//        SizeCaching.Clear()
         // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
-//        if let bounds = scrollBounds {
-//            if !(bounds.min.x...bounds.max.x).contains(position.x) {
-//                position.x = max(bounds.min.x, min(position.x, bounds.max.x))
-//            }
-//            if !(bounds.min.y - 10...bounds.max.y + 10).contains(position.y) {
-//                position.y = max(bounds.min.y - 10, min(position.y, bounds.max.y + 10))
-//            }
-//            if !(bounds.min.z...bounds.max.z + 200).contains(position.z) {
-//                position.z = max(bounds.min.z, min(position.z, bounds.max.z + 200))
-//            }
-//        }
+        if let bounds = scrollBounds {
+            if !(bounds.min.x + 32...bounds.max.x).contains(position.x) {
+                position.x = max(bounds.min.x + 32, min(position.x, bounds.max.x))
+            }
+            if !(bounds.min.y - 10...bounds.max.y).contains(position.y) {
+                position.y = max(bounds.min.y - 10, min(position.y, bounds.max.y))
+            }
+            if !(bounds.min.z + 5...bounds.max.z + 100).contains(position.z) {
+                position.z = max(bounds.min.z + 5, min(position.z, bounds.max.z + 100))
+            }
+        }
     }
 }
 
