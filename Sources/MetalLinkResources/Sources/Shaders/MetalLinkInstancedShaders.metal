@@ -62,11 +62,11 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
 //    * rotateAboutY(sin(sceneConstants.totalGameTime));
     
     rasterizerData.position =
-    sceneConstants.projectionMatrix // camera
-    * sceneConstants.viewMatrix     // viewport
-    * parentMatrix                  // parent!?
-    * instanceModel                 // transforms
-    * float4(vertexIn.position, 1)  // current position
+      sceneConstants.projectionMatrix // camera
+    * sceneConstants.viewMatrix       // viewport
+    * parentMatrix                    // parent root transform
+    * instanceModel                   // transforms
+    * float4(vertexIn.position, 1)    // current position
     ;
     
     // Lol indexing into float4

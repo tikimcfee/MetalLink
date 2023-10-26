@@ -55,11 +55,6 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
         
     }
     
-//    open override func rebuildModelMatrix() {
-//        super.rebuildModelMatrix()
-//        self.rootConstants.modelMatrix = modelMatrix
-//    }
-    
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
         // override to do stuff right before instance buffer updates
     }

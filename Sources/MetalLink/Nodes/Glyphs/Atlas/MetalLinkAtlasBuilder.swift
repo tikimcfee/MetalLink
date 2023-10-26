@@ -36,7 +36,7 @@ public class AtlasBuilder {
     private let link: MetalLink
     private let textureCache: MetalLinkGlyphTextureCache
     
-    let atlasTexture: MTLTexture
+    var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
     
     private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
@@ -71,7 +71,29 @@ public class AtlasBuilder {
             let uv = try encoder.encode(uvPacking.save())
             let vertex = try encoder.encode(vertexPacking.save())
             let pairCache = try encoder.encode(uvPairCache)
-            let textureData = TextureSerializer(device: link.device).serialize(texture: atlasTexture)!
+            let dimensions = try encoder.encode(atlasSize)
+            
+            let serializer = TextureSerializer(device: link.device)
+            let textureData = serializer.serialize(texture: atlasTexture)!
+            
+            let reloadedTexture = serializer.deserialize(
+                data: textureData,
+                width: atlasTexture.width,
+                height: atlasTexture.height
+            )!
+            
+            let allIsRightWithWorld = [
+                atlasTexture.pixelFormat == reloadedTexture.pixelFormat,
+                atlasTexture.arrayLength == reloadedTexture.arrayLength,
+                atlasTexture.sampleCount == reloadedTexture.sampleCount
+            ].allSatisfy { $0 }
+            
+            atlasTexture = reloadedTexture
+            if !allIsRightWithWorld {
+                print("All is not right with the world.")
+            } else {
+                print("All is right with the world.")
+            }
             print("Done")
         } catch {
             print(error)
@@ -123,8 +145,8 @@ class TextureSerializer {
     
     private func createStagingTexture(from texture: MTLTexture, device: MTLDevice) -> MTLTexture {
         let descriptor = MTLTextureDescriptor()
-        descriptor.textureType = .type2D
-        descriptor.pixelFormat = .bgra8Unorm
+        descriptor.textureType = texture.textureType
+        descriptor.pixelFormat = texture.pixelFormat
         descriptor.width = texture.width
         descriptor.height = texture.height
         descriptor.storageMode = .shared
@@ -133,7 +155,12 @@ class TextureSerializer {
     
     private func copyTextureToStagingTexture(texture: MTLTexture, stagingTexture: MTLTexture, commandBuffer: MTLCommandBuffer) {
         let encoder = commandBuffer.makeBlitCommandEncoder()!
-        encoder.copy(from: texture, sourceSlice: 0, sourceLevel: 0, sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0), sourceSize: MTLSize(width: texture.width, height: texture.height, depth: texture.depth), to: stagingTexture, destinationSlice: 0, destinationLevel: 0, destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0))
+        encoder.copy(from: texture, sourceSlice: 0, sourceLevel: 0, 
+                     sourceOrigin: MTLOrigin(x: 0, y: 0, z: 0),
+                     sourceSize: MTLSize(width: texture.width, height: texture.height, depth: texture.depth),
+                     to: stagingTexture, destinationSlice: 0, destinationLevel: 0,
+                     destinationOrigin: MTLOrigin(x: 0, y: 0, z: 0)
+        )
         encoder.endEncoding()
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()

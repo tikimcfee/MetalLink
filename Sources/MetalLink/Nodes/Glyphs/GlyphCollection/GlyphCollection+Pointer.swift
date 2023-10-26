@@ -11,22 +11,20 @@ import MetalLinkHeaders
 
 public extension GlyphCollection {
     class Pointer {
-        var position: LFloat3 = .zero
+        public var position: LFloat3 = .zero
         
-        func right(_ dX: Float) { position.x += dX }
-        func left(_ dX: Float) { position.x -= dX }
-        func up(_ dY: Float) { position.y += dY }
-        func down(_ dY: Float) { position.y -= dY }
-        func away(_ dZ: Float) { position.z -= dZ }
-        func toward(_ dZ: Float) { position.z += dZ }
+        public func right(_ dX: Float) { position.x += dX }
+        public func left(_ dX: Float) { position.x -= dX }
+        public func up(_ dY: Float) { position.y += dY }
+        public func down(_ dY: Float) { position.y -= dY }
+        public func away(_ dZ: Float) { position.z -= dZ }
+        public func toward(_ dZ: Float) { position.z += dZ }
         
-        func reset() { position = .zero }
+        public func reset() { position = .zero }
     }
     
     class RenderState {
         var lines: [[MetalLinkGlyphNode]] = []
-        
-        
     }
     
     class Renderer {
@@ -35,8 +33,10 @@ public extension GlyphCollection {
         }
         
         let pointer = Pointer()
+        var pointerOffset = LFloat3.zero
         let targetCollection: GlyphCollection
         var lineCount = 0
+        var charactersInLines = 0
         private var currentPosition: LFloat3 { pointer.position }
         
         init(collection: GlyphCollection) {
@@ -60,8 +60,24 @@ public extension GlyphCollection {
             )
             
             pointer.right(size.x)
+            charactersInLines += 1
+            
+            // Break on really long run-on lines
             
             if letterNode.key.source.isNewline {
+                newLine(size)
+                
+                // lol 3d yo, if you have too many lines, we push you to the Z
+                if pointer.position.y <= -300 {
+                    pointerOffset.x += 100
+//                    pointerOffset.x = 0
+                    pointer.position.x = pointerOffset.x
+                    pointer.position.y = 0
+//                    pointer.position.z -= 32
+                }
+            }
+            
+            if charactersInLines >= 220 {
                 newLine(size)
             }
         }
@@ -69,8 +85,12 @@ public extension GlyphCollection {
         func newLine(_ size: LFloat2) {
 //            pointer.down(size.y * Config.newLineSizeRatio)
             pointer.down(size.y)
-            pointer.left(currentPosition.x)
+            pointer.position.x = pointerOffset.x
+            
             lineCount += 1
+            charactersInLines = 0
         }
     }
 }
+
+
