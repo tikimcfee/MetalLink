@@ -52,7 +52,7 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
     }
     
     open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
-        
+        print("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
     }
     
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {

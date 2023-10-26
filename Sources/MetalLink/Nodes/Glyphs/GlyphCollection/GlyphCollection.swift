@@ -58,7 +58,9 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     
     public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         enumerateInstanceChildren(action)
-        children.forEach(action)
+        for child in children {
+            action(child)
+        }
     }
     
     public func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {
