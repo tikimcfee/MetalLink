@@ -59,7 +59,7 @@ public extension GlyphCollection {
             charactersInLines += 1
             
             struct Config {
-                static let maxCharactersInLine: Int = 110
+                static let maxCharactersInLine: Int = 100
                 static let fileOffsetMinimum: Float = -300
             }
             
