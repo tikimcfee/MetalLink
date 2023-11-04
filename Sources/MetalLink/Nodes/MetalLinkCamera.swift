@@ -190,8 +190,6 @@ public extension DebugCamera {
         initialDirection = simd_act(rotationTransform.inverse, initialDirection)
         position += initialDirection
         
-        BoundsCaching.Clear()
-//        SizeCaching.Clear()
         // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
         if let bounds = scrollBounds {
             if !(bounds.min.x + 32...bounds.max.x).contains(position.x) {

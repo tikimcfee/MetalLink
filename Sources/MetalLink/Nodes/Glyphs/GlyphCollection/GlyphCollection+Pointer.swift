@@ -28,10 +28,6 @@ public extension GlyphCollection {
     }
     
     class Renderer {
-        struct Config {
-            static let newLineSizeRatio: Float = 1.10
-        }
-        
         let pointer = Pointer()
         var pointerOffset = LFloat3.zero
         let targetCollection: GlyphCollection
@@ -62,28 +58,29 @@ public extension GlyphCollection {
             pointer.right(size.x)
             charactersInLines += 1
             
-            // Break on really long run-on lines
+            struct Config {
+                static let maxCharactersInLine: Int = 110
+                static let fileOffsetMinimum: Float = -300
+            }
             
             if letterNode.key.source.isNewline {
                 newLine(size)
                 
-                // lol 3d yo, if you have too many lines, we push you to the Z
-                if pointer.position.y <= -300 {
-                    pointerOffset.x += 100
-//                    pointerOffset.x = 0
+                // lol 3d yo, if you have too many lines, we push you somewhere else
+                if pointer.position.y <= Config.fileOffsetMinimum {
+                    pointerOffset.x += Config.maxCharactersInLine.float
                     pointer.position.x = pointerOffset.x
                     pointer.position.y = 0
-//                    pointer.position.z -= 32
                 }
             }
-            
-            if charactersInLines >= 220 {
+
+            // Break on really long run-on lines
+            if charactersInLines >= Config.maxCharactersInLine {
                 newLine(size)
             }
         }
         
         func newLine(_ size: LFloat2) {
-//            pointer.down(size.y * Config.newLineSizeRatio)
             pointer.down(size.y)
             pointer.position.x = pointerOffset.x
             
