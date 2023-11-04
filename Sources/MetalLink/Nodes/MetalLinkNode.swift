@@ -102,7 +102,15 @@ open class MetalLinkNode: Measures {
     }
     
     // MARK: Rendering
+    var rebuildPending: Bool {
+           currentModel.willRebuild
+        || cachedBounds.willRebuild
+        || cachedSize.willRebuild
+    }
+    
     open func rebuildModelMatrix() {
+        if rebuildPending { return }
+        
         currentModel.dirty()
         cachedBounds.dirty()
         cachedSize.dirty()
@@ -132,7 +140,7 @@ open class MetalLinkNode: Measures {
     // MARK: Children
     
     public func add(child: MetalLinkNode) {
-        children.append(child)
+        children.append(cfhild)
         if let parent = child.parent {
             print("[\(child.nodeId)] parent already set to [\(parent.nodeId)]")
         }
