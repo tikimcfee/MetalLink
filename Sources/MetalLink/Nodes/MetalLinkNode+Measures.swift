@@ -43,7 +43,7 @@ extension MetalLinkNode {
         }
     }
     
-    // This is so.. not right, but it seems to work? I think it's because `rectPos`
+    // This is so.. not right, but it seems to work? I think it's because `sizeBounds`
     // already converts to parent when building size. So if we use it to compute `worldBounds`,
     // we're counting it multiple times. So.. get the parent, and then *it's* parent's position.
     // That is the starting position for the already transformed bounds. E.g., my bounds are in my
@@ -62,10 +62,10 @@ extension MetalLinkNode {
     }
     
     public var worldBounds: Bounds {
-        let rectPos = rectPos
+        let sizeBounds = sizeBounds
         return (
-            min: rectPos.min + _worldPositionForBounds,
-            max: rectPos.max + _worldPositionForBounds
+            min: sizeBounds.min + _worldPositionForBounds,
+            max: sizeBounds.max + _worldPositionForBounds
         )
     }
 }

@@ -18,9 +18,9 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     public lazy var renderer = Renderer(collection: self)
     
     public override var contentSize: LFloat3 {
-        // TODO: contentSize in GlyphCollection sucks. It uses rectPos, but rectPos uses computeSise() which uses contentSize, so there's a loop.
+        // TODO: contentSize in GlyphCollection sucks. It uses sizeBounds, but sizeBounds uses computeSise() which uses contentSize, so there's a loop.
         // TODO: Collection can maybe maintain its own size?
-        return BoundsSize(rectPos)
+        return BoundsSize(sizeBounds)
     }
         
     public init(

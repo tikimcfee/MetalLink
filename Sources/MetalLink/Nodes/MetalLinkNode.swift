@@ -9,15 +9,10 @@ import MetalKit
 import Combine
 
 open class MetalLinkNode: Measures {
-    
-    var flare: SignalFlare?
-    var lastSeenFlare: SignalFlare.ID?
-    
     public init() {
         
     }
     
-//    public lazy var currentModel = CachedMatrix4x4(update: { self.buildModelMatrix() })
     public lazy var currentModel = CachedValue { self.buildModelMatrix() }
     public lazy var cachedBounds = CachedValue { self.computeBoundingBox() }
     public lazy var cachedSize = CachedValue { self.computeSize() }
@@ -26,29 +21,29 @@ open class MetalLinkNode: Measures {
 
     open var parent: MetalLinkNode?
         { didSet {
-            rebuildModelMatrix()
+            rebuildTreeState()
         } }
     
     open var children: [MetalLinkNode] = []
         { didSet {
-            rebuildModelMatrix()
+            rebuildTreeState()
         } }
     
     // MARK: - Model params
     
     public var position: LFloat3 = .zero
         { didSet {
-            rebuildModelMatrix()
+            rebuildTreeState()
         } }
     
     public var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
         { didSet {
-            rebuildModelMatrix()
+            rebuildTreeState()
         } }
     
     public var rotation: LFloat3 = .zero
         { didSet {
-            rebuildModelMatrix()
+            rebuildTreeState()
         } }
     
     // MARK: - Overridable Measures
@@ -63,7 +58,7 @@ open class MetalLinkNode: Measures {
         cachedBounds.get()
     }
 
-    public var rectPos: Bounds {
+    public var sizeBounds: Bounds {
         cachedSize.get()
     }
     
@@ -106,15 +101,11 @@ open class MetalLinkNode: Measures {
     }
     
     // MARK: Rendering
-    open func rebuildModelMatrix() {
+    open func rebuildTreeState() {
         currentModel.dirty()
         cachedBounds.dirty()
         cachedSize.dirty()
-        flare?.fire()
-        
-//        enumerateChildren {
-//            $0.rebuildModelMatrix()
-//        }
+        enumerateChildren { $0.rebuildTreeState() }
     }
     
     open func render(in sdp: inout SafeDrawPass) {
@@ -142,23 +133,11 @@ open class MetalLinkNode: Measures {
             print("[\(child.nodeId)] parent already set to [\(parent.nodeId)]")
         }
         child.parent = self
-        child.flare = flare ?? {
-            let flare = SignalFlare()
-            self.flare = flare
-            return flare
-        }()
     }
     
     public func remove(child: MetalLinkNode) {
         children.removeAll(where: { $0.nodeId == child.nodeId })
         child.parent = nil
-        
-        // "You're the new man of the house, buddy. Good luck out there."
-        let newFlare = SignalFlare()
-        child.flare = newFlare
-        child.enumerateChildren {
-            $0.flare = newFlare
-        }
     }
     
     open func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
@@ -217,14 +196,14 @@ public extension MetalLinkNode {
 
 //// Make this an extension for a target value because hell yes why double up on objects..
 //// Can't believe I used a struct. wut. muh memory.
-public class CachedValue<T> {
+public class CachedValue<T> /*: SignalFlareWatcher*/ {
     public private(set) var value: T
-    public private(set) var willUpdate: Bool
+    
+    public private(set) var willUpdate = true
     public var update: () -> T
     
     public init(update: @escaping () -> T) {
         self.update = update
-        self.willUpdate = true
         self.value = update()
     }
     
@@ -233,17 +212,11 @@ public class CachedValue<T> {
     }
     
     public func get() -> T {
-        guard willUpdate else { return value }
+        guard willUpdate
+        else { return value }
+        
         willUpdate = false
         value = update()
         return value
-    }
-}
-
-class SignalFlare: Identifiable {
-    var id: UUID = UUID()
-    
-    func fire() {
-        id = UUID()
     }
 }

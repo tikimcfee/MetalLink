@@ -13,7 +13,7 @@ import SceneKit
 public protocol Measures: AnyObject {
     var nodeId: String { get }
     
-    var rectPos: Bounds { get }
+    var sizeBounds: Bounds { get }
     var bounds: Bounds { get }
     var position: LFloat3 { get set }
     var worldPosition: LFloat3 { get set }
@@ -191,7 +191,9 @@ public extension Measures {
         return finalBounds
     }
     
-    func computeBoundingBox(convertParent: Bool = true) -> Bounds {
+    func computeBoundingBox(
+        convertParent: Bool = true
+    ) -> Bounds {
         var size = computeSize()
         if convertParent {
             size.min = convertPosition(size.min, to: parent)
