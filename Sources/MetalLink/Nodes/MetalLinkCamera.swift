@@ -34,8 +34,8 @@ public extension MetalLinkCamera {
 public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkReader {
     public let type: MetalLinkCameraType = .Debug
     
-    private lazy var currentProjection = CachedMatrix4x4(update: self.buildProjectionMatrix)
-    private lazy var currentView = CachedMatrix4x4(update: self.buildViewMatrix)
+    private lazy var currentProjection = CachedValue { self.buildProjectionMatrix() }
+    private lazy var currentView = CachedValue { self.buildViewMatrix() }
     
     public var position: LFloat3 = .zero { didSet {
         currentProjection.dirty()
@@ -202,6 +202,27 @@ public extension DebugCamera {
                 position.z = max(bounds.min.z + 5, min(position.z, bounds.max.z + 100))
             }
         }
+    }
+    
+    func unprojectPoint(_ screenPoint: LFloat2) -> LFloat3 {
+
+        let x = screenPoint.x / viewBounds.x * 2 - 1
+        let y = screenPoint.y / viewBounds.y * 2 - 1
+
+      let clipCoords = LFloat3(x, -y, -1)
+
+      let viewProjected = viewMatrix.inverse * LFloat4(clipCoords, 1)
+      let viewCoords = LFloat3(viewProjected.x,
+                               viewProjected.y,
+                               viewProjected.z)
+
+      let worldProjected = projectionMatrix.inverse * LFloat4(viewCoords, 1)
+      let worldCoords = LFloat3(worldProjected.x,
+                                worldProjected.y,
+                                worldProjected.z)
+                                
+      return worldCoords
+
     }
 }
 
