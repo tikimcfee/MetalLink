@@ -10,7 +10,10 @@ import Metal
 import BitHandling
 import MetalLinkHeaders
 
-public class InstanceState<InstancedNodeType> {
+public class InstanceState<
+    InstanceKey,
+    InstancedNodeType: MetalLinkNode
+> {
     public typealias BufferOperator = (
         InstancedNodeType,
         InstancedConstants,
@@ -32,11 +35,15 @@ public class InstanceState<InstancedNodeType> {
         set { constants.pointer = newValue }
     }
     
+    public let instanceBuilder: (InstanceKey) -> InstancedNodeType?
+    
     public init(
         link: MetalLink,
-        bufferSize: Int = BackingBufferDefaultSize
+        bufferSize: Int = BackingBufferDefaultSize,
+        instanceBuilder: @escaping (InstanceKey) -> InstancedNodeType?
     ) throws {
         self.link = link
+        self.instanceBuilder = instanceBuilder
         self.constants = try BackingBuffer(
             link: link,
             initialSize: bufferSize
@@ -48,7 +55,34 @@ public class InstanceState<InstancedNodeType> {
             && index < instanceBufferCount
     }
     
-    public func makeAndUpdateConstants(_ operation: (inout InstancedConstants) -> Void) throws {
+    public func makeNewInstance(_ key: InstanceKey) -> InstancedNodeType? {
+        guard let instanceTarget = instanceBuilder(key) else {
+            return .none
+        }
+        instanceTarget.instanceUpdate = updateBufferOnChange
+        
+        return instanceTarget
+    }
+    
+    // lol get generic'd on
+    private func updateBufferOnChange<Node: MetalLinkNode> (
+        updated: Node
+    ) {
+        guard let constants = updated.instanceConstants else {
+            return
+        }
+        guard let bufferIndex = updated.instanceBufferIndex else {
+            return
+        }
+        guard indexValid(bufferIndex) else {
+            return
+        }
+        rawPointer[bufferIndex] = constants
+    }
+    
+    public func makeAndUpdateConstants(
+        _ operation: (inout InstancedConstants) -> Void
+    ) throws {
         var newConstants = try makeConstants()
         operation(&newConstants)
         rawPointer[newConstants.arrayIndex] = newConstants

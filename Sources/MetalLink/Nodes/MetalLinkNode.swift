@@ -7,17 +7,36 @@
 
 import MetalKit
 import Combine
+import MetalLinkHeaders
 
 open class MetalLinkNode: Measures {
     public init() {
         
     }
     
-    public lazy var currentModel = CachedValue { self.buildModelMatrix() }
     public lazy var cachedBounds = CachedValue { self.computeBoundingBox() }
     public lazy var cachedSize = CachedValue { self.computeSize() }
+    public lazy var currentModel = CachedValue {
+        let new = self.buildModelMatrix()
+        self.instanceConstants?.modelMatrix = new
+        return new
+    }
     
     public lazy var nodeId = UUID().uuidString
+    
+    // Whatever just instance everything lolol
+    public var instanceID: InstanceIDType?
+    public var instanceBufferIndex: Int?
+    public var instanceUpdate: ((MetalLinkNode) -> Void)?
+    
+    public var instanceConstants: InstancedConstants? {
+        didSet {
+//            _ = modelMatrix
+            if let instanceUpdate {
+                instanceUpdate(self)
+            }
+        }
+    }
 
     open var parent: MetalLinkNode?
         { didSet {
@@ -176,7 +195,7 @@ extension MetalLinkNode: Hashable, Equatable {
 
 public extension MetalLinkNode {
     var modelMatrix: matrix_float4x4 {
-        return currentModel.get()
+        currentModel.get()
     }
     
     private func buildModelMatrix() -> matrix_float4x4 {

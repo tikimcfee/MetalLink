@@ -36,17 +36,11 @@ public class MetalLinkAtlas {
 }
 
 public extension MetalLinkAtlas {
-    func newGlyph(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
-        // TODO: Can't I just reuse the constants on the nodes themselves?
-        addGlyphToAtlasIfMissing(key)
-        let newNode = nodeCache.create(key)
-        return newNode
-    }
-    
-    private func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
+    func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
         guard uvPairCache[key] == nil else { return }
 //        print("Adding glyph to Atlas: [\(key.glyph)]")
-//        insertionLock.wait(); defer { insertionLock.signal() }
+        
+        insertionLock.wait(); defer { insertionLock.signal() }
         do {
             let block = try builder.startAtlasUpdate()
             builder.addGlyph(key, block)

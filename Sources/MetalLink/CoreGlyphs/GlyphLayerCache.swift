@@ -8,6 +8,22 @@ import UIKit
 #elseif os(macOS)
 import AppKit
 #endif
+import BitHandling
+
+/// [ character: [
+///     color:
+///         color: key
+///     ]
+/// ]
+
+// I'm a monster
+//typealias ForegroundCache = LockingCache<NSUIColor, GlyphCacheKey>
+//typealias CompositeCache = LockingCache<NSUIColor, ForegroundCache>
+//typealias CharCache = LockingCache<Character, CompositeCache>
+
+typealias ForegroundCache = [NSUIColor: GlyphCacheKey]
+typealias CompositeCache = [NSUIColor: ForegroundCache]
+typealias CharCache = [Character: CompositeCache]
 
 public struct GlyphCacheKey: Hashable, Equatable, Codable {
     public let source: Character
@@ -15,6 +31,44 @@ public struct GlyphCacheKey: Hashable, Equatable, Codable {
     
     public let foreground: NSUIColor
     public let background: NSUIColor
+    static var rootCache = CharCache()
+    static var rwlock = LockWrapper()
+    
+    public static func fromCache(
+        source: Character,
+        _ foreground: NSUIColor,
+        _ background: NSUIColor = NSUIColor.black
+    ) -> GlyphCacheKey {
+        var updated = false
+        rwlock.readLock()
+        var compositeCache = rootCache[source, default: {
+            updated = true
+            return CompositeCache()
+        }()]
+        var foregroundCache = compositeCache[background, default: {
+            updated = true
+            return ForegroundCache()
+        }()]
+        let key = foregroundCache[foreground, default: {
+            updated = true
+            return GlyphCacheKey(
+                source: source,
+                foreground,
+                background
+            )
+        }()]
+        rwlock.unlock()
+        
+        if updated {
+            rwlock.writeLock()
+            foregroundCache[foreground] = key
+            compositeCache[background] = foregroundCache
+            rootCache[source] = compositeCache
+            rwlock.unlock()
+        }
+        
+        return key
+    }
     
     public init(
         source: Character,

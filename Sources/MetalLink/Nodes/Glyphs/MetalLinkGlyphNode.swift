@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import MetalLinkHeaders
 
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
@@ -58,17 +59,11 @@ public extension MetalLinkGlyphNode {
     // encoded into SCNNode.name. This is more explicit.
     struct Meta {
         public var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
-        public var instanceID: InstanceIDType?
-        public var instanceBufferIndex: Int?
         
         public init(
-            syntaxID: String? = nil,
-            instanceID: InstanceIDType? = nil,
-            instanceBufferIndex: Int? = nil
+            syntaxID: String? = nil
         ) {
             self.syntaxID = syntaxID
-            self.instanceID = instanceID
-            self.instanceBufferIndex = instanceBufferIndex
         }
     }
 }

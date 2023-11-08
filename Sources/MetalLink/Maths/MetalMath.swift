@@ -20,6 +20,12 @@ public extension LFloat3 {
         self = LFloat3(x + dX, y + dY, z + dZ)
         return self
     }
+    
+    @discardableResult
+    mutating func translateBy(_ vector: LFloat3) -> LFloat3 {
+        self = LFloat3(x + vector.x, y + vector.y, z + vector.z)
+        return self
+    }
 }
 
 public extension matrix_float4x4 {

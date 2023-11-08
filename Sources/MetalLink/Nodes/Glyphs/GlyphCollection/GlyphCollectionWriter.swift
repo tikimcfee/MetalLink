@@ -73,21 +73,19 @@ public struct GlyphCollectionWriter {
     // Buffer *should* only reset when the texture is called,
     // but that's a fragile guarantee.
     public func addGlyph(
-        _ key: GlyphCacheKey,
-        _ action: (GlyphNode, inout InstancedConstants) -> Void
-    ) {
-        Self.locked_worker.sync {
-            doAddGlyph(key, action)
-        }
+        _ key: GlyphCacheKey
+    ) -> GlyphNode? {
+        doAddGlyph(key)
     }
     
     private func doAddGlyph(
-        _ key: GlyphCacheKey,
-        _ action: (GlyphNode, inout InstancedConstants) -> Void
-    ) {
-        guard let newGlyph = linkAtlas.newGlyph(key) else {
+        _ key: GlyphCacheKey
+    ) -> GlyphNode? {
+        linkAtlas.addGlyphToAtlasIfMissing(key)
+        
+        guard let newGlyph = target.generateInstance(key) else {
             print("No glyph for", key)
-            return
+            return .none
         }
         
         newGlyph.parent = target
@@ -106,14 +104,15 @@ public struct GlyphCollectionWriter {
                 }
                 
                 target.instanceState.instanceIdNodeLookup[constants.instanceID] = newGlyph
-                newGlyph.meta.instanceBufferIndex = constants.arrayIndex
-                newGlyph.meta.instanceID = constants.instanceID
+                newGlyph.instanceConstants = constants
+                newGlyph.instanceBufferIndex = constants.arrayIndex
+                newGlyph.instanceID = constants.instanceID
                 target.renderer.insert(newGlyph, &constants)
-                action(newGlyph, &constants)
             }
         } catch {
             print(error)
-            return
         }
+        
+        return newGlyph
     }
 }

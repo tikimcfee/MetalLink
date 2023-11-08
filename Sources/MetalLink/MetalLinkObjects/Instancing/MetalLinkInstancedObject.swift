@@ -9,7 +9,10 @@ import MetalKit
 import MetalLinkHeaders
 //import Algorithms
 
-open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
+open class MetalLinkInstancedObject<
+    InstanceKey,
+    InstancedNodeType: MetalLinkNode
+>: MetalLinkNode {
     public let link: MetalLink
     public var mesh: any MetalLinkMesh
     
@@ -23,26 +26,36 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
     
     // TODO: Use regular constants for root, not instanced
     public var rootConstants = BasicModelConstants() {
-        didSet { rebuildSelf = true }
+        didSet {
+            rebuildSelf = true
+        }
     }
     
     public var rebuildSelf: Bool = true
     public var rebuildInstances: Bool = false
     public var rootState = State()
-    public let instanceState: InstanceState<InstancedNodeType>
+    public let instanceState: InstanceState<InstanceKey, InstancedNodeType>
 
     public init(
         _ link: MetalLink,
         mesh: any MetalLinkMesh,
-        bufferSize: Int = BackingBufferDefaultSize
+        bufferSize: Int = BackingBufferDefaultSize,
+        instanceBuilder: @escaping (InstanceKey) -> InstancedNodeType
     ) throws {
         self.link = link
         self.mesh = mesh
         self.instanceState = try InstanceState(
             link: link,
-            bufferSize: bufferSize
+            bufferSize: bufferSize,
+            instanceBuilder: instanceBuilder
         )
         super.init()
+    }
+    
+    open func generateInstance(
+        _ key: InstanceKey
+    ) -> InstancedNodeType? {
+        instanceState.makeNewInstance(key)
     }
     
     open override func update(deltaTime: Float) {

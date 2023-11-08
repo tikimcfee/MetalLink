@@ -12,8 +12,10 @@ import Combine
 // There's some kind of `GlyphCollection` in Foundation that gets picked up sometimes.. need to alias
 public typealias MetalLinkGlyphCollection = GlyphCollection
 
-public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
-
+public class GlyphCollection: MetalLinkInstancedObject<
+    GlyphCacheKey,
+    MetalLinkGlyphNode
+> {
     public var linkAtlas: MetalLinkAtlas
     public lazy var renderer = Renderer(collection: self)
     
@@ -32,14 +34,12 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
         try super.init(
             link,
             mesh: link.meshLibrary[.Quad],
-            bufferSize: bufferSize
+            bufferSize: bufferSize,
+            instanceBuilder: { [linkAtlas] key in
+                let node = linkAtlas.nodeCache.create(key)
+                return node! // may the sins i sow today come back to me tenfold
+            }
         )
-    }
-        
-    private var _time: Float = 0
-    private func time(_ dT: Float) -> Float {
-        _time += dT
-        return _time
     }
     
     public override func update(deltaTime dT: Float) {
@@ -70,53 +70,13 @@ public class GlyphCollection: MetalLinkInstancedObject<MetalLinkGlyphNode> {
     }
     
     open override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
-//        node.rotation.x -= 0.0167 * 2
-//        node.rotation.y -= 0.0167 * 2
-//        node.position.z = cos(time(0.0167) / 500)
+        
     }
 }
 
 public extension GlyphCollection {
     subscript(glyphID: InstanceIDType) -> MetalLinkGlyphNode? {
         instanceState.instanceIdNodeLookup[glyphID]
-    }
-}
-
-public extension MetalLinkInstancedObject
-where InstancedNodeType == MetalLinkGlyphNode {
-    func updatePointer(
-        _ operation: (inout UnsafeMutablePointer<InstancedConstants>) throws -> Void
-    ) {
-        do {
-            try operation(&instanceState.rawPointer)
-        } catch {
-            print("pointer operation update failed")
-            print(error)
-        }
-        
-    }
-    
-    func updateConstants(
-        for node: InstancedNodeType,
-        _ operation: (inout InstancedConstants) throws -> Void
-    ) rethrows {
-        guard let bufferIndex = node.meta.instanceBufferIndex
-        else {
-            print("Missing buffer index for [\(node.key.glyph)]: \(node.nodeId)")
-            return
-        }
-        
-        guard instanceState.indexValid(bufferIndex)
-        else {
-            print("Invalid buffer index for \(node.nodeId)")
-            return
-        }
-        
-        // This may be unsafe... not sure what happens here with multithreading.
-        // Probably very bad things. If there's a crash here, just create a copy
-        // and don't be too fancy.
-        let pointer = instanceState.rawPointer
-        try operation(&pointer[bufferIndex])
     }
 }
 
