@@ -61,24 +61,6 @@ final public class GlyphCollection: MetalLinkInstancedObject<
         super.render(in: &sdp)
     }
     
-    public override func enumerateChildren( /* instance + children */ 
-        _ action: (MetalLinkNode) -> Void
-    ) {
-        enumerateInstanceChildren(action)
-        for child in children {
-            action(child)
-        }
-    }
-    
-    public func enumerateInstanceChildren(_ action: (MetalLinkGlyphNode) -> Void) {
-        for instance in instanceState.nodes.values {
-            action(instance)
-        }
-    }
-    
-//    public override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
-//        
-//    }
 }
 
 public extension GlyphCollection {

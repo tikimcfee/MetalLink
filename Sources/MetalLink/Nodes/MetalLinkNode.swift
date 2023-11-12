@@ -179,15 +179,6 @@ open class MetalLinkNode: Measures {
         children.removeAll(where: { $0.nodeId == child.nodeId })
         child.parent = nil
     }
-    
-    open func enumerateChildren( /* base, no closure */ 
-        _ action: (MetalLinkNode) -> Void
-    ) {
-        for child in children {
-            action(child)
-            child.enumerateChildren(action)
-        }
-    }
 }
 
 extension MetalLinkNode {

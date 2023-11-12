@@ -26,7 +26,6 @@ public protocol Measures: AnyObject {
     var asNode: MetalLinkNode { get }
     var parent: MetalLinkNode? { get set }
     func convertPosition(_ position: LFloat3, to: MetalLinkNode?) -> LFloat3
-    func enumerateChildren(_ action: (MetalLinkNode) -> Void)
 }
 
 // MARK: - Position

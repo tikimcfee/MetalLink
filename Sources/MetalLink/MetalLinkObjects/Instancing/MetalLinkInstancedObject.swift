@@ -63,13 +63,7 @@ open class MetalLinkInstancedObject<
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
-        
-    open override func enumerateChildren( /* fatal if missing */
-        _ action: (MetalLinkNode) -> Void
-    ) {
-        fatalError("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
-    }
-    
+
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
         // override to do stuff right before instance buffer updates
     }
