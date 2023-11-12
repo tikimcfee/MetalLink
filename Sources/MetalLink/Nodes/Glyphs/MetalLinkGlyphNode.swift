@@ -49,10 +49,6 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public override func applyTextures(_ sdp: inout SafeDrawPass) {
         sdp.renderCommandEncoder.setFragmentTexture(texture, index: 0)
     }
-    
-//    public override func rebuildTreeState() {
-//        rebuildNow()
-//    }
 }
 
 public extension MetalLinkGlyphNode {
