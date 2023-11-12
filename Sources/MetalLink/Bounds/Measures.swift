@@ -273,13 +273,26 @@ extension MetalLinkNode {
 public extension Measures {
     func computeSize() -> Bounds {
         let computing = BoxComputing()
-        enumerateChildren { childNode in
+        
+        /*
+         The trick to the speed up is not enumerating collections every time
+         There's a different behavior in layout, though, and I'm not sure if it's right or wrong.
+         It's way, way faster now, since the content size is used directly and we skip thousands of iterations
+         per file. Intrinsic size is still computed with all nodes, but it's once off now.
+             enumerateChildren { childNode in
+                 var childSize = childNode.computeSize()
+                 childSize.min = convertPosition(childSize.min, to: parent)
+                 childSize.max = convertPosition(childSize.max, to: parent)
+                 computing.consumeBounds(childSize)
+             }
+         */
+        for childNode in asNode.children {
             var childSize = childNode.computeSize()
             childSize.min = convertPosition(childSize.min, to: parent)
             childSize.max = convertPosition(childSize.max, to: parent)
             computing.consumeBounds(childSize)
-            
         }
+        
         if hasIntrinsicSize {
             let size = contentSize
             let offset = contentOffset

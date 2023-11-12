@@ -182,7 +182,7 @@ open class MetalLinkNode: Measures {
         child.parent = nil
     }
     
-    open func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    /* base, no closure */ open func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         for child in children {
             action(child)
             child.enumerateChildren(action)

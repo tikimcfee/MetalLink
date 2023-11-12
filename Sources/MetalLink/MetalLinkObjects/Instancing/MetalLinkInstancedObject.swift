@@ -76,8 +76,8 @@ open class MetalLinkInstancedObject<
         }
     }
     
-    open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
-        print("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
+    /* fatal if missing */ open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+        fatalError("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
     }
     
     open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {

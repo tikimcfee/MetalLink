@@ -19,10 +19,20 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     public var linkAtlas: MetalLinkAtlas
     public lazy var renderer = Renderer(collection: self)
     
+    
+    // TODO: IT'S SO MUCH FASTER!!
+    /*
+     So intrinsic size is only directly computed in a few cases, and importantly,
+     it's mostly during `computeSize` and `computeBoundingBox`. 
+     */
+    public override var hasIntrinsicSize: Bool {
+        true
+    }
+    
     public override var contentSize: LFloat3 {
-        // TODO: contentSize in GlyphCollection sucks. It uses sizeBounds, but sizeBounds uses computeSise() which uses contentSize, so there's a loop.
-        // TODO: Collection can maybe maintain its own size?
-        return BoundsSize(sizeBounds)
+        let b = BoxComputing()
+        b.consumeNodeSizes(self.instanceState.nodes.values)
+        return BoundsSize(b.bounds) * self.scale
     }
         
     public init(
@@ -51,7 +61,7 @@ final public class GlyphCollection: MetalLinkInstancedObject<
         super.render(in: &sdp)
     }
     
-    public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    /* instance + children */ public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         enumerateInstanceChildren(action)
         for child in children {
             action(child)
