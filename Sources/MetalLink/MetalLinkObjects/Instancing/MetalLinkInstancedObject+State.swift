@@ -59,43 +59,40 @@ public class InstanceState<
         guard let instanceTarget = instanceBuilder(key) else {
             return .none
         }
+        guard let newInstanceConstants = try? makeNewConstants() else {
+            return .none
+        }
+        
+        instanceTarget.instanceConstants = newInstanceConstants
         instanceTarget.instanceUpdate = updateBufferOnChange
+        
+        instanceIdNodeLookup[newInstanceConstants.instanceID] = instanceTarget
+        nodes.append(instanceTarget)
         
         return instanceTarget
     }
     
     // lol get generic'd on
     private func updateBufferOnChange<Node: MetalLinkNode> (
+        newConstants: InstancedConstants,
         updated: Node
     ) {
-        guard let constants = updated.instanceConstants else {
-            return
-        }
         guard let bufferIndex = updated.instanceBufferIndex else {
             return
         }
         guard indexValid(bufferIndex) else {
             return
         }
-        rawPointer[bufferIndex] = constants
+        rawPointer[bufferIndex] = newConstants
     }
     
-    public func makeAndUpdateConstants(
-        _ operation: (inout InstancedConstants) -> Void
-    ) throws {
-        var newConstants = try makeConstants()
-        operation(&newConstants)
-        rawPointer[newConstants.arrayIndex] = newConstants
-    }
-    
-    public func appendToState(node newNode: InstancedNodeType) {
-        nodes.append(newNode)
-    }
-    
-    private func makeConstants() throws -> InstancedConstants {
+    private func makeNewConstants() throws -> InstancedConstants {
         let newConstants = try constants.createNext {
-            $0.instanceID = InstanceCounter.shared.nextGlyphId() // TODO: generic is bad, be specific or change enum thing
+            // TODO: generic is bad, be specific or change enum thing
+            $0.instanceID = InstanceCounter.shared.nextGlyphId()
         }
+        
+        rawPointer[newConstants.arrayIndex] = newConstants
         return newConstants
     }
 }

@@ -14,26 +14,22 @@ open class MetalLinkNode: Measures {
         
     }
     
-    public lazy var cachedBounds = CachedValue { self.computeBoundingBox() }
-    public lazy var cachedSize = CachedValue { self.computeSize() }
-    public lazy var currentModel = CachedValue {
-        let new = self.buildModelMatrix()
-        self.instanceConstants?.modelMatrix = new
-        return new
-    }
+    public lazy var cachedBounds = CachedValue(update: computeBoundingBox)
+    public lazy var cachedSize = CachedValue(update: computeSize)
+    public lazy var currentModel = CachedValue(update: buildModelMatrix)
     
     public lazy var nodeId = UUID().uuidString
     
     // Whatever just instance everything lolol
-    public var instanceID: InstanceIDType?
-    public var instanceBufferIndex: Int?
-    public var instanceUpdate: ((MetalLinkNode) -> Void)?
+    public var instanceID: InstanceIDType? { instanceConstants?.instanceID }
+    public var instanceBufferIndex: Int? { instanceConstants?.arrayIndex }
+    public var instanceUpdate: ((InstancedConstants, MetalLinkNode) -> Void)?
     
+    private var didSetInstanceMatrix: Bool = false
     public var instanceConstants: InstancedConstants? {
         didSet {
-//            _ = modelMatrix
-            if let instanceUpdate {
-                instanceUpdate(self)
+            if let instanceUpdate, let instanceConstants {
+                instanceUpdate(instanceConstants, self)
             }
         }
     }
@@ -127,6 +123,13 @@ open class MetalLinkNode: Measures {
         enumerateChildren { $0.rebuildTreeState() }
     }
     
+    open func rebuildNow() {
+        currentModel.updateNow()
+        cachedBounds.updateNow()
+        cachedSize.updateNow()
+        enumerateChildren { $0.rebuildNow() }
+    }
+    
     open func render(in sdp: inout SafeDrawPass) {
         for child in children {
             child.render(in: &sdp)
@@ -209,6 +212,7 @@ public extension MetalLinkNode {
         if let parentMatrix = parent?.modelMatrix {
             matrix = matrix_multiply(parentMatrix, matrix)
         }
+        instanceConstants?.modelMatrix = matrix
         return matrix
     }
 }
@@ -230,12 +234,16 @@ public class CachedValue<T> /*: SignalFlareWatcher*/ {
         willUpdate = true
     }
     
+    public func updateNow() {
+        value = update()
+        willUpdate = false
+    }
+    
     public func get() -> T {
         guard willUpdate
         else { return value }
-        
-        willUpdate = false
         value = update()
+        willUpdate = false
         return value
     }
 }

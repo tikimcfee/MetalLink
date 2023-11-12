@@ -39,21 +39,16 @@ public extension GlyphCollection {
             self.targetCollection = collection
         }
         
-        func insert(
-            _ letterNode: MetalLinkGlyphNode,
-            _ constants: inout InstancedConstants
+        public func insert(
+            _ letterNode: MetalLinkGlyphNode
         ) {
             let size = letterNode.quadSize
             
-            // *Must set initial model matrix on constants*.
-            // Nothing directly updates this in the normal render flow.
-            // Give them an initial based on the faux-node's position.
-            // TODO: Is this obsoleted with BackingBuffer and node updates?
+            // Well it turns out I played myself.
+            // The inout here overwrote the cached value in the node..
+            // because value objects yo.
             letterNode.position = currentPosition
-            constants.modelMatrix = matrix_multiply(
-                targetCollection.modelMatrix,
-                letterNode.modelMatrix
-            )
+            letterNode.rebuildNow()
             
             pointer.right(size.x)
             charactersInLines += 1
@@ -80,7 +75,7 @@ public extension GlyphCollection {
             }
         }
         
-        func newLine(_ size: LFloat2) {
+        public func newLine(_ size: LFloat2) {
             pointer.down(size.y)
             pointer.position.x = pointerOffset.x
             

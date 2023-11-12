@@ -48,6 +48,16 @@ public class BoundsComputing {
         }
     }
     
+    public func consumeNodes(
+        _ nodes: [MetalLinkNode]
+    ) {
+        for node in nodes {
+            consumeBounds(
+                node.bounds
+            )
+        }
+    }
+    
     public func pad(_ pad: VectorFloat) {
         minX -= pad
         minY -= pad

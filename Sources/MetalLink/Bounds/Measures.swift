@@ -194,6 +194,7 @@ public extension Measures {
     
     func computeBoundingBox() -> Bounds {
         var size = sizeBounds
+//        var size = computeSize()
         size.min = convertPosition(size.min, to: parent)
         size.max = convertPosition(size.max, to: parent)
         return size

@@ -40,7 +40,7 @@ open class MetalLinkInstancedObject<
         _ link: MetalLink,
         mesh: any MetalLinkMesh,
         bufferSize: Int = BackingBufferDefaultSize,
-        instanceBuilder: @escaping (InstanceKey) -> InstancedNodeType
+        instanceBuilder: @escaping (InstanceKey) -> InstancedNodeType?
     ) throws {
         self.link = link
         self.mesh = mesh

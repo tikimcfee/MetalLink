@@ -72,13 +72,13 @@ public struct GlyphCollectionWriter {
     // potentially recreating the buffer hundreds of times.
     // Buffer *should* only reset when the texture is called,
     // but that's a fragile guarantee.
-    public func addGlyph(
+    public func writeGlyphToState(
         _ key: GlyphCacheKey
     ) -> GlyphNode? {
-        doAddGlyph(key)
+        addGlyphToCollectionState(key)
     }
     
-    private func doAddGlyph(
+    private func addGlyphToCollectionState(
         _ key: GlyphCacheKey
     ) -> GlyphNode? {
         linkAtlas.addGlyphToAtlasIfMissing(key)
@@ -87,30 +87,16 @@ public struct GlyphCollectionWriter {
             print("No glyph for", key)
             return .none
         }
-        
         newGlyph.parent = target
-        target.instanceState.appendToState(node: newGlyph)
         
-        do {
-            try target.instanceState.makeAndUpdateConstants { constants in
-                if let cachedPair = linkAtlas.uvPairCache[key] {
-                    constants.textureDescriptorU = cachedPair.u
-                    constants.textureDescriptorV = cachedPair.v
-                } else {
-                    print("--------------")
-                    print("MISSING UV PAIR")
-                    print("\(key.glyph)")
-                    print("--------------")
-                }
-                
-                target.instanceState.instanceIdNodeLookup[constants.instanceID] = newGlyph
-                newGlyph.instanceConstants = constants
-                newGlyph.instanceBufferIndex = constants.arrayIndex
-                newGlyph.instanceID = constants.instanceID
-                target.renderer.insert(newGlyph, &constants)
-            }
-        } catch {
-            print(error)
+        if let cachedPair = linkAtlas.uvPairCache[key] {
+            newGlyph.instanceConstants?.textureDescriptorU = cachedPair.u
+            newGlyph.instanceConstants?.textureDescriptorV = cachedPair.v
+        } else {
+            print("--------------")
+            print("MISSING UV PAIR")
+            print("\(key.glyph)")
+            print("--------------")
         }
         
         return newGlyph

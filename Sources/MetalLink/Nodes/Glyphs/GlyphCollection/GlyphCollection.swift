@@ -36,8 +36,7 @@ public class GlyphCollection: MetalLinkInstancedObject<
             mesh: link.meshLibrary[.Quad],
             bufferSize: bufferSize,
             instanceBuilder: { [linkAtlas] key in
-                let node = linkAtlas.nodeCache.create(key)
-                return node! // may the sins i sow today come back to me tenfold
+                linkAtlas.nodeCache.create(key)
             }
         )
     }
