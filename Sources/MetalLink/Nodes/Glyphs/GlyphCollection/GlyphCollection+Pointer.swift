@@ -43,14 +43,10 @@ public extension GlyphCollection {
             _ letterNode: MetalLinkGlyphNode
         ) {
             let size = letterNode.quadSize
-            
-            // Well it turns out I played myself.
-            // The inout here overwrote the cached value in the node..
-            // because value objects yo.
             letterNode.position = currentPosition
             letterNode.rebuildNow()
-            
             pointer.right(size.x)
+            
             charactersInLines += 1
             
             struct Config {
@@ -73,6 +69,37 @@ public extension GlyphCollection {
             if charactersInLines >= Config.maxCharactersInLine {
                 newLine(size)
             }
+        }
+        
+        public func insertLineRaw(
+            line: String,
+            lineOffset: Int,
+            lineOffsetSize: LFloat2,
+            writer: GlyphCollectionWriter,
+            rawId: String
+        ) -> [GlyphNode] {
+            let pointer = Pointer()
+            pointer.down(lineOffsetSize.y * lineOffset.float)
+            
+            var nodes = [GlyphNode]()
+            for newCharacter in line {
+                let glyphKey = GlyphCacheKey(source: newCharacter, .white)
+                guard let glyph = writer.writeGlyphToState(glyphKey) else {
+                    print("nooooooooooooooooooooo!")
+                    continue
+                }
+                
+                glyph.meta.syntaxID = rawId
+                glyph.position = pointer.position
+                glyph.rebuildNow()
+                
+                let size = glyph.quadSize
+                pointer.right(size.x)
+                
+                nodes.append(glyph)
+            }
+            
+            return nodes
         }
         
         public func newLine(_ size: LFloat2) {
