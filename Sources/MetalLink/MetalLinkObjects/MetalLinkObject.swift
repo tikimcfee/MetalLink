@@ -30,8 +30,8 @@ public class MetalLinkObject: MetalLinkNode {
     }
     
     public override func update(deltaTime: Float) {
-        super.update(deltaTime: deltaTime)        
         updateModelConstants()
+        super.update(deltaTime: deltaTime)
     }
     
     override public func doRender(in sdp: inout SafeDrawPass) {

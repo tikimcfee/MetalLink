@@ -26,12 +26,13 @@ open class MetalLinkNode: Measures {
     public var instanceUpdate: ((InstancedConstants, MetalLinkNode) -> Void)?
     
     private var didSetInstanceMatrix: Bool = false
-    public var instanceConstants: InstancedConstants? {
-        didSet {
-            if let instanceUpdate, let instanceConstants {
-                instanceUpdate(instanceConstants, self)
-            }
+    private func pushInstanceUpdate() {
+        if let instanceUpdate, let instanceConstants {
+            instanceUpdate(instanceConstants, self)
         }
+    }
+    public var instanceConstants: InstancedConstants? {
+        didSet { pushInstanceUpdate() }
     }
 
     open var parent: MetalLinkNode?
@@ -46,17 +47,17 @@ open class MetalLinkNode: Measures {
     
     // MARK: - Model params
     
-    public var position: LFloat3 = .zero
+    open var position: LFloat3 = .zero
         { didSet {
             rebuildTreeState()
         } }
     
-    public var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
+    open var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
         { didSet {
             rebuildTreeState()
         } }
     
-    public var rotation: LFloat3 = .zero
+    open var rotation: LFloat3 = .zero
         { didSet {
             rebuildTreeState()
         } }
@@ -141,7 +142,7 @@ open class MetalLinkNode: Measures {
         
     }
     
-    public func update(deltaTime: Float) {
+    open func update(deltaTime: Float) {
         children.forEach {
             $0.update(deltaTime: deltaTime)
         }
@@ -214,36 +215,5 @@ public extension MetalLinkNode {
         }
         instanceConstants?.modelMatrix = matrix
         return matrix
-    }
-}
-
-//// Make this an extension for a target value because hell yes why double up on objects..
-//// Can't believe I used a struct. wut. muh memory.
-public class CachedValue<T> /*: SignalFlareWatcher*/ {
-    public private(set) var value: T
-    
-    public private(set) var willUpdate = true
-    public var update: () -> T
-    
-    public init(update: @escaping () -> T) {
-        self.update = update
-        self.value = update()
-    }
-    
-    public func dirty() {
-        willUpdate = true
-    }
-    
-    public func updateNow() {
-        value = update()
-        willUpdate = false
-    }
-    
-    public func get() -> T {
-        guard willUpdate
-        else { return value }
-        value = update()
-        willUpdate = false
-        return value
     }
 }

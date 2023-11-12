@@ -40,6 +40,7 @@ float4x4 rotateAboutZ(float angleRadians) {
     return rotate(X_AXIS, angleRadians);
 }
 
+constant float4x4 identityMatrix = float4x4(1.0);
 
 // MARK: - Instances
 
@@ -54,7 +55,10 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     
     // Static matrix
     float4x4 instanceModel = constants.modelMatrix;
-    float4x4 parentMatrix = parentConstants.modelMatrix;
+    float4x4 parentMatrix = identityMatrix;
+    if (constants.useParentMatrix == 1) {
+        parentMatrix = parentConstants.modelMatrix;
+    }
     
     // Do test rotation
 //    float4x4 instanceModel = constants.modelMatrix

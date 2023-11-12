@@ -1,5 +1,5 @@
 //
-//  BoundsComputing.swift
+//  BoxComputing.swift
 //  LookAtThat_AppKit
 //
 //  Created by Ivan Lugo on 8/26/22.
@@ -12,7 +12,7 @@ public typealias Bounds = (
     max: LFloat3
 )
 
-public class BoundsComputing {
+public class BoxComputing {
     public var didSetInitial: Bool = false
     public var minX: VectorFloat = .infinity
     public var minY: VectorFloat = .infinity
@@ -54,6 +54,16 @@ public class BoundsComputing {
         for node in nodes {
             consumeBounds(
                 node.bounds
+            )
+        }
+    }
+    
+    public func consumeNodeSizes(
+        _ nodes: [MetalLinkNode]
+    ) {
+        for node in nodes {
+            consumeBounds(
+                node.sizeBounds
             )
         }
     }

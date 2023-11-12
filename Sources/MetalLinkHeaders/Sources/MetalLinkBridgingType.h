@@ -28,6 +28,7 @@ struct InstancedConstants {
     uint instanceID;
     simd_float4 addedColor; 
     uint bufferIndex; // index of self in cpu mtlbuffer
+    uint useParentMatrix; // 0 == no, 1 == yes, other == undefined
 };
 
 struct SceneConstants {

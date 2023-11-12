@@ -40,11 +40,7 @@ public class GlyphCollection: MetalLinkInstancedObject<
             }
         )
     }
-    
-    public override func update(deltaTime dT: Float) {
-        super.update(deltaTime: dT)
-    }
-    
+
     public override func render(in sdp: inout SafeDrawPass) {
         sdp.oncePerPass("glyph-collection-atlas") {
             $0.renderCommandEncoder.setFragmentTexture(
