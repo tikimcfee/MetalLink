@@ -23,6 +23,7 @@ public protocol Measures: AnyObject {
     var contentSize: LFloat3 { get }
     var contentOffset: LFloat3 { get }
     
+    var asNode: MetalLinkNode { get }
     var parent: MetalLinkNode? { get set }
     func convertPosition(_ position: LFloat3, to: MetalLinkNode?) -> LFloat3
     func enumerateChildren(_ action: (MetalLinkNode) -> Void)
@@ -103,7 +104,48 @@ public extension Measures {
     var localBottom: VectorFloat { bounds.min.y }
     var localFront: VectorFloat { bounds.max.z }
     var localBack: VectorFloat { bounds.min.z }
-
+    
+//    var boundsTopLeftFront: LFloat3 { BoundsTopLeftFront(sizeBounds) }
+//    var boundsTopRightFront: LFloat3 { BoundsTopRightFront(sizeBounds) }
+//    var boundsBottomLeftFront: LFloat3 { BoundsBottomLeftFront(sizeBounds) }
+//    var boundsBottomRightFront: LFloat3 { BoundsBottomRightFront(sizeBounds) }
+//    var boundsTopLeftBack: LFloat3 { BoundsTopLeftBack(sizeBounds) }
+//    var boundsTopRightBack: LFloat3 { BoundsTopRightBack(sizeBounds) }
+//    var boundsBottomLeftBack: LFloat3 { BoundsBottomLeftBack(sizeBounds) }
+//    var boundsBottomRightBack: LFloat3 { BoundsBottomRightBack(sizeBounds) }
+//    
+//    func boundsTopLeftFront(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsTopLeftFront(bounds), to: convert)
+//    }
+//
+//    func boundsTopRightFront(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsTopRightFront(bounds), to: convert)
+//    }
+//
+//    func boundsBottomLeftFront(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsBottomLeftFront(bounds), to: convert)
+//    }
+//
+//    func boundsBottomRightFront(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsBottomRightFront(bounds), to: convert)
+//    }
+//
+//    func boundsTopLeftBack(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsTopLeftBack(bounds), to: convert)
+//    }
+//
+//    func boundsTopRightBack(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsTopRightBack(bounds), to: convert)
+//    }
+//
+//    func boundsBottomLeftBack(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsBottomLeftBack(bounds), to: convert)
+//    }
+//
+//    func boundsBottomRightBack(_ convert: MetalLinkNode?) -> LFloat3 {
+//        convertPosition(BoundsBottomRightBack(bounds), to: convert)
+//    }
+    
     var leading: VectorFloat { localLeading }
     var trailing: VectorFloat { localTrailing }
     var top: VectorFloat { localTop }
@@ -164,6 +206,69 @@ public extension Measures {
         return self
     }
 }
+
+extension MetalLinkNode {
+    public func convertPosition(_ convertTarget: LFloat3, to final: MetalLinkNode?) -> LFloat3 {
+        var position: LFloat3 = convertTarget
+        var nodeParent = parent
+        while !(nodeParent == final || nodeParent == nil) {
+            position += nodeParent?.position ?? .zero
+            nodeParent = nodeParent?.parent
+        }
+        // Stopped at 'final'; add the final position manually
+        position += final?.position ?? .zero
+                    
+        return position
+    }
+    
+    public var worldPosition: LFloat3 {
+        get {
+            var finalPosition: LFloat3 = position
+            var nodeParent = parent
+            while let parent = nodeParent {
+                finalPosition += parent.position
+                nodeParent = parent.parent
+            }
+            return finalPosition
+        }
+        set {
+            var finalPosition: LFloat3 = newValue
+            var nodeParent = parent
+            while let parent = nodeParent {
+                finalPosition += parent.position
+                nodeParent = parent.parent
+            }
+            position = finalPosition
+        }
+    }
+    
+    // This is so.. not right, but it seems to work? I think it's because `sizeBounds`
+    // already converts to parent when building size. So if we use it to compute `worldBounds`,
+    // we're counting it multiple times. So.. get the parent, and then *it's* parent's position.
+    // That is the starting position for the already transformed bounds. E.g., my bounds are in my
+    // parent's coordinate space, and their bounds (position) are in their parent's. If I'm already
+    // converted up, then I just need to convert to my parent's position to get the rest of the
+    // hiearchy transforms.
+    // This is what I'm telling myself to believe it.
+    public var _worldPositionForBounds: LFloat3 {
+        var finalPosition: LFloat3 = parent?.parent?.position ?? .zero
+        var nodeParent = parent?.parent?.parent
+        while let parent = nodeParent {
+            finalPosition += parent.position
+            nodeParent = parent.parent
+        }
+        return finalPosition
+    }
+    
+    public var worldBounds: Bounds {
+        let sizeBounds = sizeBounds
+        return (
+            min: sizeBounds.min + _worldPositionForBounds,
+            max: sizeBounds.max + _worldPositionForBounds
+        )
+    }
+}
+
 
 public extension Measures {
     func computeSize() -> Bounds {

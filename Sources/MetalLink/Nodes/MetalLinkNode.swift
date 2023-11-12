@@ -14,6 +14,17 @@ open class MetalLinkNode: Measures {
         
     }
     
+    public var pausedInvalidate: Bool = false {
+        willSet {
+            if newValue != pausedInvalidate {
+                if newValue {
+                    rebuildTreeState()
+                }
+            }
+        }
+    }
+    
+    
     public lazy var cachedBounds = CachedValue(update: computeBoundingBox)
     public lazy var cachedSize = CachedValue(update: computeSize)
     public lazy var currentModel = CachedValue(update: buildModelMatrix)
@@ -34,6 +45,8 @@ open class MetalLinkNode: Measures {
     public var instanceConstants: InstancedConstants? {
         didSet { pushInstanceUpdate() }
     }
+    
+    open var asNode: MetalLinkNode { self }
 
     open var parent: MetalLinkNode?
         { didSet {
@@ -118,10 +131,16 @@ open class MetalLinkNode: Measures {
     
     // MARK: Rendering
     open func rebuildTreeState() {
+        guard !pausedInvalidate else { return }
+        
         currentModel.dirty()
         cachedBounds.dirty()
         cachedSize.dirty()
         enumerateChildren { $0.rebuildTreeState() }
+        
+//        for child in children {
+//            child.rebuildTreeState()
+//        }
     }
     
     open func rebuildNow() {
@@ -129,6 +148,10 @@ open class MetalLinkNode: Measures {
         cachedBounds.updateNow()
         cachedSize.updateNow()
         enumerateChildren { $0.rebuildNow() }
+        
+//        for child in children {
+//            child.rebuildNow()
+//        }
     }
     
     open func render(in sdp: inout SafeDrawPass) {

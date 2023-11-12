@@ -66,38 +66,39 @@ public class AtlasBuilder {
     }
     
     func serialize() {
-        let encoder = JSONEncoder()
-        do {
-            let uv = try encoder.encode(uvPacking.save())
-            let vertex = try encoder.encode(vertexPacking.save())
-            let pairCache = try encoder.encode(uvPairCache)
-            let dimensions = try encoder.encode(atlasSize)
-            
-            let serializer = TextureSerializer(device: link.device)
-            let textureData = serializer.serialize(texture: atlasTexture)!
-            
-            let reloadedTexture = serializer.deserialize(
-                data: textureData,
-                width: atlasTexture.width,
-                height: atlasTexture.height
-            )!
-            
-            let allIsRightWithWorld = [
-                atlasTexture.pixelFormat == reloadedTexture.pixelFormat,
-                atlasTexture.arrayLength == reloadedTexture.arrayLength,
-                atlasTexture.sampleCount == reloadedTexture.sampleCount
-            ].allSatisfy { $0 }
-            
-            atlasTexture = reloadedTexture
-            if !allIsRightWithWorld {
-                print("All is not right with the world.")
-            } else {
-                print("All is right with the world.")
-            }
-            print("Done")
-        } catch {
-            print(error)
-        }
+        fatalError("it's commented out man")
+//        let encoder = JSONEncoder()
+//        do {
+//            let uv = try encoder.encode(uvPacking.save())
+//            let vertex = try encoder.encode(vertexPacking.save())
+//            let pairCache = try encoder.encode(uvPairCache)
+//            let dimensions = try encoder.encode(atlasSize)
+//            
+//            let serializer = TextureSerializer(device: link.device)
+//            let textureData = serializer.serialize(texture: atlasTexture)!
+//            
+//            let reloadedTexture = serializer.deserialize(
+//                data: textureData,
+//                width: atlasTexture.width,
+//                height: atlasTexture.height
+//            )!
+//            
+//            let allIsRightWithWorld = [
+//                atlasTexture.pixelFormat == reloadedTexture.pixelFormat,
+//                atlasTexture.arrayLength == reloadedTexture.arrayLength,
+//                atlasTexture.sampleCount == reloadedTexture.sampleCount
+//            ].allSatisfy { $0 }
+//            
+//            atlasTexture = reloadedTexture
+//            if !allIsRightWithWorld {
+//                print("All is not right with the world.")
+//            } else {
+//                print("All is right with the world.")
+//            }
+//            print("Done")
+//        } catch {
+//            print(error)
+//        }
     }
     
 //    func serializeMTLTexture(texture: MTLTexture) -> NSData? {
