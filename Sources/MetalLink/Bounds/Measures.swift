@@ -275,10 +275,10 @@ public extension Measures {
         let computing = BoxComputing()
         enumerateChildren { childNode in
             var childSize = childNode.computeSize()
-//            var childSize = childNode.sizeBounds
             childSize.min = convertPosition(childSize.min, to: parent)
             childSize.max = convertPosition(childSize.max, to: parent)
             computing.consumeBounds(childSize)
+            
         }
         if hasIntrinsicSize {
             let size = contentSize
@@ -298,8 +298,8 @@ public extension Measures {
     }
     
     func computeBoundingBox() -> Bounds {
-//        var size = sizeBounds
-        var size = computeSize()
+        var size = sizeBounds
+//        var size = computeSize()
         size.min = convertPosition(size.min, to: parent)
         size.max = convertPosition(size.max, to: parent)
         return size

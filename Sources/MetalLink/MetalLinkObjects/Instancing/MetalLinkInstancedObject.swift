@@ -64,6 +64,18 @@ open class MetalLinkInstancedObject<
         super.update(deltaTime: deltaTime)
     }
     
+    open override func rebuildTreeState() {
+        guard !pausedInvalidate else { return }
+        
+        currentModel.dirty()
+        cachedBounds.dirty()
+        cachedSize.dirty()
+        
+        for child in children {
+            child.rebuildTreeState()
+        }
+    }
+    
     open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
         print("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
     }

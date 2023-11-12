@@ -14,7 +14,12 @@ open class MetalLinkNode: Measures {
         
     }
     
-    public var pausedInvalidate: Bool = false
+    public var pausedInvalidate: Bool = false 
+//    {
+//        willSet {
+//            if newValue { rebuildTreeState() }
+//        }
+//    }
     
     public lazy var cachedBounds = CachedValue(update: computeBoundingBox)
     public lazy var cachedSize = CachedValue(update: computeSize)
