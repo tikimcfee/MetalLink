@@ -12,7 +12,7 @@ import Combine
 // There's some kind of `GlyphCollection` in Foundation that gets picked up sometimes.. need to alias
 public typealias MetalLinkGlyphCollection = GlyphCollection
 
-public class GlyphCollection: MetalLinkInstancedObject<
+final public class GlyphCollection: MetalLinkInstancedObject<
     GlyphCacheKey,
     MetalLinkGlyphNode
 > {
@@ -64,9 +64,9 @@ public class GlyphCollection: MetalLinkInstancedObject<
         }
     }
     
-    open override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
-        
-    }
+//    public override func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
+//        
+//    }
 }
 
 public extension GlyphCollection {
