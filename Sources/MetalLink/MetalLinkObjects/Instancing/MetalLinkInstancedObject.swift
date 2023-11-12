@@ -63,20 +63,10 @@ open class MetalLinkInstancedObject<
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
-    
-    open override func rebuildTreeState() {
-        guard !pausedInvalidate else { return }
         
-        currentModel.dirty()
-        cachedBounds.dirty()
-        cachedSize.dirty()
-        
-        for child in children {
-            child.rebuildTreeState()
-        }
-    }
-    
-    /* fatal if missing */ open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    open override func enumerateChildren( /* fatal if missing */
+        _ action: (MetalLinkNode) -> Void
+    ) {
         fatalError("[\(#file).\(#function).L\(#line)] -- UNIMPLEMENTED ENUMERATOR --")
     }
     

@@ -26,7 +26,7 @@ final public class GlyphCollection: MetalLinkInstancedObject<
      it's mostly during `computeSize` and `computeBoundingBox`. 
      */
     public override var hasIntrinsicSize: Bool {
-        true
+        !instanceState.nodes.isEmpty
     }
     
     public override var contentSize: LFloat3 {
@@ -61,7 +61,9 @@ final public class GlyphCollection: MetalLinkInstancedObject<
         super.render(in: &sdp)
     }
     
-    /* instance + children */ public override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    public override func enumerateChildren( /* instance + children */ 
+        _ action: (MetalLinkNode) -> Void
+    ) {
         enumerateInstanceChildren(action)
         for child in children {
             action(child)

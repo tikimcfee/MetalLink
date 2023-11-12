@@ -132,22 +132,20 @@ open class MetalLinkNode: Measures {
         currentModel.dirty()
         cachedBounds.dirty()
         cachedSize.dirty()
-        enumerateChildren { $0.rebuildTreeState() }
         
-//        for child in children {
-//            child.rebuildTreeState()
-//        }
+        for child in children {
+            child.rebuildTreeState()
+        }
     }
     
     open func rebuildNow() {
         currentModel.updateNow()
         cachedBounds.updateNow()
         cachedSize.updateNow()
-        enumerateChildren { $0.rebuildNow() }
         
-//        for child in children {
-//            child.rebuildNow()
-//        }
+        for child in children {
+            child.rebuildNow()
+        }
     }
     
     open func render(in sdp: inout SafeDrawPass) {
@@ -182,7 +180,9 @@ open class MetalLinkNode: Measures {
         child.parent = nil
     }
     
-    /* base, no closure */ open func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
+    open func enumerateChildren( /* base, no closure */ 
+        _ action: (MetalLinkNode) -> Void
+    ) {
         for child in children {
             action(child)
             child.enumerateChildren(action)

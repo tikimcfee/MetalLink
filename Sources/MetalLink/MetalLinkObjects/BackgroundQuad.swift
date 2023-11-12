@@ -15,7 +15,9 @@ public class BackgroundQuad: MetalLinkObject, QuadSizable {
         didSet { quad.setSize(size) }
     }
     
-    public override var hasIntrinsicSize: Bool { true }
+    public override var hasIntrinsicSize: Bool {
+        true
+    }
     
     public override var contentSize: LFloat3 {
         LFloat3(size.x, size.y, 1)
