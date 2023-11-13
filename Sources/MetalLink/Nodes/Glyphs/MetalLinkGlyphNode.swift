@@ -8,6 +8,8 @@
 import MetalKit
 import MetalLinkHeaders
 
+public typealias GlyphNode = MetalLinkGlyphNode
+
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
     public let texture: MTLTexture

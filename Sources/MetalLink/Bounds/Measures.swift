@@ -76,11 +76,11 @@ public extension Measures {
     }
     var boundsCenterHeight: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsHeight(currentBounds) / 2.0
+        return currentBounds.min.y + BoundsHeight(currentBounds) / 2.0
     }
     var boundsCenterLength: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsLength(currentBounds) / 2.0
+        return currentBounds.min.z + BoundsLength(currentBounds) / 2.0
     }
     
     var boundsCenterPosition: LFloat3 {
@@ -97,12 +97,14 @@ public extension Measures {
 // MARK: - Named positions
 
 public extension Measures {
-    var leading: VectorFloat { bounds.min.x  }
+    var leading: VectorFloat  { bounds.min.x  }
     var trailing: VectorFloat { bounds.max.x  }
-    var top: VectorFloat { bounds.max.y  }
-    var bottom: VectorFloat { bounds.min.y  }
-    var front: VectorFloat { bounds.max.z  }
-    var back: VectorFloat { bounds.min.z  }
+    
+    var top: VectorFloat      { bounds.max.y  }
+    var bottom: VectorFloat   { bounds.min.y  }
+    
+    var front: VectorFloat    { bounds.max.z  }
+    var back: VectorFloat     { bounds.min.z  }
 }
 
 public extension Measures {
@@ -201,7 +203,7 @@ extension MetalLinkNode {
     // converted up, then I just need to convert to my parent's position to get the rest of the
     // hiearchy transforms.
     // This is what I'm telling myself to believe it.
-    public var _worldPositionForBounds: LFloat3 {
+    private var _worldPositionForBounds: LFloat3 {
         var finalPosition: LFloat3 = parent?.parent?.position ?? .zero
         var nodeParent = parent?.parent?.parent
         while let parent = nodeParent {
