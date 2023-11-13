@@ -53,7 +53,7 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         defer { createSemaphore.signal() }
         
         if shouldRebuild {
-            try expandBuffer(nextSize: defaultEnlargeNextSize)
+            try expandBuffer(nextSize: defaultEnlargeNextSize, force: false)
         }
         
         var next = pointer[currentEndIndex]
@@ -68,12 +68,16 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         return next
     }
     
-    private func expandBuffer(
-        nextSize: Int
+    public func expandBuffer(
+        nextSize: Int,
+        force: Bool
     ) throws {
         enlargeSemaphore.wait()
         defer { enlargeSemaphore.signal() }
-        guard shouldRebuild else {
+        
+        guard nextSize > currentBufferSize else { return }
+        
+        guard shouldRebuild || force else {
             print("Already enlarged by another consumer; breaking")
             return
         }
