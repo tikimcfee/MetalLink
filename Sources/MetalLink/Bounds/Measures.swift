@@ -97,60 +97,12 @@ public extension Measures {
 // MARK: - Named positions
 
 public extension Measures {
-    var localLeading: VectorFloat { bounds.min.x }
-    var localTrailing: VectorFloat { bounds.max.x }
-    var localTop: VectorFloat { bounds.max.y }
-    var localBottom: VectorFloat { bounds.min.y }
-    var localFront: VectorFloat { bounds.max.z }
-    var localBack: VectorFloat { bounds.min.z }
-    
-//    var boundsTopLeftFront: LFloat3 { BoundsTopLeftFront(sizeBounds) }
-//    var boundsTopRightFront: LFloat3 { BoundsTopRightFront(sizeBounds) }
-//    var boundsBottomLeftFront: LFloat3 { BoundsBottomLeftFront(sizeBounds) }
-//    var boundsBottomRightFront: LFloat3 { BoundsBottomRightFront(sizeBounds) }
-//    var boundsTopLeftBack: LFloat3 { BoundsTopLeftBack(sizeBounds) }
-//    var boundsTopRightBack: LFloat3 { BoundsTopRightBack(sizeBounds) }
-//    var boundsBottomLeftBack: LFloat3 { BoundsBottomLeftBack(sizeBounds) }
-//    var boundsBottomRightBack: LFloat3 { BoundsBottomRightBack(sizeBounds) }
-//    
-//    func boundsTopLeftFront(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsTopLeftFront(bounds), to: convert)
-//    }
-//
-//    func boundsTopRightFront(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsTopRightFront(bounds), to: convert)
-//    }
-//
-//    func boundsBottomLeftFront(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsBottomLeftFront(bounds), to: convert)
-//    }
-//
-//    func boundsBottomRightFront(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsBottomRightFront(bounds), to: convert)
-//    }
-//
-//    func boundsTopLeftBack(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsTopLeftBack(bounds), to: convert)
-//    }
-//
-//    func boundsTopRightBack(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsTopRightBack(bounds), to: convert)
-//    }
-//
-//    func boundsBottomLeftBack(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsBottomLeftBack(bounds), to: convert)
-//    }
-//
-//    func boundsBottomRightBack(_ convert: MetalLinkNode?) -> LFloat3 {
-//        convertPosition(BoundsBottomRightBack(bounds), to: convert)
-//    }
-    
-    var leading: VectorFloat { localLeading }
-    var trailing: VectorFloat { localTrailing }
-    var top: VectorFloat { localTop }
-    var bottom: VectorFloat { localBottom }
-    var front: VectorFloat { localFront }
-    var back: VectorFloat { localBack }
+    var leading: VectorFloat { bounds.min.x  }
+    var trailing: VectorFloat { bounds.max.x  }
+    var top: VectorFloat { bounds.max.y  }
+    var bottom: VectorFloat { bounds.min.y  }
+    var front: VectorFloat { bounds.max.z  }
+    var back: VectorFloat { bounds.min.z  }
 }
 
 public extension Measures {
@@ -304,8 +256,8 @@ public extension Measures {
     }
     
     func computeBoundingBox() -> Bounds {
-        var size = sizeBounds
-//        var size = computeSize()
+//        var size = sizeBounds
+        var size = computeSize()
         size.min = convertPosition(size.min, to: parent)
         size.max = convertPosition(size.max, to: parent)
         return size

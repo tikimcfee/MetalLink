@@ -14,12 +14,7 @@ open class MetalLinkNode: Measures {
         
     }
     
-    public var pausedInvalidate: Bool = false 
-//    {
-//        willSet {
-//            if newValue { rebuildTreeState() }
-//        }
-//    }
+    public var pausedInvalidate: Bool = false
     
     public lazy var cachedBounds = CachedValue(update: computeBoundingBox)
     public lazy var cachedSize = CachedValue(update: computeSize)
@@ -126,6 +121,7 @@ open class MetalLinkNode: Measures {
     }
     
     // MARK: Rendering
+    
     open func rebuildTreeState() {
         guard !pausedInvalidate else { return }
         

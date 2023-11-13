@@ -58,7 +58,7 @@ public class BoxComputing {
         }
     }
     
-    public func consumeNodeSizes(
+    public func consumeNodeSizeBounds(
         _ nodes: [MetalLinkNode]
     ) {
         for node in nodes {
@@ -103,78 +103,3 @@ public func BoundsBack(_ bounds: Bounds) -> VectorFloat { bounds.min.z }
 public func BoundsSize(_ bounds: Bounds) -> LFloat3 {
     LFloat3(BoundsWidth(bounds), BoundsHeight(bounds), BoundsLength(bounds))
 }
-
-//func BoundsTopLeftFront(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let topLeftFront = LFloat3(
-//        min.x,
-//        max.y,
-//        max.z
-//    )
-//    return topLeftFront
-//}
-//
-//func BoundsTopRightFront(_ bounds: Bounds) -> LFloat3 {
-//    return bounds.max
-//}
-//
-//func BoundsBottomLeftFront(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let bottomLeftFront = LFloat3(
-//        min.x,
-//        min.y,
-//        max.z
-//    )
-//    return bottomLeftFront
-//}
-//
-//func BoundsBottomRightFront(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let bottomRightFront = LFloat3(
-//        max.x,
-//        min.y,
-//        max.z
-//    )
-//    return bottomRightFront
-//}
-//
-//
-//func BoundsTopLeftBack(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let topLeftBack = LFloat3(
-//        min.x,
-//        max.y,
-//        min.z
-//    )
-//    return topLeftBack
-//}
-//
-//func BoundsTopRightBack(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let topRightBack = LFloat3(
-//        max.x,
-//        max.y,
-//        min.z
-//    )
-//    return topRightBack
-//}
-//
-//func BoundsBottomLeftBack(_ bounds: Bounds) -> LFloat3 {
-//    return bounds.min
-//}
-//
-//func BoundsBottomRightBack(_ bounds: Bounds) -> LFloat3 {
-//    let min = bounds.min
-//    let max = bounds.max
-//    let bottomRightBack = LFloat3(
-//        max.x,
-//        min.y,
-//        min.z
-//    )
-//    return bottomRightBack
-//}
