@@ -32,7 +32,7 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     public override var contentSize: LFloat3 {
         let b = BoxComputing()
         b.consumeNodeSizeBounds(instanceState.nodes.values)
-        return BoundsSize(b.bounds) /** * scale  **/
+        return BoundsSize(b.bounds) * scale
     }
         
     public init(
