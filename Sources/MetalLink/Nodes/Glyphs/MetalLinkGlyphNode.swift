@@ -20,8 +20,8 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     
     public override var hasIntrinsicSize: Bool { true }
     
-    public override var contentSize: LFloat3 {
-        LFloat3(quad.width, quad.height, 1)
+    public override var contentBounds: Bounds {
+        Bounds(.zero, LFloat3(quad.width, quad.height, 1) * scale)
     }
     
     public override var contentOffset: LFloat3 {

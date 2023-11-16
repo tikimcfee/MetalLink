@@ -29,10 +29,14 @@ final public class GlyphCollection: MetalLinkInstancedObject<
         !instanceState.nodes.isEmpty
     }
     
-    public override var contentSize: LFloat3 {
+    public override var contentBounds: Bounds {
         let b = BoxComputing()
-        b.consumeNodeSizeBounds(instanceState.nodes.values)
-        return BoundsSize(b.bounds) * scale
+        for node in instanceState.nodes.values {
+            b.consumeBounds(
+                node.sizeBounds
+            )
+        }
+        return b.bounds * scale
     }
         
     public init(

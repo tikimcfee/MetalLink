@@ -7,10 +7,47 @@
 
 import Foundation
 
-public typealias Bounds = (
-    min: LFloat3,
-    max: LFloat3
-)
+// Rename this to 'Box'
+public struct Bounds {
+    public var min: LFloat3
+    public var max: LFloat3
+    
+    init(
+        _ min: LFloat3,
+        _ max: LFloat3
+    ) {
+        self.min = min
+        self.max = max
+    }
+    
+    public static let zero = Bounds(.zero, .zero)
+    
+    public static func * (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min *= rhs
+        newBounds.max *= rhs
+        return newBounds
+    }
+    
+    public static func + (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min += rhs
+        newBounds.max += rhs
+        return newBounds
+    }
+    
+    public var width: Float {
+        BoundsWidth(self)
+    }
+    
+    public var height: Float {
+        BoundsHeight(self)
+    }
+    
+    public var length: Float {
+        BoundsLength(self)
+    }
+}
 
 public class BoxComputing {
     public var didSetInitial: Bool = false
@@ -58,16 +95,6 @@ public class BoxComputing {
         }
     }
     
-    public func consumeNodeSizeBounds(
-        _ nodes: [MetalLinkNode]
-    ) {
-        for node in nodes {
-            consumeBounds(
-                node.sizeBounds
-            )
-        }
-    }
-    
     public func pad(_ pad: VectorFloat) {
         minX -= pad
         minY -= pad
@@ -81,11 +108,11 @@ public class BoxComputing {
     public var bounds: Bounds {
         guard didSetInitial else {
             print("Bounds were never set; returning safe default")
-            return (min: .zero, max: .zero)
+            return .zero
         }
-        return (
-            min: LFloat3(x: minX, y: minY, z: minZ),
-            max: LFloat3(x: maxX, y: maxY, z: maxZ)
+        return Bounds(
+            LFloat3(x: minX, y: minY, z: minZ),
+            LFloat3(x: maxX, y: maxY, z: maxZ)
         )
     }
 }
@@ -102,4 +129,17 @@ public func BoundsFront(_ bounds: Bounds) -> VectorFloat { bounds.max.z }
 public func BoundsBack(_ bounds: Bounds) -> VectorFloat { bounds.min.z }
 public func BoundsSize(_ bounds: Bounds) -> LFloat3 {
     LFloat3(BoundsWidth(bounds), BoundsHeight(bounds), BoundsLength(bounds))
+}
+
+public func BoundsP(_ bounds: Bounds) {
+    
+}
+
+public extension LFloat3 {
+    var debugString: String {
+        String(
+            format: "(%.4d, %.4d, %.4d)",
+            x, y, z
+        )
+    }
 }

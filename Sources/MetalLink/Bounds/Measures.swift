@@ -7,20 +7,24 @@
 
 import Foundation
 import SceneKit
+import simd
 
 // MARK: -- Measuring and layout
 
 public protocol Measures: AnyObject {
     var nodeId: String { get }
     
-    var sizeBounds: Bounds { get }
-    var bounds: Bounds { get }
+    
+    
     var position: LFloat3 { get set }
     var worldPosition: LFloat3 { get set }
+    
+    var sizeBounds: Bounds { get }
+    var bounds: Bounds { get }
     var worldBounds: Bounds { get }
     
     var hasIntrinsicSize: Bool { get }
-    var contentSize: LFloat3 { get }
+    var contentBounds: Bounds { get }
     var contentOffset: LFloat3 { get }
     
     var asNode: MetalLinkNode { get }
@@ -49,9 +53,9 @@ public extension Measures {
 
 // MARK: - Size
 public extension Measures {
-    var contentHalfWidth: Float { contentSize.x / 2.0 }
-    var contentHalfHeight: Float { contentSize.y / 2.0 }
-    var contentHalfLength: Float { contentSize.z / 2.0 }
+    var contentHalfWidth: Float { BoundsWidth(contentBounds) / 2.0 }
+    var contentHalfHeight: Float { BoundsHeight(contentBounds) / 2.0 }
+    var contentHalfLength: Float { BoundsLength(contentBounds) / 2.0 }
 }
 
 // MARK: - Bounds
@@ -110,7 +114,6 @@ public extension Measures {
 public extension Measures {
     @discardableResult
     func setLeading(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(leading - newValue)
         let delta = newValue - leading
         xpos += delta
         return self
@@ -118,8 +121,6 @@ public extension Measures {
     
     @discardableResult
     func setTrailing(_ newValue: VectorFloat) -> Self{
-//        let delta = abs(trailing - newValue)
-//        xpos -= delta
         let delta = newValue - trailing
         xpos += delta
         return self
@@ -127,16 +128,13 @@ public extension Measures {
     
     @discardableResult
     func setTop(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(top - newValue)
         let delta = newValue - top
-//        ypos -= delta
         ypos += delta
         return self
     }
     
     @discardableResult
     func setBottom(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(bottom - newValue)
         let delta = newValue - bottom
         ypos += delta
         return self
@@ -144,16 +142,13 @@ public extension Measures {
     
     @discardableResult
     func setFront(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(front - newValue)
         let delta = newValue - front
-//        zpos -= delta
         zpos += delta
         return self
     }
     
     @discardableResult
     func setBack(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(back - newValue)
         let delta = newValue - back
         zpos += delta
         return self
@@ -165,14 +160,23 @@ extension MetalLinkNode {
         var position: LFloat3 = convertTarget
         var nodeParent = parent
         while !(nodeParent == final || nodeParent == nil) {
-            position += nodeParent?.position ?? .zero
+            if let nodeMatrix = nodeParent?.modelMatrix {
+                let multiplied = matrix_multiply(nodeMatrix, LFloat4(position.x, position.y, position.z, 1))
+                position = LFloat3(multiplied.x, multiplied.y, multiplied.z)
+            }
             nodeParent = nodeParent?.parent
         }
-        // Stopped at 'final'; add the final position manually
-        position += final?.position ?? .zero
-                    
+        
+        if let finalMatrix = final?.modelMatrix {
+            let multiplied = matrix_multiply(finalMatrix, LFloat4(position.x, position.y, position.z, 1))
+            position = LFloat3(multiplied.x, multiplied.y, multiplied.z)
+        }
         return position
     }
+}
+
+extension MetalLinkNode {
+    
     
     public var worldPosition: LFloat3 {
         get {
@@ -215,63 +219,79 @@ extension MetalLinkNode {
     
     public var worldBounds: Bounds {
         let sizeBounds = sizeBounds
-        return (
-            min: sizeBounds.min + _worldPositionForBounds,
-            max: sizeBounds.max + _worldPositionForBounds
+        return Bounds(
+            sizeBounds.min + _worldPositionForBounds,
+            sizeBounds.max + _worldPositionForBounds
         )
     }
 }
 
 
 public extension Measures {
-    func computeSize() -> Bounds {
+    func computeSizeInLocalSpace() -> Bounds {
         let computing = BoxComputing()
-        
-        /*
-         The trick to the speed up is not enumerating collections every time
-         There's a different behavior in layout, though, and I'm not sure if it's right or wrong.
-         It's way, way faster now, since the content size is used directly and we skip thousands of iterations
-         per file. Intrinsic size is still computed with all nodes, but it's once off now.
-         */
+
         for childNode in asNode.children {
-            var childSize = childNode.computeSize()
-            childSize.min = convertPosition(childSize.min, to: parent)
-            childSize.max = convertPosition(childSize.max, to: parent)
+            var childSize = childNode.computeBoundingBoxInLocalSpace()
             computing.consumeBounds(childSize)
         }
         
         if hasIntrinsicSize {
-            let size = contentSize
+            let size = contentBounds
             let offset = contentOffset
-            var min = LFloat3(position.x + offset.x,
-                              position.y + offset.y - size.y,
-                              position.z + offset.z)
-            var max = LFloat3(position.x + offset.x + size.x,
-                              position.y + offset.y,
-                              position.z + offset.z + size.z)
-            min = convertPosition(min, to: parent)
-            max = convertPosition(max, to: parent)
-            computing.consumeBounds((min, max))
+            let offsetSize = size + offset + position
+            computing.consumeBounds(offsetSize)
         }
         let finalBounds = computing.bounds
         return finalBounds
     }
     
-    func computeBoundingBox() -> Bounds {
-//        var size = sizeBounds
-        var size = computeSize()
+    func computeBoundingBoxInLocalSpace() -> Bounds {
+        var size = computeSizeInLocalSpace()
         size.min = convertPosition(size.min, to: parent)
         size.max = convertPosition(size.max, to: parent)
         return size
     }
+    
+    
+//    func computeSize() -> Bounds {
+//        let computing = BoxComputing()
+//
+//        for childNode in asNode.children {
+//            var childSize = childNode.computeSize()
+//            childSize.min = convertPosition(childSize.min, to: parent)
+//            childSize.max = convertPosition(childSize.max, to: parent)
+//            computing.consumeBounds(childSize)
+//        }
+//        
+//        if hasIntrinsicSize {
+//            let size = contentBounds
+//            let offset = contentOffset
+//            let min = LFloat3(position.x + offset.x,
+//                              position.y + offset.y - size.y,
+//                              position.z + offset.z)
+//            let max = LFloat3(position.x + offset.x + size.x,
+//                              position.y + offset.y,
+//                              position.z + offset.z + size.z)
+//            computing.consumeBounds(Bounds(min: min, max: max))
+//        }
+//        let finalBounds = computing.bounds
+//        return finalBounds
+//    }
+//    
+//    func computeBoundingBox() -> Bounds {
+//        var size = computeSize()
+//        size.min = convertPosition(size.min, to: parent)
+//        size.max = convertPosition(size.max, to: parent)
+//        return size
+//    }
 }
 
 public extension Measures {
     var dumpstats: String {
         """
-        ContentSizeX:                    \(contentSize.x)
-        ContentSizeY:                    \(contentSize.y)
-        ContentSizeZ:                    \(contentSize.z)
+        ContentBoundsMin:                \(contentBounds.min)
+        ContentBoundsMax:                \(contentBounds.max)
         
         nodePosition:                    \(position)
         worldPosition:                   \(worldPosition)

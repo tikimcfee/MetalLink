@@ -10,14 +10,15 @@ import Combine
 import MetalLinkHeaders
 
 open class MetalLinkNode: Measures {
+    
     public init() {
         
     }
     
     public var pausedInvalidate: Bool = false
     
-    public lazy var cachedBounds = CachedValue(update: computeBoundingBox)
-    public lazy var cachedSize = CachedValue(update: computeSize)
+    public lazy var cachedSize = CachedValue(update: computeSizeInLocalSpace)
+    public lazy var cachedBounds = CachedValue(update: computeBoundingBoxInLocalSpace)
     public lazy var currentModel = CachedValue(update: buildModelMatrix)
     
     public lazy var nodeId = UUID().uuidString
@@ -69,7 +70,7 @@ open class MetalLinkNode: Measures {
     // MARK: - Overridable Measures
     
     open var hasIntrinsicSize: Bool { false }
-    open var contentSize: LFloat3 { .zero }
+    open var contentBounds: Bounds { Bounds.zero }
     open var contentOffset: LFloat3 { .zero }
     
     // MARK: Bounds / Position
