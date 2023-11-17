@@ -243,13 +243,17 @@ public extension Measures {
         if hasIntrinsicSize {
             // I figured out (remembered to be kind) that I was
             // doing the origin offset thing here.. maybe I just.. don't.. do that...
-//            let originSize = Bounds(
-//                LFloat3(0, -contentSize.height, 0),
-//                LFloat3(contentSize.width, 0, contentSize.length)
-//            )
             let size = contentBounds
+            let originSize = Bounds(
+                LFloat3(0, -size.height, 0),
+                LFloat3(size.width, 0, size.length)
+            )
+            
+//            let size = contentBounds
             let offset = contentOffset
-            let offsetSize = size + offset + position
+//            let offsetSize = size + offset + position
+            let offsetSize = originSize + offset + position
+            
             totalBounds.union(with: offsetSize)
         }
         

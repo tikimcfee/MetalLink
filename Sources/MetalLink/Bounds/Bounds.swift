@@ -17,9 +17,89 @@ public struct Bounds {
         self.min = min
         self.max = max
     }
+}
+
+public extension Bounds {
+    static func * (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min *= rhs
+        newBounds.max *= rhs
+        return newBounds
+    }
     
-    public static let zero = Bounds(.zero, .zero)
-    public static let forBaseComputing = 
+    static func + (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min += rhs
+        newBounds.max += rhs
+        return newBounds
+    }
+    
+    static func / (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min /= rhs
+        newBounds.max /= rhs
+        return newBounds
+    }
+}
+
+public extension Bounds {
+    var width: VectorFloat {
+        abs(max.x - min.x)
+    }
+    
+    var height: VectorFloat {
+        abs(max.y - min.y)
+    }
+    
+    var length: VectorFloat {
+        abs(max.z - min.z)
+    }
+    
+    var size: LFloat3 {
+        LFloat3(
+            width,
+            height,
+            length
+        )
+    }
+
+    var top: VectorFloat {
+        max.y
+    }
+
+    var bottom: VectorFloat {
+        min.y
+    }
+
+    var leading: VectorFloat {
+        min.x
+    }
+
+    var trailing: VectorFloat {
+        max.x
+    }
+
+    var front: VectorFloat {
+        max.z
+    }
+
+    var back: VectorFloat {
+        min.z
+    }
+
+    var center: LFloat3 {
+        LFloat3(
+            min.x + (width / 2),
+            min.y - (height / 2),
+            min.z + (length / 2)
+        )
+    }
+}
+
+public extension Bounds {
+    static let zero = Bounds(.zero, .zero)
+    
+    static let forBaseComputing =
         Bounds(
             LFloat3(
                 VectorFloat.infinity,
@@ -32,79 +112,6 @@ public struct Bounds {
                 -VectorFloat.infinity
             )
         )
-    
-    public static func * (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min *= rhs
-        newBounds.max *= rhs
-        return newBounds
-    }
-    
-    public static func + (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min += rhs
-        newBounds.max += rhs
-        return newBounds
-    }
-    
-    public static func / (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min /= rhs
-        newBounds.max /= rhs
-        return newBounds
-    }
-    
-    public var width: VectorFloat {
-        abs(max.x - min.x)
-    }
-    
-    public var height: VectorFloat {
-        abs(max.y - min.y)
-    }
-    
-    public var length: VectorFloat {
-        abs(max.z - min.z)
-    }
-    
-    public var size: LFloat3 {
-        LFloat3(
-            width,
-            height,
-            length
-        )
-    }
-
-    public var top: VectorFloat {
-        max.y
-    }
-
-    public var bottom: VectorFloat {
-        min.y
-    }
-
-    public var leading: VectorFloat {
-        min.x
-    }
-
-    public var trailing: VectorFloat {
-        max.x
-    }
-
-    public var front: VectorFloat {
-        max.z
-    }
-
-    public var back: VectorFloat {
-        min.z
-    }
-
-    public var center: LFloat3 {
-        LFloat3(
-            min.x + (width / 2),
-            min.y - (height / 2),
-            min.z + (length / 2)
-        )
-    }
 }
 
 public extension Bounds {
