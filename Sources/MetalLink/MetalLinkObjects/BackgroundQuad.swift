@@ -20,11 +20,10 @@ public class BackgroundQuad: MetalLinkObject, QuadSizable {
     }
     
     public override var contentBounds: Bounds {
-        Bounds(.zero, LFloat3(size.x, size.y, 1) * scale)
-    }
-    
-    public override var contentOffset: LFloat3 {
-        LFloat3(-size.x / 2, size.y / 2, 0)
+        Bounds(
+            LFloat3(-size.x / 2, size.y / 2, 0),
+            LFloat3( size.x / 2, size.y / 2, 1)
+        ) * scale
     }
     
     public init(_ link: MetalLink) {

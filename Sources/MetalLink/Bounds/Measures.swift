@@ -25,7 +25,6 @@ public protocol Measures: AnyObject {
     
     var hasIntrinsicSize: Bool { get }
     var contentBounds: Bounds { get }
-    var contentOffset: LFloat3 { get }
     
     var asNode: MetalLinkNode { get }
     var parent: MetalLinkNode? { get set }
@@ -202,66 +201,40 @@ extension MetalLinkNode {
         }
     }
     
-    // This is so.. not right, but it seems to work? I think it's because `sizeBounds`
-    // already converts to parent when building size. So if we use it to compute `worldBounds`,
-    // we're counting it multiple times. So.. get the parent, and then *it's* parent's position.
-    // That is the starting position for the already transformed bounds. E.g., my bounds are in my
-    // parent's coordinate space, and their bounds (position) are in their parent's. If I'm already
-    // converted up, then I just need to convert to my parent's position to get the rest of the
-    // hiearchy transforms.
-    // This is what I'm telling myself to believe it.
-    private var _worldPositionForBounds: LFloat3 {
-        var finalPosition: LFloat3 = parent?.parent?.position ?? .zero
-        var nodeParent = parent?.parent?.parent
-        while let parent = nodeParent {
-            finalPosition += parent.position
-            nodeParent = parent.parent
-        }
-        return finalPosition
-    }
-    
     public var worldBounds: Bounds {
-        let sizeBounds = sizeBounds
-        return Bounds(
-            sizeBounds.min + _worldPositionForBounds,
-            sizeBounds.max + _worldPositionForBounds
-        )
+        var finalBounds = sizeBounds
+        var nextParent = parent
+        while let parent = nextParent {
+            finalBounds.min += parent.position
+            finalBounds.max += parent.position
+            nextParent = parent.parent
+        }
+        return finalBounds
     }
 }
 
 
 public extension Measures {
     
-    func computeSizeInLocalSpace() -> Bounds {
+    func computeLocalSize() -> Bounds {
         var totalBounds = Bounds.forBaseComputing
 
         for childNode in asNode.children {
-            let childSize = childNode.computeBoundingBoxInLocalSpace()
+            let childSize = childNode.computeLocalBounds()
             totalBounds.union(with: childSize)
         }
         
         if hasIntrinsicSize {
-            // I figured out (remembered to be kind) that I was
-            // doing the origin offset thing here.. maybe I just.. don't.. do that...
             let size = contentBounds
-            let originSize = Bounds(
-                LFloat3(0, -size.height, 0),
-                LFloat3(size.width, 0, size.length)
-            )
-            
-//            let size = contentBounds
-            let offset = contentOffset
-//            let offsetSize = size + offset + position
-            let offsetSize = originSize + offset + position
-            
+            let offsetSize = size + position
             totalBounds.union(with: offsetSize)
         }
         
         return totalBounds
     }
     
-    func computeBoundingBoxInLocalSpace() -> Bounds {
-        var size = computeSizeInLocalSpace()
+    func computeLocalBounds() -> Bounds {
+        var size = computeLocalSize()
         size.min = convertPosition(size.min, to: parent)
         size.max = convertPosition(size.max, to: parent)
         return size
@@ -273,7 +246,7 @@ public extension Measures {
 //    var boundingBox: AxisAlignedBoundingBox {
 //        // Compute the bounding box based on the node's geometry and transform
 //        // This is a placeholder implementation and should be replaced with actual computation
-//        let bounds = computeBoundingBoxInLocalSpace()
+//        let bounds = computeLocalBounds()
 //        return AxisAlignedBoundingBox(
 //            boxMin: bounds.min,
 //            boxMax: bounds.max
@@ -300,7 +273,6 @@ public extension Measures {
 //
 //        if hasIntrinsicSize {
 //            let size = contentBounds
-//            let offset = contentOffset
 //            let min = LFloat3(position.x + offset.x,
 //                              position.y + offset.y - size.y,
 //                              position.z + offset.z)

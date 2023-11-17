@@ -7,6 +7,7 @@
 
 import MetalKit
 import Combine
+import simd
 
 public enum MetalLinkCameraType {
     case Debug
@@ -192,15 +193,11 @@ public extension DebugCamera {
         
         // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
         if let bounds = scrollBounds {
-            if !(bounds.min.x + 32...bounds.max.x).contains(position.x) {
-                position.x = max(bounds.min.x + 32, min(position.x, bounds.max.x))
-            }
-            if !(bounds.min.y - 10...bounds.max.y).contains(position.y) {
-                position.y = max(bounds.min.y - 10, min(position.y, bounds.max.y))
-            }
-            if !(bounds.min.z + 5...bounds.max.z + 100).contains(position.z) {
-                position.z = max(bounds.min.z + 5, min(position.z, bounds.max.z + 100))
-            }
+            var padded = bounds
+            padded.min += LFloat3(0, -32, 8)
+            padded.max += LFloat3(0, 32, 64)
+            
+            position.clamped(min: padded.min, max: padded.max)
         }
     }
     

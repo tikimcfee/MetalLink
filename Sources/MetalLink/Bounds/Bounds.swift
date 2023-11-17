@@ -115,6 +115,20 @@ public extension Bounds {
 }
 
 public extension Bounds {
+    func intersects(with other: Bounds) -> Bool {
+        return (min.x <= other.max.x && max.x >= other.min.x)
+            && (min.y <= other.max.y && max.y >= other.min.y)
+            && (min.z <= other.max.z && max.z >= other.min.z)
+    }
+    
+    func contains(point: LFloat3) -> Bool {
+        return (min.x <= point.x && point.x <= max.x)
+            && (min.y <= point.y && point.y <= max.y)
+            && (min.z <= point.z && point.z <= max.z)
+    }
+}
+
+public extension Bounds {
     func createUnion(from other: Bounds) -> Bounds {
         let newMin = LFloat3(
             Swift.min(min.x, other.min.x),

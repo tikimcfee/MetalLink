@@ -17,8 +17,8 @@ open class MetalLinkNode: Measures {
     
     public var pausedInvalidate: Bool = false
     
-    public lazy var cachedSize = CachedValue(update: computeSizeInLocalSpace)
-    public lazy var cachedBounds = CachedValue(update: computeBoundingBoxInLocalSpace)
+    public lazy var cachedSize = CachedValue(update: computeLocalSize)
+    public lazy var cachedBounds = CachedValue(update: computeLocalBounds)
     public lazy var currentModel = CachedValue(update: buildModelMatrix)
     
     public lazy var nodeId = UUID().uuidString
@@ -71,7 +71,6 @@ open class MetalLinkNode: Measures {
     
     open var hasIntrinsicSize: Bool { false }
     open var contentBounds: Bounds { Bounds.zero }
-    open var contentOffset: LFloat3 { .zero }
     
     // MARK: Bounds / Position
     

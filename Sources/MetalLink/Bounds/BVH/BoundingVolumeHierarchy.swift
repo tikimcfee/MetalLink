@@ -10,7 +10,7 @@ public class BoundingVolumeHierarchy {
     public init() {}
     
     public func insert(node: MetalLinkNode) {
-//        let nodeBounds = node.computeBoundingBoxInLocalSpace()
+//        let nodeBounds = node.computeLocalBounds()
 //        
 //        // TODO: THIS DOES NOT COMPILE
 //        // The compilation error is: `Cannot convert value of type 'Bounds' to expected argument type 'AxisAlignedBoundingBox'`.
