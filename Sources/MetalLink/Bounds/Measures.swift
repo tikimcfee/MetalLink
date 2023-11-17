@@ -156,21 +156,23 @@ public extension Measures {
 }
 
 extension MetalLinkNode {
+    /*
+     A suggestion was to use the matrix itself to account for non-translation changes,
+     but it doesn't work here because, at the moment, the parent is already applied.
+     Can (re)separate parent from child computations if this ends up being needed. Likely it is.
+     //        if let finalMatrix = final?.modelMatrix {
+     //            position = position.preMultiplied(matrix: finalMatrix)
+     //        }
+     */
     public func convertPosition(_ convertTarget: LFloat3, to final: MetalLinkNode?) -> LFloat3 {
         var position: LFloat3 = convertTarget
         var nodeParent = parent
         while !(nodeParent == final || nodeParent == nil) {
-            if let nodeMatrix = nodeParent?.modelMatrix {
-                let multiplied = matrix_multiply(nodeMatrix, LFloat4(position.x, position.y, position.z, 1))
-                position = LFloat3(multiplied.x, multiplied.y, multiplied.z)
-            }
+            position += nodeParent?.position ?? .zero
             nodeParent = nodeParent?.parent
         }
-        
-        if let finalMatrix = final?.modelMatrix {
-            let multiplied = matrix_multiply(finalMatrix, LFloat4(position.x, position.y, position.z, 1))
-            position = LFloat3(multiplied.x, multiplied.y, multiplied.z)
-        }
+        // Stopped at 'final'; add the final position manually
+        position += final?.position ?? .zero
         return position
     }
 }
@@ -228,6 +230,7 @@ extension MetalLinkNode {
 
 
 public extension Measures {
+    
     func computeSizeInLocalSpace() -> Bounds {
         let computing = BoxComputing()
 
@@ -237,6 +240,12 @@ public extension Measures {
         }
         
         if hasIntrinsicSize {
+            // I figured out (remembered to be kind) that I was
+            // doing the origin offset thing here.. maybe I just.. don't.. do that...
+//            let originSize = Bounds(
+//                LFloat3(0, -contentSize.height, 0),
+//                LFloat3(contentSize.width, 0, contentSize.length)
+//            )
             let size = contentBounds
             let offset = contentOffset
             let offsetSize = size + offset + position
@@ -252,8 +261,28 @@ public extension Measures {
         size.max = convertPosition(size.max, to: parent)
         return size
     }
-    
-    
+}
+
+//extension Measures {
+//
+//    var boundingBox: AxisAlignedBoundingBox {
+//        // Compute the bounding box based on the node's geometry and transform
+//        // This is a placeholder implementation and should be replaced with actual computation
+//        let bounds = computeBoundingBoxInLocalSpace()
+//        return AxisAlignedBoundingBox(
+//            boxMin: bounds.min,
+//            boxMax: bounds.max
+//        )
+//    }
+//
+//    func computeAxisAlignedBoxInLocalSpace() -> AxisAlignedBoundingBox {
+//        // Use the BoundingVolumeHierarchy to compute the bounding box
+//        let boundingVolumeHierarchy = BoundingVolumeHierarchy()
+//        boundingVolumeHierarchy.insert(node: asNode)
+//        let axisAlignedBoundingBox = boundingVolumeHierarchy.computeBounds()
+//        return axisAlignedBoundingBox
+//    }
+//
 //    func computeSize() -> Bounds {
 //        let computing = BoxComputing()
 //
@@ -263,7 +292,7 @@ public extension Measures {
 //            childSize.max = convertPosition(childSize.max, to: parent)
 //            computing.consumeBounds(childSize)
 //        }
-//        
+//
 //        if hasIntrinsicSize {
 //            let size = contentBounds
 //            let offset = contentOffset
@@ -278,14 +307,16 @@ public extension Measures {
 //        let finalBounds = computing.bounds
 //        return finalBounds
 //    }
-//    
+//
 //    func computeBoundingBox() -> Bounds {
 //        var size = computeSize()
 //        size.min = convertPosition(size.min, to: parent)
 //        size.max = convertPosition(size.max, to: parent)
 //        return size
 //    }
-}
+// 
+//
+//}
 
 public extension Measures {
     var dumpstats: String {

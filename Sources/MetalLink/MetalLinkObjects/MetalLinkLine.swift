@@ -8,10 +8,10 @@
 import MetalKit
 
 public class MetalLinkLineMesh: MetalLinkBaseMesh {
-    public var width = 2.0.float
+    public var width = 1.0.float
     public var halfWidth: Float { width / 2.0 }
     
-    public var height = 2.0.float
+    public var height = 1.0.float
     public var halfHeight: Float { height / 2.0 }
     
     public override var name: String { "MetalLinkLineMesh" }

@@ -88,37 +88,31 @@ open class MetalLinkNode: Measures {
     }
     
     public var lengthX: VectorFloat {
-        let box = bounds
-        return BoundsWidth(box)
+        bounds.width
     }
     
     public var lengthY: VectorFloat {
-        let box = bounds
-        return BoundsHeight(box)
+        bounds.height
     }
     
     public var lengthZ: VectorFloat {
-        let box = bounds
-        return BoundsLength(box)
+        bounds.length
     }
     
     public var centerX: VectorFloat {
-        let box = bounds
-        return BoundsWidth(box) / 2.0 + box.min.x
+        return bounds.center.x
     }
     
     public var centerY: VectorFloat {
-        let box = bounds
-        return BoundsHeight(box) / 2.0 + box.min.y
+        return bounds.center.y
     }
     
     public var centerZ: VectorFloat {
-        let box = bounds
-        return BoundsLength(box) / 2.0 + box.min.z
+        return bounds.center.z
     }
     
     public var centerPosition: LFloat3 {
-        return LFloat3(x: centerX, y: centerY, z: centerZ)
+        return bounds.center
     }
     
     // MARK: Rendering

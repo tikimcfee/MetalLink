@@ -26,6 +26,18 @@ public extension LFloat3 {
         self = LFloat3(x + vector.x, y + vector.y, z + vector.z)
         return self
     }
+    
+    @discardableResult
+    mutating func preMultipy(matrix: matrix_float4x4) -> LFloat3 {
+        let multiplied = matrix_multiply(matrix, LFloat4(x, y, z, 1))
+        self = LFloat3(multiplied.x, multiplied.y, multiplied.z)
+        return self
+    }
+    
+    func preMultiplied(matrix: matrix_float4x4) -> LFloat3 {
+        let multiplied = matrix_multiply(matrix, LFloat4(x, y, z, 1))
+        return LFloat3(multiplied.x, multiplied.y, multiplied.z)
+    }
 }
 
 public extension matrix_float4x4 {

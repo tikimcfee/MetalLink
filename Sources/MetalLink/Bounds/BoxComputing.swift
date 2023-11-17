@@ -36,6 +36,13 @@ public struct Bounds {
         return newBounds
     }
     
+    public static func / (lhs: Bounds, rhs: LFloat3) -> Bounds {
+        var newBounds = lhs
+        newBounds.min /= rhs
+        newBounds.max /= rhs
+        return newBounds
+    }
+    
     public var width: Float {
         BoundsWidth(self)
     }
@@ -46,6 +53,14 @@ public struct Bounds {
     
     public var length: Float {
         BoundsLength(self)
+    }
+
+    public var center: LFloat3 {
+        LFloat3(
+            min.x + (width / 2),
+            min.y + (height / 2),
+            min.z + (length / 2)
+        )
     }
 }
 
@@ -72,17 +87,6 @@ public class BoxComputing {
         maxX = max(bounds.max.x, maxX)
         maxY = max(bounds.max.y, maxY)
         maxZ = max(bounds.max.z, maxZ)
-    }
-    
-    public func consumeNodeSet(
-        _ nodes: Set<MetalLinkNode>,
-        convertingTo node: MetalLinkNode?
-    ) {
-        for node in nodes {
-            consumeBounds(
-                node.bounds
-            )
-        }
     }
     
     public func consumeNodes(
