@@ -94,6 +94,18 @@ public extension Bounds {
             min.z + (length / 2)
         )
     }
+    
+    var leadingTopFront: LFloat3 { LFloat3(leading, top, front) }
+    var trailingTopFront: LFloat3 { LFloat3(trailing, top, front) }
+    
+    var leadingBottomFront: LFloat3 { LFloat3(leading, bottom, front) }
+    var trailingBottomFront: LFloat3 { LFloat3(trailing, bottom, front) }
+    
+    var leadingTopBack: LFloat3 { LFloat3(leading, top, back) }
+    var trailingTopBack: LFloat3 { LFloat3(trailing, top, back) }
+    
+    var leadingBottomBack: LFloat3 { LFloat3(leading, bottom, back) }
+    var trailingBottomBack: LFloat3 { LFloat3(trailing, bottom, back) }
 }
 
 public extension Bounds {
