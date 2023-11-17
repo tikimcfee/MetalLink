@@ -53,9 +53,9 @@ public extension Measures {
 
 // MARK: - Size
 public extension Measures {
-    var contentHalfWidth: Float { BoundsWidth(contentBounds) / 2.0 }
-    var contentHalfHeight: Float { BoundsHeight(contentBounds) / 2.0 }
-    var contentHalfLength: Float { BoundsLength(contentBounds) / 2.0 }
+    var contentHalfWidth: Float { contentBounds.width / 2.0 }
+    var contentHalfHeight: Float { contentBounds.height / 2.0 }
+    var contentHalfLength: Float { contentBounds.length / 2.0 }
 }
 
 // MARK: - Bounds
@@ -63,36 +63,37 @@ public extension Measures {
 public extension Measures {
     var boundsWidth: VectorFloat {
         let currentBounds = bounds
-        return BoundsWidth(currentBounds)
+        return currentBounds.width
     }
     var boundsHeight: VectorFloat {
         let currentBounds = bounds
-        return BoundsHeight(currentBounds)
+        return currentBounds.height
     }
     var boundsLength: VectorFloat {
         let currentBounds = bounds
-        return BoundsLength(currentBounds)
+        return currentBounds.length
     }
     
     var boundsCenterWidth: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsWidth(currentBounds) / 2.0
+        return currentBounds.min.x + currentBounds.width / 2.0
     }
+    
     var boundsCenterHeight: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.y + BoundsHeight(currentBounds) / 2.0
+        return currentBounds.min.y - currentBounds.height / 2.0
     }
+    
     var boundsCenterLength: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.z + BoundsLength(currentBounds) / 2.0
+        return currentBounds.min.z + currentBounds.length / 2.0
     }
     
     var boundsCenterPosition: LFloat3 {
-        let currentBounds = bounds
         let vector = LFloat3(
-            x: currentBounds.min.x + BoundsWidth(currentBounds) / 2.0,
-            y: currentBounds.min.y + BoundsHeight(currentBounds) / 2.0,
-            z: currentBounds.min.z + BoundsLength(currentBounds) / 2.0
+            x: boundsCenterWidth,
+            y: boundsCenterHeight,
+            z: boundsCenterLength
         )
         return vector
     }
@@ -232,11 +233,11 @@ extension MetalLinkNode {
 public extension Measures {
     
     func computeSizeInLocalSpace() -> Bounds {
-        let computing = BoxComputing()
+        var totalBounds = Bounds.forBaseComputing
 
         for childNode in asNode.children {
-            var childSize = childNode.computeBoundingBoxInLocalSpace()
-            computing.consumeBounds(childSize)
+            let childSize = childNode.computeBoundingBoxInLocalSpace()
+            totalBounds.union(with: childSize)
         }
         
         if hasIntrinsicSize {
@@ -249,10 +250,10 @@ public extension Measures {
             let size = contentBounds
             let offset = contentOffset
             let offsetSize = size + offset + position
-            computing.consumeBounds(offsetSize)
+            totalBounds.union(with: offsetSize)
         }
-        let finalBounds = computing.bounds
-        return finalBounds
+        
+        return totalBounds
     }
     
     func computeBoundingBoxInLocalSpace() -> Bounds {

@@ -40,6 +40,15 @@ public extension LFloat3 {
     }
 }
 
+public extension LFloat3 {
+    var debugString: String {
+        String(
+            format: "(%.4d, %.4d, %.4d)",
+            x, y, z
+        )
+    }
+}
+
 public extension matrix_float4x4 {
     mutating func scale(amount: LFloat3) {
         self = matrix_multiply(self, .init(scaleBy: amount))

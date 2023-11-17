@@ -30,13 +30,11 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     }
     
     public override var contentBounds: Bounds {
-        let b = BoxComputing()
+        var totalBounds = Bounds.forBaseComputing
         for node in instanceState.nodes.values {
-            b.consumeBounds(
-                node.sizeBounds
-            )
+            totalBounds.union(with: node.sizeBounds)
         }
-        return b.bounds * scale
+        return totalBounds * scale
     }
         
     public init(
