@@ -90,7 +90,7 @@ public extension Bounds {
     var center: LFloat3 {
         LFloat3(
             min.x + (width / 2),
-            min.y - (height / 2),
+            min.y + (height / 2),
             min.z + (length / 2)
         )
     }
