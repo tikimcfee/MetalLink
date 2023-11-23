@@ -83,3 +83,13 @@ extension RenderPipelineDescriptorLibrary {
         }
     }
 }
+
+func _applyBasicAlphaBlending(to descriptor: MTLRenderPipelineDescriptor, at index: Int) {
+    descriptor.colorAttachments[index].isBlendingEnabled = true
+    descriptor.colorAttachments[index].rgbBlendOperation = .add
+    descriptor.colorAttachments[index].alphaBlendOperation = .add
+    descriptor.colorAttachments[index].sourceRGBBlendFactor = .sourceAlpha
+    descriptor.colorAttachments[index].sourceAlphaBlendFactor = .sourceAlpha
+    descriptor.colorAttachments[index].destinationRGBBlendFactor = .oneMinusSourceAlpha
+    descriptor.colorAttachments[index].destinationAlphaBlendFactor = .oneMinusSourceAlpha
+}

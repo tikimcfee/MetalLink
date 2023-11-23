@@ -9,6 +9,9 @@ import MetalKit
 import MetalLinkHeaders
 
 public typealias GlyphNode = MetalLinkGlyphNode
+public typealias NodeSyntaxID = String
+public typealias NodeSet = Set<GlyphNode>
+public typealias SortedNodeSet = [GlyphNode]
 
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
@@ -59,7 +62,7 @@ public extension MetalLinkGlyphNode {
     // flexibility and adding cohesion (coupling?). This is basically what I
     // encoded into SCNNode.name. This is more explicit.
     struct Meta {
-        public var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
+        public var syntaxID: NodeSyntaxID?
         
         public init(
             syntaxID: String? = nil

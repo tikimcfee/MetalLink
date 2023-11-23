@@ -241,72 +241,18 @@ public extension Measures {
     }
 }
 
-//extension Measures {
-//
-//    var boundingBox: AxisAlignedBoundingBox {
-//        // Compute the bounding box based on the node's geometry and transform
-//        // This is a placeholder implementation and should be replaced with actual computation
-//        let bounds = computeLocalBounds()
-//        return AxisAlignedBoundingBox(
-//            boxMin: bounds.min,
-//            boxMax: bounds.max
-//        )
-//    }
-//
-//    func computeAxisAlignedBoxInLocalSpace() -> AxisAlignedBoundingBox {
-//        // Use the BoundingVolumeHierarchy to compute the bounding box
-//        let boundingVolumeHierarchy = BoundingVolumeHierarchy()
-//        boundingVolumeHierarchy.insert(node: asNode)
-//        let axisAlignedBoundingBox = boundingVolumeHierarchy.computeBounds()
-//        return axisAlignedBoundingBox
-//    }
-//
-//    func computeSize() -> Bounds {
-//        let computing = BoxComputing()
-//
-//        for childNode in asNode.children {
-//            var childSize = childNode.computeSize()
-//            childSize.min = convertPosition(childSize.min, to: parent)
-//            childSize.max = convertPosition(childSize.max, to: parent)
-//            computing.consumeBounds(childSize)
-//        }
-//
-//        if hasIntrinsicSize {
-//            let size = contentBounds
-//            let min = LFloat3(position.x + offset.x,
-//                              position.y + offset.y - size.y,
-//                              position.z + offset.z)
-//            let max = LFloat3(position.x + offset.x + size.x,
-//                              position.y + offset.y,
-//                              position.z + offset.z + size.z)
-//            computing.consumeBounds(Bounds(min: min, max: max))
-//        }
-//        let finalBounds = computing.bounds
-//        return finalBounds
-//    }
-//
-//    func computeBoundingBox() -> Bounds {
-//        var size = computeSize()
-//        size.min = convertPosition(size.min, to: parent)
-//        size.max = convertPosition(size.max, to: parent)
-//        return size
-//    }
-// 
-//
-//}
-
 public extension Measures {
     var dumpstats: String {
         """
-        ContentBoundsMin:                \(contentBounds.min)
-        ContentBoundsMax:                \(contentBounds.max)
+        ContentBoundsMin:  \(contentBounds.min)
+        ContentBoundsMax:  \(contentBounds.max)
         
-        nodePosition:                    \(position)
-        worldPosition:                   \(worldPosition)
+        nodePosition:      \(position)
+        worldPosition:     \(worldPosition)
 
-        boundsMin:                       \(bounds.min)
-        boundsMax:                       \(bounds.max)
-        boundsCenter:                    \(boundsCenterPosition)
+        boundsMin:         \(bounds.min)
+        boundsMax:         \(bounds.max)
+        boundsCenter:      \(boundsCenterPosition)
         --
         """
     }

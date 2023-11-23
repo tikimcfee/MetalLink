@@ -178,7 +178,7 @@ class TextureSerializer {
     private func dataToTexture(data: Data, device: MTLDevice, width: Int, height: Int) -> MTLTexture {
         let descriptor = MTLTextureDescriptor()
         descriptor.textureType = .type2D
-        descriptor.pixelFormat = .bgra8Unorm
+        descriptor.pixelFormat = .rgba8Unorm
         descriptor.width = width
         descriptor.height = height
         descriptor.storageMode = .shared
