@@ -54,45 +54,14 @@ public protocol KeyboardPositionSource {
     var rotation: LFloat3 { get }
 }
 
-public extension KeyboardInterceptor {
-    struct CameraTarget: KeyboardPositionSource {
-        var targetCamera: MetalLinkCamera
-        var bag = Set<AnyCancellable>()
-
-        public var worldUp: LFloat3 { targetCamera.worldUp }
-        public var worldRight: LFloat3 { targetCamera.worldRight }
-        public var worldFront: LFloat3 { targetCamera.worldFront }
-        public var current: LFloat3 { targetCamera.position }
-        public var rotation: LFloat3 { targetCamera.rotation }
-        
-        init(targetCamera: MetalLinkCamera,
-             interceptor: KeyboardInterceptor
-        ) {
-            self.targetCamera = targetCamera
-            
-            interceptor.positions.$travelOffset.sink { offset in
-                targetCamera.position += offset
-            }.store(in: &bag)
-        }
-    }
-}
-
 public class KeyboardInterceptor {
-
-    private let movementQueue = DispatchQueue(label: "KeyboardCamera", qos: .userInteractive)
     
     private(set) var state = State()
     private(set) var positions = Positions()
-    private(set) var running: Bool = false
     
     public var onNewFileOperation: FileOperationReceiver?
     public var onNewFocusChange: FocusChangeReceiver?
     public var positionSource: KeyboardPositionSource?
-    
-    private var dispatchTimeNext: DispatchTime {
-        let next = DispatchTime.now() + .milliseconds(default_UpdateDeltaMillis)
-        return next
-    }
     
     public init(onNewFileOperation: FileOperationReceiver? = nil) {
         self.onNewFileOperation = onNewFileOperation
@@ -103,20 +72,15 @@ public class KeyboardInterceptor {
     }
     
     public func onNewKeyEvent(_ event: OSEvent) {
-        movementQueue.sync {
-            self.enqueuedKeyConsume(event)
-        }
+        enqueuedKeyConsume(event)
     }
     
-    private func enqueueRunLoop() {
-        guard !running else { return }
-        running = true
+    public func runCurrentInterceptedState() {
         runLoopImplementation()
     }
     
     private func runLoopImplementation() {
         guard !state.directions.isEmpty else {
-            running = false
             return
         }
         
@@ -127,23 +91,18 @@ public class KeyboardInterceptor {
         state.directions.forEach { direction in
             doDirectionDelta(direction, finalDelta)
         }
-        
-        movementQueue.asyncAfter(deadline: dispatchTimeNext) {
-            self.runLoopImplementation()
-        }
     }
     
     private func startMovement(_ direction: SelfRelativeDirection) {
         guard !state.directions.contains(direction) else { return }
         print("start", direction)
         state.directions.insert(direction)
-        enqueueRunLoop()
     }
     
     private func stopMovement(_ direction: SelfRelativeDirection) {
+        guard state.directions.contains(direction) else { return }
         print("stop", direction)
         state.directions.remove(direction)
-        enqueueRunLoop()
     }
 }
 
@@ -152,46 +111,37 @@ private extension KeyboardInterceptor {
         _ direction: SelfRelativeDirection,
         _ finalDelta: VectorFloat
     ) {
-        weak var weakSelf = self
+        guard let source = self.positionSource else { return }
         
-        DispatchQueue.main.async {
-            doDelta()
+        var positionOffset: LFloat3 = .zero
+        var rotationOffset: LFloat3 = .zero
+        
+        switch direction {
+        case .forward:
+            positionOffset = source.worldFront * Float(finalDelta)
+        case .backward:
+            positionOffset = source.worldFront * -Float(finalDelta)
+            
+        case .right:
+            positionOffset = source.worldRight * Float(finalDelta)
+        case .left:
+            positionOffset = source.worldRight * -Float(finalDelta)
+            
+        case .up:
+            positionOffset = source.worldUp * Float(finalDelta)
+        case .down:
+            positionOffset = source.worldUp * -Float(finalDelta)
+            
+        case .yawLeft:
+            rotationOffset = LFloat3(0, -5, 0)
+        case .yawRight:
+            rotationOffset = LFloat3(0, 5, 0)
         }
         
-        func doDelta() {
-            guard let self = weakSelf else { return }
-            guard let source = self.positionSource else { return }
-            
-            var positionOffset: LFloat3 = .zero
-            var rotationOffset: LFloat3 = .zero
-            
-            switch direction {
-            case .forward:
-                positionOffset = source.worldFront * Float(finalDelta)
-            case .backward:
-                positionOffset = source.worldFront * -Float(finalDelta)
-                
-            case .right:
-                positionOffset = source.worldRight * Float(finalDelta)
-            case .left:
-                positionOffset = source.worldRight * -Float(finalDelta)
-                
-            case .up:
-                positionOffset = source.worldUp * Float(finalDelta)
-            case .down:
-                positionOffset = source.worldUp * -Float(finalDelta)
-                
-            case .yawLeft:
-                rotationOffset = LFloat3(0, -5, 0)
-            case .yawRight:
-                rotationOffset = LFloat3(0, 5, 0)
-            }
-            
-            positions.totalOffset += positionOffset
-            positions.travelOffset = positionOffset
-            positions.rotationOffset += rotationOffset
-            positions.rotationDelta = rotationOffset
-        }
+        positions.totalOffset += positionOffset
+        positions.travelOffset = positionOffset
+        positions.rotationOffset += rotationOffset
+        positions.rotationDelta = rotationOffset
     }
 }
 
@@ -269,10 +219,15 @@ private extension KeyboardInterceptor {
         switch event.type {
         case .keyDown:
             onKeyDown(event.characters ?? "", event)
+            
         case .keyUp:
             onKeyUp(event.characters ?? "", event)
-        default:
+            
+        case .flagsChanged:
             onFlagsChanged(event.modifierFlags, event)
+            
+        default:
+            break
         }
     }
     
@@ -282,11 +237,11 @@ private extension KeyboardInterceptor {
         } else if let focusDirection = focusDirectionForKey(characters, event) {
             changeFocus(focusDirection)
         } else {
+            // MARK: - Shortcuts
+            // Probably need a shortcut shim thing here.. oof..
             switch characters {
-                
             case "o" where event.modifierFlags.contains(.command):
                 onNewFileOperation?(.openDirectory)
-                
             default:
                 break
             }
@@ -294,13 +249,21 @@ private extension KeyboardInterceptor {
     }
     
     private func onKeyUp(_ characters: String, _ event: OSEvent) {
-        guard let direction = directionForKey(characters) else { return }
+        guard let direction = directionForKey(characters) else {
+            return
+        }
         stopMovement(direction)
     }
     
     private func onFlagsChanged(_ flags: OSEvent.ModifierFlags, _ event: OSEvent) {
         state.currentModifiers = flags
-        enqueueRunLoop()
+        
+        /// This is to try and fix the stuck key thing.  So there's some kind of 'unknown' flag
+        /// with value 256 that occurs after repeated characters and combination keys. We interpret this as:
+        /// "the keyboard has stopped doing weird stuff magic stuff, clear state and assume things will work"
+        if flags.__unsafe__isUnknown {
+            state.directions.removeAll(keepingCapacity: true)
+        }
     }
     
     private func changeFocus(_ focusDirection: SelfRelativeDirection) {
@@ -308,6 +271,133 @@ private extension KeyboardInterceptor {
         onNewFocusChange?(focusDirection)
     }
 }
+
+extension NSEvent.ModifierFlags: CustomStringConvertible {
+    public var description: String {
+        var modifiers = ""
+        
+        func add(_ name: String) {
+            modifiers = modifiers.isEmpty ? name : "\(modifiers) + \(name)"
+        }
+
+        if self.contains(NSEvent.ModifierFlags.capsLock) {
+            add("capsLock")
+        }
+        if self.contains(NSEvent.ModifierFlags.shift) {
+            add("shift")
+        }
+        if self.contains(NSEvent.ModifierFlags.control) {
+            add("control")
+        }
+        if self.contains(NSEvent.ModifierFlags.option) {
+            add("option")
+        }
+        if self.contains(NSEvent.ModifierFlags.command) {
+            add("command")
+        }
+        if self.contains(NSEvent.ModifierFlags.numericPad) {
+            add("numericPad")
+        }
+        if self.contains(NSEvent.ModifierFlags.help) {
+            add("help")
+        }
+        if self.contains(NSEvent.ModifierFlags.function) {
+            add("function")
+        }
+        if self.contains(NSEvent.ModifierFlags.deviceIndependentFlagsMask) {
+            add("mask")
+        }
+
+        if modifiers.isEmpty {
+            add("unknown-modifier-\(rawValue)")
+        }
+
+        return modifiers
+    }
+    
+    var __unsafe__isUnknown: Bool {
+        rawValue == 256
+    }
+}
+
+extension NSEvent.EventType: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .leftMouseDown:
+            return "leftMouseDown"
+        case .leftMouseUp:
+            return "leftMouseUp"
+        case .rightMouseDown:
+            return "rightMouseDown"
+        case .rightMouseUp:
+            return "rightMouseUp"
+        case .mouseMoved:
+            return "mouseMoved"
+        case .leftMouseDragged:
+            return "leftMouseDragged"
+        case .rightMouseDragged:
+            return "rightMouseDragged"
+        case .mouseEntered:
+            return "mouseEntered"
+        case .mouseExited:
+            return "mouseExited"
+        case .keyDown:
+            return "keyDown"
+        case .keyUp:
+            return "keyUp"
+        case .flagsChanged:
+            return "flagsChanged"
+        case .appKitDefined:
+            return "appKitDefined"
+        case .systemDefined:
+            return "systemDefined"
+        case .applicationDefined:
+            return "applicationDefined"
+        case .periodic:
+            return "periodic"
+        case .cursorUpdate:
+            return "cursorUpdate"
+        case .scrollWheel:
+            return "scrollWheel"
+        case .tabletPoint:
+            return "tabletPoint"
+        case .tabletProximity:
+            return "tabletProximity"
+        case .otherMouseDown:
+            return "otherMouseDown"
+        case .otherMouseUp:
+            return "otherMouseUp"
+        case .otherMouseDragged:
+            return "otherMouseDragged"
+        case .gesture:
+            return "gesture"
+        case .magnify:
+            return "magnify"
+        case .swipe:
+            return "swipe"
+        case .rotate:
+            return "rotate"
+        case .beginGesture:
+            return "beginGesture"
+        case .endGesture:
+            return "endGesture"
+        case .smartMagnify:
+            return "smartMagnify"
+        case .quickLook:
+            return "quickLook"
+        case .pressure:
+            return "pressure"
+        case .directTouch:
+            return "directTouch"
+        case .changeMode:
+            return "changeMode"
+        @unknown default:
+            return "unknown-key-\(rawValue)"
+        }
+    }
+}
+
+
 #endif
 
 func directionForKey(_ key: String) -> SelfRelativeDirection? {
@@ -341,5 +431,36 @@ func focusDirectionForKey(_ key: String, _ event: OSEvent) -> SelfRelativeDirect
     case _ where event.specialKey == .downArrow: return .down
     #endif
     default: return nil
+    }
+}
+
+
+class MLLooper {
+    let loop: () -> Void
+    let queue: DispatchQueue
+    
+    var interval: DispatchTimeInterval
+    var nextDispatch: DispatchTime { .now() + interval }
+    
+    init(interval: DispatchTimeInterval = .seconds(1),
+         loop: @escaping () -> Void,
+         queue: DispatchQueue = .main) {
+        self.interval = interval
+        self.loop = loop
+        self.queue = queue
+    }
+    
+    func runUntil(
+        onStop: (() -> Void)? = nil,
+        _ stopCondition: @escaping () -> Bool
+    ) {
+        guard !stopCondition() else {
+            onStop?()
+            return
+        }
+        loop()
+        queue.asyncAfter(deadline: nextDispatch) {
+            self.runUntil(onStop: onStop, stopCondition)
+        }
     }
 }

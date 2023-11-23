@@ -25,6 +25,7 @@ public class RootNode: MetalLinkNode, MetalLinkReader {
         constants.viewMatrix = camera.viewMatrix
         constants.projectionMatrix = camera.projectionMatrix
         constants.totalGameTime += deltaTime
+        camera.interceptor.runCurrentInterceptedState()
         super.update(deltaTime: deltaTime)
     }
     
