@@ -28,8 +28,7 @@ open class MetalLinkNode: Measures {
     public var instanceBufferIndex: Int? { instanceConstants?.arrayIndex }
     public var instanceUpdate: ((InstancedConstants, MetalLinkNode) -> Void)?
     
-    private var didSetInstanceMatrix: Bool = false
-    private func pushInstanceUpdate() {
+    public func pushInstanceUpdate() {
         if let instanceUpdate, let instanceConstants {
             instanceUpdate(instanceConstants, self)
         }

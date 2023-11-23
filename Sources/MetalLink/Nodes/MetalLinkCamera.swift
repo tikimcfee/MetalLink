@@ -193,11 +193,7 @@ public extension DebugCamera {
         
         // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
         if let bounds = scrollBounds {
-            var padded = bounds
-            padded.min += LFloat3(0, -32, 8)
-            padded.max += LFloat3(0, 32, 64)
-            
-            position.clamped(min: padded.min, max: padded.max)
+            position.clamped(min: bounds.min, max: bounds.max)
         }
     }
     
