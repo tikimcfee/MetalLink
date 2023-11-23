@@ -8,7 +8,7 @@
 import SceneKit
 import Combine
 
-public let default_MovementSpeed: VectorFloat = 500
+public let default_MovementSpeed: VectorFloat = 50
 public let default_ModifiedMovementSpeed: VectorFloat = 1000
 private let default_UpdateDeltaMillis = 16
 
