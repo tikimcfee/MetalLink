@@ -25,12 +25,23 @@ typealias ForegroundCache = [NSUIColor: GlyphCacheKey]
 typealias CompositeCache = [NSUIColor: ForegroundCache]
 typealias CharCache = [Character: CompositeCache]
 
+extension Character
+{
+    func unicodeScalarCodePoint() -> UInt32 {
+        let characterString = String(self)
+        let scalars = characterString.unicodeScalars
+
+        return scalars[scalars.startIndex].value
+    }
+}
+
 public struct GlyphCacheKey: Hashable, Equatable, Codable {
     public let source: Character
     public let glyph: String
     
     public let foreground: NSUIColor
     public let background: NSUIColor
+    
     static var rootCache = CharCache()
     static var rwlock = LockWrapper()
     
@@ -51,6 +62,19 @@ public struct GlyphCacheKey: Hashable, Equatable, Codable {
         }()]
         let key = foregroundCache[foreground, default: {
             updated = true
+            
+            print(
+            """
+            glyph |-----------
+            glyph | \(source)
+            glyph | \(foreground.rgba!)
+            glyph | \(background.rgba!)
+            glyph | \(source.unicodeScalars)
+            glyph | \(source.unicodeScalarCodePoint())
+            glyph |-----------
+            """
+            )
+            
             return GlyphCacheKey(
                 source: source,
                 foreground,

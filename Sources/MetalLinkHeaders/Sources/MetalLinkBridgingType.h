@@ -26,9 +26,20 @@ struct InstancedConstants {
     simd_float4 textureDescriptorV;
     
     uint instanceID;
-    simd_float4 addedColor; 
+    simd_float4 addedColor;
     uint bufferIndex; // index of self in cpu mtlbuffer
     uint useParentMatrix; // 0 == no, 1 == yes, other == undefined
+};
+
+// Glyphees
+struct GlyphMapKernelOut {
+    uint32_t sourceValue;
+    
+    simd_float4 foreground;
+    simd_float4 background;
+    
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
 };
 
 struct SceneConstants {
