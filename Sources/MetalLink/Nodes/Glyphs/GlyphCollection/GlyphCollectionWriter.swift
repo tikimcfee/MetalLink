@@ -101,4 +101,33 @@ public struct GlyphCollectionWriter {
         
         return newGlyph
     }
+    
+    private func addGlyphToCollectionState(
+        _ keyOut: GlyphMapKernelOut
+    ) -> GlyphNode? {
+        let key = GlyphCacheKey.fromCache(
+            source: Character(UnicodeScalar(keyOut.sourceValue)!),
+            .white
+        )
+        
+        linkAtlas.addGlyphToAtlasIfMissing(key)
+        
+        guard let newGlyph = target.generateInstance(key) else {
+            print("No glyph for", key)
+            return .none
+        }
+        newGlyph.parent = target
+        
+        if let cachedPair = linkAtlas.uvPairCache[key] {
+            newGlyph.instanceConstants?.textureDescriptorU = cachedPair.u
+            newGlyph.instanceConstants?.textureDescriptorV = cachedPair.v
+        } else {
+            print("--------------")
+            print("MISSING UV PAIR")
+            print("\(key.glyph)")
+            print("--------------")
+        }
+        
+        return newGlyph
+    }
 }

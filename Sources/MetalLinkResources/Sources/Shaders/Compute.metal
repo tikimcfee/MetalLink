@@ -4,41 +4,6 @@
 #include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
-kernel void characterMappingKernel(
-   const device uint8_t*  inBuffer  [[buffer(0)]],
-         device uint8_t*  outBuffer [[buffer(1)]],
-                uint      id        [[thread_position_in_grid]]
-) {
-    // Perform your mapping operation here
-    // For simplicity, we are just copying the input to the output
-    outBuffer[id] = inBuffer[id];
-}
-
-kernel void utf8CharacterProcessingKernel(
-    const device uint8_t* inBuffer [[buffer(0)]],
-          device uint8_t* outBuffer [[buffer(1)]],
-                 uint id [[thread_position_in_grid]]
-) {
-    uint8_t byte = inBuffer[id];
-
-    // Check the leading bits to determine if it's a standalone character
-    // or part of a multi-byte character
-    if ((byte & 0x80) == 0x00) {
-        // 1-byte character
-    } else if ((byte & 0xE0) == 0xC0) {
-        // Start of a 2-byte character
-    } else if ((byte & 0xF0) == 0xE0) {
-        // Start of a 3-byte character
-    } else if ((byte & 0xF8) == 0xF0) {
-        // Start of a 4-byte character
-    } else {
-        // Continuation byte
-    }
-
-    // Based on this, perform your desired operation
-    // For example, mark character boundaries, count characters, etc.
-}
-
 kernel void utf8ToUtf32Kernel(
     const device uint8_t*            utf8Buffer      [[buffer(0)]],
           device GlyphMapKernelOut*  utf32Buffer     [[buffer(1)]],
