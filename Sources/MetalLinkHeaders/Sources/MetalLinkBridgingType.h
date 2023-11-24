@@ -38,6 +38,7 @@ struct GlyphMapKernelOut {
     simd_float4 foreground;
     simd_float4 background;
     
+    simd_float2 textureSize;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
 };

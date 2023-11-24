@@ -62,19 +62,17 @@ public struct GlyphCacheKey: Hashable, Equatable, Codable {
         }()]
         let key = foregroundCache[foreground, default: {
             updated = true
-            
-            print(
-            """
-            glyph |-----------
-            glyph | \(source)
-            glyph | \(foreground.rgba!)
-            glyph | \(background.rgba!)
-            glyph | \(source.unicodeScalars)
-            glyph | \(source.unicodeScalarCodePoint())
-            glyph |-----------
-            """
-            )
-            
+//            print(
+//            """
+//            glyph |-----------
+//            glyph | \(source)
+//            glyph | \(foreground.rgba!)
+//            glyph | \(background.rgba!)
+//            glyph | \(source.unicodeScalars)
+//            glyph | \(source.unicodeScalarCodePoint())
+//            glyph |-----------
+//            """
+//            )
             return GlyphCacheKey(
                 source: source,
                 foreground,

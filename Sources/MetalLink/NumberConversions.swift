@@ -14,13 +14,13 @@ import Foundation
 import CoreGraphics
 
 
-extension VectorFloat {
+public extension VectorFloat {
     var toDouble: Double {
         Double(self)
     }
 }
 
-extension Double {
+public extension Double {
     var cg: CGFloat {
         return self
     }
@@ -30,7 +30,7 @@ extension Double {
     }
 }
 
-extension CGFloat {
+public extension CGFloat {
     var vector: VectorFloat {
         return VectorFloat(self)
     }
@@ -40,7 +40,7 @@ extension CGFloat {
     }
 }
 
-extension Int {
+public extension Int {
     var cg: CGFloat {
         return CGFloat(self)
     }
@@ -50,7 +50,7 @@ extension Int {
     }
 }
 
-extension Float {
+public extension Float {
     var vector: VectorFloat {
         return VectorFloat(self)
     }
@@ -60,13 +60,13 @@ extension Float {
     }
 }
 
-extension CGFloat {
+public extension CGFloat {
     var float: Float {
         return Float(self)
     }
 }
 
-extension CGSize {
+public extension CGSize {
     var asSimd: LFloat2 {
         LFloat2(width.float, height.float)
     }
