@@ -46,14 +46,20 @@ kernel void utf8ToUtf32Kernel(
     // MARK: NOTE / TAKE CARE / BE AWARE [Buffer size]
     // The ID here is offset by the UTF size 4!
     // Account for this in your buffer!
+    //    if (index > 0) {
+    //        index = (id + 3) / 4;
+    //    }
+    //
+
+    uint index = id;
     if ((firstByte & 0x80) == 0x00 ||
         (firstByte & 0xE0) == 0xC0 ||
         (firstByte & 0xF0) == 0xE0 ||
         (firstByte & 0xF8) == 0xF0) {
-        utf32Buffer[id / 4].sourceValue = codePoint;
-        utf32Buffer[id / 4].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-        utf32Buffer[id / 4].background = simd_float4(0.0, 0.0, 0.0, 0.0);
-        utf32Buffer[id / 4].textureDescriptorU = simd_float4(0.1, 0.2, 0.3, 0.4);
-        utf32Buffer[id / 4].textureDescriptorV = simd_float4(0.1, 0.2, 0.3, 0.4);
+        utf32Buffer[index].sourceValue = codePoint;
+        utf32Buffer[index].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
+        utf32Buffer[index].background = simd_float4(0.0, 0.0, 0.0, 0.0);
+        utf32Buffer[index].textureDescriptorU = simd_float4(0.1, 0.2, 0.3, 0.4);
+        utf32Buffer[index].textureDescriptorV = simd_float4(0.1, 0.2, 0.3, 0.4);
     }
 }
