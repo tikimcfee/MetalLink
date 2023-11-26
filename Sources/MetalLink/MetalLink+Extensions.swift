@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import MetalLinkHeaders
 import System
 
 public extension MTLTexture {
@@ -74,4 +75,40 @@ public extension MetalLink {
         newBuffer.label = String(describing: T.self)
         return newBuffer
     }
+}
+
+extension GraphemeStatus: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case SINGLE: return "single"
+        case START: return "start"
+        case MIDDLE: return "middle"
+        case END: return "end"
+        default: return "unknown"
+        }
+    }
+    
+    var isSingle: Bool { self == SINGLE }
+    var isStart: Bool { self == START }
+    var isMiddle: Bool { self == MIDDLE }
+    var isEnd: Bool { self == END }
+}
+
+extension GraphemeCategory: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case utf32GlyphSingle: return "one utf32 character"
+        case utf32GlyphEmojiPrefix: return "glyph prefix"
+        case utf32GlyphTag: return "glyph tag"
+        case utf32GlyphEmojiSingle: return "one utf32 emoji"
+        case utf32GlyphData: return "_data"
+        default: return "unknown"
+        }
+    }
+    
+    var isSingleGlyph: Bool { self == utf32GlyphSingle }
+    var isGlyphPrefix: Bool { self == utf32GlyphEmojiPrefix }
+    var isGlyphTag: Bool { self == utf32GlyphTag }
+    var isSingleEmoji: Bool { self == utf32GlyphEmojiSingle }
+    var isData: Bool { self == utf32GlyphData }
 }

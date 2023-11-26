@@ -32,8 +32,47 @@ struct InstancedConstants {
 };
 
 // Glyphees
+enum GraphemeStatus {
+    SINGLE = 0,
+    START,
+    MIDDLE,
+    END
+};
+
+enum GraphemeCategory {
+    // -- 'utf32GlyphSingle`
+    //- 0 : "single"
+    utf32GlyphSingle = 0,
+    
+    // -- 'utf32GlyphEmojiPrefix`
+    //- 1 : "start"
+    //- 2 : "middle"
+    //- 3 : "middle"
+    //- 4 : "end"
+    utf32GlyphEmojiPrefix,
+    
+    // -- 'utf32GlyphTag`
+    //- 14 : "start"
+    //- 15 : "end"
+    //- 16 : "middle"
+    //- 17 : "end"
+    utf32GlyphTag,
+    
+    // -- 'utf32GlyphEmojiSingle`
+    //- 40 : "start"
+    //- 41 : "middle"
+    //- 42 : "end"
+    //- 43 : "end"
+    utf32GlyphEmojiSingle,
+    
+    // -- 'utf32GlyphData`
+    //- 0 : "single"
+    utf32GlyphData
+};
+
 struct GlyphMapKernelOut {
     uint32_t sourceValue;
+    uint sourceValueIndex;
     
     simd_float4 foreground;
     simd_float4 background;
@@ -41,6 +80,9 @@ struct GlyphMapKernelOut {
     simd_float2 textureSize;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
+    
+    enum GraphemeStatus graphemeStatus;
+    enum GraphemeCategory graphemeCategory;
 };
 
 struct SceneConstants {

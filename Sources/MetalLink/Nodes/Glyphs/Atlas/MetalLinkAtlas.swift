@@ -6,6 +6,7 @@
 //
 
 import MetalKit
+import BitHandling
 
 public enum LinkAtlasError: Error {
     case noTargetAtlasTexture
@@ -19,7 +20,8 @@ public class MetalLinkAtlas {
     public var uvPairCache: TextureUVCache
     public var currentAtlas: MTLTexture { builder.atlasTexture }
     
-    private var insertionLock = DispatchSemaphore(value: 1)
+//    private var insertionLock = DispatchSemaphore(value: 1)
+    private var rwLock = LockWrapper()
     
     public init(_ link: MetalLink) throws {
         self.link = link
@@ -39,16 +41,26 @@ public class MetalLinkAtlas {
 public extension MetalLinkAtlas {
     func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
 //        print("Adding glyph to Atlas: [\(key.glyph)]")
-        insertionLock.wait()
-        defer { insertionLock.signal() }
-        guard uvPairCache[key] == nil else { return }
+        rwLock.readLock()
+        guard uvPairCache[key] == nil 
+        else {
+            rwLock.unlock()
+            return
+        }
+        rwLock.unlock()
         
         do {
+            rwLock.writeLock()
+            
             let block = try builder.startAtlasUpdate()
             builder.addGlyph(key, block)
             (_, uvPairCache) = builder.finishAtlasUpdate(from: block)
+            
+            rwLock.unlock()
         } catch {
             print(error)
+            
+            rwLock.unlock()
         }
     }
 }
