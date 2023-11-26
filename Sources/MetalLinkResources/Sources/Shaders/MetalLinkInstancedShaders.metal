@@ -14,7 +14,6 @@ using namespace metal;
 
 constant float4x4 identityMatrix = float4x4(1.0);
 
-
 float4x4 rotate(float3 axis, float angleRadians) {
     float x = axis.x, y = axis.y, z = axis.z;
     float c = cos(angleRadians);

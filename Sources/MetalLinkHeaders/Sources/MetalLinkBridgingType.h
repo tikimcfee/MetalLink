@@ -6,12 +6,11 @@
 //
 
 
-
 #ifndef MetalLinkBridgingType_h
 #define MetalLinkBridgingType_h
+
 #include <simd/simd.h>
 // TODO: Make `uint` type a bridged name.
-
 
 struct BasicModelConstants {
     simd_float4x4 modelMatrix;
@@ -74,6 +73,14 @@ struct GlyphMapKernelOut {
     uint32_t sourceValue;
     uint sourceValueIndex;
     
+    simd_uint4 unicodeSlot1;
+    simd_uint4 unicodeSlot2;
+    simd_uint4 unicodeSlot3;
+    simd_uint4 unicodeSlot4;
+    simd_uint4 unicodeSlot5;
+    simd_uint4 unicodeSlot6;
+    simd_uint4 unicodeSlot7;
+    
     simd_float4 foreground;
     simd_float4 background;
     
@@ -81,7 +88,6 @@ struct GlyphMapKernelOut {
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
-    enum GraphemeStatus graphemeStatus;
     enum GraphemeCategory graphemeCategory;
 };
 

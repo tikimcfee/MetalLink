@@ -97,10 +97,10 @@ extension GraphemeStatus: CustomStringConvertible {
 extension GraphemeCategory: CustomStringConvertible {
     public var description: String {
         switch self {
-        case utf32GlyphSingle: return "one utf32 character"
-        case utf32GlyphEmojiPrefix: return "glyph prefix"
+        case utf32GlyphSingle: return "single character"
+        case utf32GlyphEmojiPrefix: return "emoji group prefix"
         case utf32GlyphTag: return "glyph tag"
-        case utf32GlyphEmojiSingle: return "one utf32 emoji"
+        case utf32GlyphEmojiSingle: return "emoji single prefix"
         case utf32GlyphData: return "_data"
         default: return "unknown"
         }

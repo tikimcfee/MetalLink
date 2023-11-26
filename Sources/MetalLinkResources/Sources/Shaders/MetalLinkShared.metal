@@ -5,6 +5,8 @@
 //  Created by Ivan Lugo on 8/10/22.
 //
 
+#ifndef MetalLinkShared_h
+#define MetalLinkShared_h
 #include <metal_stdlib>
 using namespace metal;
 
@@ -78,3 +80,4 @@ struct ForceLayoutEdge {
     // Nodes with a stronger relationship will be pulled closer together.
     float strength;
 };
+#endif
