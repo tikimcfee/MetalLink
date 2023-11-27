@@ -125,61 +125,57 @@ GraphemeCategory categoryForGraphemeBytes(
     return utf32GlyphSingle;
 }
 
-void setBytesOnSlotAtIndex(
+void setDataOnSlotAtIndex(
    device       GlyphMapKernelOut* utf32Buffer,
                 uint id,
                 int slotNumber,
-                uint8_t firstByte,
-                uint8_t secondByte,
-                uint8_t thirdByte,
-                uint8_t fourthByte
+                uint32_t data
 ) {
     switch (slotNumber) {
         case 1:
-            utf32Buffer[id].unicodeSlot1[0] = firstByte;
-            utf32Buffer[id].unicodeSlot1[1] = secondByte;
-            utf32Buffer[id].unicodeSlot1[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot1[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot1 = data;
             break;
         case 2:
-            utf32Buffer[id].unicodeSlot2[0] = firstByte;
-            utf32Buffer[id].unicodeSlot2[1] = secondByte;
-            utf32Buffer[id].unicodeSlot2[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot2[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot2 = data;
             break;
         case 3:
-            utf32Buffer[id].unicodeSlot3[0] = firstByte;
-            utf32Buffer[id].unicodeSlot3[1] = secondByte;
-            utf32Buffer[id].unicodeSlot3[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot3[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot3 = data;
             break;
         case 4:
-            utf32Buffer[id].unicodeSlot4[0] = firstByte;
-            utf32Buffer[id].unicodeSlot4[1] = secondByte;
-            utf32Buffer[id].unicodeSlot4[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot4[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot4 = data;
             break;
         case 5:
-            utf32Buffer[id].unicodeSlot5[0] = firstByte;
-            utf32Buffer[id].unicodeSlot5[1] = secondByte;
-            utf32Buffer[id].unicodeSlot5[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot5[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot5 = data;
             break;
         case 6:
-            utf32Buffer[id].unicodeSlot6[0] = firstByte;
-            utf32Buffer[id].unicodeSlot6[1] = secondByte;
-            utf32Buffer[id].unicodeSlot6[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot6[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot6 = data;
             break;
         case 7:
-            utf32Buffer[id].unicodeSlot7[0] = firstByte;
-            utf32Buffer[id].unicodeSlot7[1] = secondByte;
-            utf32Buffer[id].unicodeSlot7[2] = thirdByte;
-            utf32Buffer[id].unicodeSlot7[3] = fourthByte;
+            utf32Buffer[id].unicodeSlot7 = data;
             break;
     }
-
 }
+
+uint32_t codePointForSequence(
+    uint8_t firstByte,
+    uint8_t secondByte,
+    uint8_t thirdByte,
+    uint8_t fourthByte,
+    int sequenceCount
+) {
+    switch (sequenceCount) {
+        case 1:
+            return firstByte;
+        case 2:
+            return decodeByteSequence_2(firstByte, secondByte);
+        case 3:
+            return decodeByteSequence_3(firstByte, secondByte, thirdByte);
+        case 4:
+            return decodeByteSequence_4(firstByte, secondByte, thirdByte, fourthByte);
+    }
+    return 0;
+}
+
 
 void attemptUnicodeScalarSetLookahead(
    const device uint8_t* utf8Buffer,
@@ -187,46 +183,47 @@ void attemptUnicodeScalarSetLookahead(
                 uint id,
    constant     uint* utf8BufferSize,
                 GraphemeCategory category,
-                uint8_t byte1,
-                uint8_t byte2,
-                uint8_t byte3,
-                uint8_t byte4
+                uint32_t codePoint
 ) {
+    // Grab lookahead data
+    uint lookaheadStartIndex = id + 4;
+    uint8_t lookahead1 = getByte(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
+    uint8_t lookahead2 = getByte(utf8Buffer, lookaheadStartIndex + 1, *utf8BufferSize);
+    uint8_t lookahead3 = getByte(utf8Buffer, lookaheadStartIndex + 2, *utf8BufferSize);
+    uint8_t lookahead4 = getByte(utf8Buffer, lookaheadStartIndex + 3, *utf8BufferSize);
+    
+    // Grab the category of the next utf32 group
+    GraphemeCategory lookaheadCategory = categoryForGraphemeBytes(lookahead1, lookahead2, lookahead3, lookahead4);
+    
     // Data and single-byte glyphs just return their initial bytes;
     // this particular lookahead is done.
     if (category == utf32GlyphSingle || category == utf32GlyphData) {
-        setBytesOnSlotAtIndex(utf32Buffer, id, 1, byte1, 0, 0, 0);
+        setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
     }
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
     else if (category == utf32GlyphEmojiSingle) {
-        setBytesOnSlotAtIndex(utf32Buffer, id, 1, byte1, byte2, byte3, byte4);
+        setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
     }
     
     // If it's a prefix, we do some work
     else if (category == utf32GlyphEmojiPrefix) {
-        setBytesOnSlotAtIndex(utf32Buffer, id, 1, byte1, byte2, byte3, byte4);
-        
-        uint lookaheadStartIndex = id + 4;
-        // Grab lookahead data
-        uint8_t lookahead1 = getByte(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
-        uint8_t lookahead2 = getByte(utf8Buffer, lookaheadStartIndex + 1, *utf8BufferSize);
-        uint8_t lookahead3 = getByte(utf8Buffer, lookaheadStartIndex + 2, *utf8BufferSize);
-        uint8_t lookahead4 = getByte(utf8Buffer, lookaheadStartIndex + 3, *utf8BufferSize);
-        
-        // Grab the category of the next unicode group
-        GraphemeCategory lookaheadCategory = categoryForGraphemeBytes(lookahead1, lookahead2, lookahead3, lookahead4);
-        
         // We assume that if we have two sequential 'prefix', it's actually one emoji, so set the second slot
         if (lookaheadCategory == utf32GlyphEmojiPrefix) {
-            setBytesOnSlotAtIndex(utf32Buffer, id, 2, lookahead1, lookahead2, lookahead3, lookahead4);
+            setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+            
+            uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
+            setDataOnSlotAtIndex(utf32Buffer, id, 2, nextCodePoint);
         }
         
         // If it's a tag, we start doing some special lookahead magic...
-        if (lookaheadCategory == utf32GlyphTag) {
+        else if (lookaheadCategory == utf32GlyphTag) {
+            setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+            
             int writeSlot = 2;
+            uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 7) {
-                setBytesOnSlotAtIndex(utf32Buffer, id, writeSlot, lookahead1, lookahead2, lookahead3, lookahead4);
+                setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
                 
                 writeSlot += 1;
                 lookaheadStartIndex += 4;
@@ -235,6 +232,9 @@ void attemptUnicodeScalarSetLookahead(
                 lookahead2 = getByte(utf8Buffer, lookaheadStartIndex + 1, *utf8BufferSize);
                 lookahead3 = getByte(utf8Buffer, lookaheadStartIndex + 2, *utf8BufferSize);
                 lookahead4 = getByte(utf8Buffer, lookaheadStartIndex + 3, *utf8BufferSize);
+                
+                int sequenceCount = sequenceCountForByteAtIndex(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
+                codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, sequenceCount);
                 
                 lookaheadCategory = categoryForGraphemeBytes(lookahead1, lookahead2, lookahead3, lookahead4);
             }
@@ -269,21 +269,7 @@ kernel void utf8ToUtf32Kernel(
     uint8_t thirdByte  = getByte(utf8Buffer, id + 2, *utf8BufferSize);
     uint8_t fourthByte = getByte(utf8Buffer, id + 3, *utf8BufferSize);
     
-    uint32_t codePoint = 0;
-    switch (sequenceCount) {
-        case 1:
-            codePoint = firstByte;
-            break;
-        case 2:
-            codePoint = decodeByteSequence_2(firstByte, secondByte);
-            break;
-        case 3:
-            codePoint = decodeByteSequence_3(firstByte, secondByte, thirdByte);
-            break;
-        case 4:
-            codePoint = decodeByteSequence_4(firstByte, secondByte, thirdByte, fourthByte);
-            break;
-    }
+    uint32_t codePoint = codePointForSequence(firstByte, secondByte, thirdByte, fourthByte, sequenceCount);
     
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
     utf32Buffer[id].graphemeCategory = category;
@@ -301,10 +287,7 @@ kernel void utf8ToUtf32Kernel(
        id,
        utf8BufferSize,
        category,
-       firstByte,
-       secondByte,
-       thirdByte,
-       fourthByte
+       codePoint
      );
 }
 

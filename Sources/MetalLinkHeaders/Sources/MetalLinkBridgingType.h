@@ -73,13 +73,13 @@ struct GlyphMapKernelOut {
     uint32_t sourceValue;
     uint sourceValueIndex;
     
-    simd_uint4 unicodeSlot1;
-    simd_uint4 unicodeSlot2;
-    simd_uint4 unicodeSlot3;
-    simd_uint4 unicodeSlot4;
-    simd_uint4 unicodeSlot5;
-    simd_uint4 unicodeSlot6;
-    simd_uint4 unicodeSlot7;
+    uint32_t unicodeSlot1;
+    uint32_t unicodeSlot2;
+    uint32_t unicodeSlot3;
+    uint32_t unicodeSlot4;
+    uint32_t unicodeSlot5;
+    uint32_t unicodeSlot6;
+    uint32_t unicodeSlot7;
     
     simd_float4 foreground;
     simd_float4 background;

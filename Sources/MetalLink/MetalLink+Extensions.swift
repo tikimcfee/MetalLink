@@ -112,3 +112,21 @@ extension GraphemeCategory: CustomStringConvertible {
     var isSingleEmoji: Bool { self == utf32GlyphEmojiSingle }
     var isData: Bool { self == utf32GlyphData }
 }
+
+public extension GlyphMapKernelOut {
+    var allSequentialScalars: [UInt32] {
+        let scalars = [
+         unicodeSlot1,
+         unicodeSlot2,
+         unicodeSlot3,
+         unicodeSlot4,
+         unicodeSlot5,
+         unicodeSlot6,
+         unicodeSlot7,
+        ]
+        .filter { $0 != .zero }
+//        .filter { $0 != .zero }
+        
+        return scalars
+    }
+}
