@@ -344,3 +344,60 @@ kernel void utf8ToUtf32Kernel(
     
     utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer[id]);
 }
+
+kernel void utf8ToUtf32KernelAtlasMapped(
+    const device uint8_t* utf8Buffer                [[buffer(0)]],
+    device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
+    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
+                 uint id                            [[thread_position_in_grid]],
+    constant     uint* utf8BufferSize               [[buffer(3)]],
+    constant     uint* atlasBufferSize              [[buffer(4)]]
+) {
+    // Boundary check
+    if (id >= *utf8BufferSize) {
+        return;
+    }
+    
+    // Determine the number of bytes in the UTF-8 character
+    int sequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+    if (sequenceCount < 1 || sequenceCount > 4) {
+        // If it has a weird sequence length, it's glyph data, break early
+        utf32Buffer[id].graphemeCategory = utf32GlyphData;
+        return;
+    }
+    
+    // Grab 4 bytes from the buffer; we're assuming 0 is returned on out-of-bounds.
+    uint8_t firstByte  = getByte(utf8Buffer, id + 0, *utf8BufferSize);
+    uint8_t secondByte = getByte(utf8Buffer, id + 1, *utf8BufferSize);
+    uint8_t thirdByte  = getByte(utf8Buffer, id + 2, *utf8BufferSize);
+    uint8_t fourthByte = getByte(utf8Buffer, id + 3, *utf8BufferSize);
+    
+    uint32_t codePoint = codePointForSequence(firstByte, secondByte, thirdByte, fourthByte, sequenceCount);
+    GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
+    
+    utf32Buffer[id].graphemeCategory = category;
+    utf32Buffer[id].sourceValue = codePoint;
+    utf32Buffer[id].sourceValueIndex = id;
+    utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
+    utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
+    
+    attemptUnicodeScalarSetLookahead(
+       utf8Buffer,
+       utf32Buffer,
+       id,
+       utf8BufferSize,
+       category,
+       codePoint
+     );
+    
+    uint64_t hash = glyphHashKernel(utf32Buffer[id]);
+    utf32Buffer[id].unicodeHash = hash;
+    
+    if (hash > 0 && hash < *atlasBufferSize) {
+        GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
+        
+        utf32Buffer[id].textureSize = atlasData.textureSize;
+        utf32Buffer[id].textureDescriptorU = atlasData.textureDescriptorU;
+        utf32Buffer[id].textureDescriptorV = atlasData.textureDescriptorV;
+    }
+}

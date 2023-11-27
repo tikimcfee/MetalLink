@@ -72,6 +72,7 @@ enum GraphemeCategory {
 struct GlyphMapKernelAtlasIn {
     uint64_t unicodeHash;
     
+    simd_float2 textureSize;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
 };
