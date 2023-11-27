@@ -28,7 +28,7 @@ public class GlyphBuilder {
         
         // Create and configure text layer
         let textLayer = CATextLayer()
-        textLayer.foregroundColor = key.foreground.cgColor
+        textLayer.foregroundColor = key.foreground.asColor.cgColor
         textLayer.string = safeString
         textLayer.font = fontRenderer.renderingFont
         textLayer.alignmentMode = .left

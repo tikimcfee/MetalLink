@@ -102,20 +102,4 @@ public struct GlyphCollectionWriter {
         
         return newGlyph
     }
-    
-    public func addGlyphToAtlas(
-        _ keyOut: UnicodeScalar
-    ) -> (TextureUVCache.Pair?, MetalLinkGlyphTextureCache.Bundle?) {
-        let key = GlyphCacheKey.fromCache(
-            source: Character(keyOut),
-            .white
-        )
-        linkAtlas.addGlyphToAtlasIfMissing(key)
-        
-        let bundle: MetalLinkGlyphTextureCache.Bundle? = linkAtlas.nodeCache.textureCache[key]
-        
-        return (linkAtlas.uvPairCache[key], bundle)
-    }
-    
-    
 }
