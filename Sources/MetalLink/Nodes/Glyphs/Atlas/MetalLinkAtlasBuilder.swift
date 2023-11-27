@@ -8,7 +8,7 @@
 import MetalKit
 import BitHandling
 
-public struct TextureUVCache: Codable {
+public class TextureUVCache: Codable {
     public struct Pair: Codable {
         public let u: LFloat4
         public let v: LFloat4

@@ -114,6 +114,20 @@ extension GraphemeCategory: CustomStringConvertible {
 }
 
 public extension GlyphMapKernelOut {
+    var expressedAsString: String {
+        String(
+            String.UnicodeScalarView([
+                UnicodeScalar(unicodeSlot1)!,
+                UnicodeScalar(unicodeSlot2)!,
+                UnicodeScalar(unicodeSlot3)!,
+                UnicodeScalar(unicodeSlot4)!,
+                UnicodeScalar(unicodeSlot5)!,
+                UnicodeScalar(unicodeSlot6)!,
+                UnicodeScalar(unicodeSlot7)!,
+            ])
+        )
+    }
+    
     var allSequentialScalars: [UInt32] {
         let scalars = [
          unicodeSlot1,

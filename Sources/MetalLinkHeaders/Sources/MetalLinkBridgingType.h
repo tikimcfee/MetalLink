@@ -69,6 +69,13 @@ enum GraphemeCategory {
     utf32GlyphData
 };
 
+struct GlyphMapKernelAtlasIn {
+    uint64_t unicodeHash;
+    
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+};
+
 struct GlyphMapKernelOut {
     uint32_t sourceValue;
     uint sourceValueIndex;
