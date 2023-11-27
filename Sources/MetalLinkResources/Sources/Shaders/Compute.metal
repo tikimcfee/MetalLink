@@ -210,6 +210,16 @@ void attemptUnicodeScalarSetLookahead(
     else if (category == utf32GlyphEmojiPrefix) {
         // We assume that if we have two sequential 'prefix', it's actually one emoji, so set the second slot
         if (lookaheadCategory == utf32GlyphEmojiPrefix) {
+            uint8_t lookbehind1 = getByte(utf8Buffer, id - 4, *utf8BufferSize);
+            uint8_t lookbehind2 = getByte(utf8Buffer, id - 3, *utf8BufferSize);
+            uint8_t lookbehind3 = getByte(utf8Buffer, id - 2, *utf8BufferSize);
+            uint8_t lookbehind4 = getByte(utf8Buffer, id - 1, *utf8BufferSize);
+            GraphemeCategory lookbehindCategory = categoryForGraphemeBytes(lookbehind1, lookbehind2, lookbehind3, lookbehind4);
+            
+            if (lookbehindCategory == utf32GlyphEmojiPrefix) {
+                return;
+            }
+            
             setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
             
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
@@ -270,10 +280,9 @@ kernel void utf8ToUtf32Kernel(
     uint8_t fourthByte = getByte(utf8Buffer, id + 3, *utf8BufferSize);
     
     uint32_t codePoint = codePointForSequence(firstByte, secondByte, thirdByte, fourthByte, sequenceCount);
-    
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
-    utf32Buffer[id].graphemeCategory = category;
     
+    utf32Buffer[id].graphemeCategory = category;
     utf32Buffer[id].sourceValue = codePoint;
     utf32Buffer[id].sourceValueIndex = id;
     utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
@@ -290,4 +299,3 @@ kernel void utf8ToUtf32Kernel(
        codePoint
      );
 }
-
