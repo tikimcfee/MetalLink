@@ -176,6 +176,49 @@ uint32_t codePointForSequence(
     return 0;
 }
 
+uint64_t glyphHashKernel(
+    const GlyphMapKernelOut glyph
+) {
+    const uint64_t prime = 31;
+    uint64_t hash = 0;
+    
+    uint64_t slot1 = glyph.unicodeSlot1;
+    if (slot1 != 0) {
+        hash = (hash * prime + slot1) % 1000000;
+    }
+
+    uint64_t slot2 = glyph.unicodeSlot2;
+    if (slot2 != 0) {
+        hash = (hash * prime + slot2) % 1000000;
+    }
+    
+    uint64_t slot3 = glyph.unicodeSlot3;
+    if (slot3 != 0) {
+        hash = (hash * prime + slot3) % 1000000;
+    }
+    
+    uint64_t slot4 = glyph.unicodeSlot4;
+    if (slot4 != 0) {
+        hash = (hash * prime + slot4) % 1000000;
+    }
+    
+    uint64_t slot5 = glyph.unicodeSlot5;
+    if (slot5 != 0) {
+        hash = (hash * prime + slot5) % 1000000;
+    }
+    
+    uint64_t slot6 = glyph.unicodeSlot6;
+    if (slot6 != 0) {
+        hash = (hash * prime + slot6) % 1000000;
+    }
+    
+    uint64_t slot7 = glyph.unicodeSlot7;
+    if (slot7 != 0) {
+        hash = (hash * prime + slot7) % 1000000;
+    }
+    
+    return hash;
+}
 
 void attemptUnicodeScalarSetLookahead(
    const device uint8_t* utf8Buffer,
@@ -298,4 +341,6 @@ kernel void utf8ToUtf32Kernel(
        category,
        codePoint
      );
+    
+    utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer[id]);
 }

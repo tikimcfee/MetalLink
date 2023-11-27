@@ -81,6 +81,8 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot6;
     uint32_t unicodeSlot7;
     
+    uint64_t unicodeHash;
+    
     simd_float4 foreground;
     simd_float4 background;
     
