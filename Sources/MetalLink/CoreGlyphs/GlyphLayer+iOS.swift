@@ -25,7 +25,7 @@ public extension CALayer {
         UIGraphicsBeginImageContextWithOptions(frame.size, isOpaque, 0)
         
         guard let context = UIGraphicsGetCurrentContext() else { return nil }
-        context.setFillColor(key.background.cgColor)
+        context.setFillColor(key.background.asColor.cgColor)
         context.fill(frame)
         render(in: context)
         
