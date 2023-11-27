@@ -6,16 +6,19 @@
 //
 
 import MetalKit
+import Foundation
 import BitHandling
 
 public class TextureUVCache: Codable {
     public struct Pair: Codable {
         public let u: LFloat4
         public let v: LFloat4
+        public let size: LFloat2
         
-        public init(u: LFloat4, v: LFloat4) {
+        public init(u: LFloat4, v: LFloat4, size: LFloat2) {
             self.u = u
             self.v = v
+            self.size = size
         }
     }
 
@@ -42,14 +45,14 @@ public class AtlasBuilder {
     private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
     private lazy var vertexPacking = AtlasPacking<VertexRect>(width: atlasTexture.width, height: atlasTexture.height)
     
-    private var uvPairCache: TextureUVCache = TextureUVCache()
-    
+    private let cacheRef: TextureUVCache
     private let sourceOrigin = MTLOrigin()
     private var targetOrigin = MTLOrigin()
     
     public init(
         _ link: MetalLink,
-        textureCache: MetalLinkGlyphTextureCache
+        textureCache: MetalLinkGlyphTextureCache,
+        pairCache: TextureUVCache
     ) throws {
         guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor)
         else { throw LinkAtlasError.noTargetAtlasTexture }
@@ -57,27 +60,83 @@ public class AtlasBuilder {
         self.link = link
         self.textureCache = textureCache
         self.atlasTexture = atlasTexture
+        self.cacheRef = pairCache
         
         atlasTexture.label = "MetalLinkAtlas"
     }
     
-    func load() {
-        
+    struct Serialization: Codable {
+        let uvState: AtlasPacking<UVRect>.State
+        let vertexState: AtlasPacking<VertexRect>.State
+        let pairCache: TextureUVCache
+        let dimensions: LFloat2
     }
     
-    func serialize() {
-        fatalError("it's commented out man")
-//        let encoder = JSONEncoder()
-//        do {
-//            let uv = try encoder.encode(uvPacking.save())
-//            let vertex = try encoder.encode(vertexPacking.save())
-//            let pairCache = try encoder.encode(uvPairCache)
-//            let dimensions = try encoder.encode(atlasSize)
-//            
-//            let serializer = TextureSerializer(device: link.device)
-//            let textureData = serializer.serialize(texture: atlasTexture)!
-//            
-//            let reloadedTexture = serializer.deserialize(
+    public func save() {
+        serialize()
+    }
+    
+    public func load() {
+        let decoder = JSONDecoder()
+        
+        do {
+            let serializationData = try Data(contentsOf: AppFiles.atlasSerializationURL)
+            let serialization = try decoder.decode(Serialization.self, from: serializationData)
+            
+            let atlasData = try Data(contentsOf: AppFiles.atlasTextureURL)
+            let serializer = TextureSerializer(device: link.device)
+            if let atlasTexture = serializer.deserialize(
+                data: atlasData,
+                width: atlasTexture.width,
+                height: atlasTexture.height
+            ) {
+                reloadFrom(serialization: serialization, texture: atlasTexture)
+            } else {
+                throw LinkAtlasError.noTargetAtlasTexture
+            }
+        }  catch {
+            print(error)
+        }
+    }
+    
+    private func reloadFrom(
+        serialization: Serialization,
+        texture: MTLTexture
+    ) {
+        self.uvPacking.currentX = serialization.uvState.currentX
+        self.uvPacking.currentY = serialization.uvState.currentY
+        self.uvPacking.largestHeightThisRow = serialization.uvState.largestHeightThisRow
+        
+        self.vertexPacking.currentX = serialization.vertexState.currentX
+        self.vertexPacking.currentY = serialization.vertexState.currentY
+        self.vertexPacking.largestHeightThisRow = serialization.vertexState.largestHeightThisRow
+        
+        self.cacheRef.map = serialization.pairCache.map
+        self.atlasSize = serialization.dimensions
+        
+        self.atlasTexture = texture
+    }
+    
+    private func serialize(
+        _ encoder: JSONEncoder = JSONEncoder()
+    ) {
+        do {
+            let serialization = Serialization(
+                uvState: uvPacking.save(),
+                vertexState: vertexPacking.save(),
+                pairCache: cacheRef,
+                dimensions: atlasSize
+            )
+            
+            let serializationData = try encoder.encode(serialization)
+            try serializationData.write(to: AppFiles.atlasSerializationURL)
+            
+            let textureSerializer = TextureSerializer(device: link.device)
+            let textureData = textureSerializer.serialize(texture: atlasTexture)!
+            try textureData.write(to: AppFiles.atlasTextureURL)
+            print("Done")
+            
+//            let reloadedTexture = textureSerializer.deserialize(
 //                data: textureData,
 //                width: atlasTexture.width,
 //                height: atlasTexture.height
@@ -95,33 +154,10 @@ public class AtlasBuilder {
 //            } else {
 //                print("All is right with the world.")
 //            }
-//            print("Done")
-//        } catch {
-//            print(error)
-//        }
+        } catch {
+            print(error)
+        }
     }
-    
-//    func serializeMTLTexture(texture: MTLTexture) -> NSData? {
-//        let dataSize = texture.width * texture.height * 4
-//        guard let textureData = malloc(dataSize) else { return nil }
-//        
-//        let region = MTLRegionMake2D(0, 0, texture.width, texture.height)
-//        texture.getBytes(textureData, bytesPerRow: texture.width * 4, from: region, mipmapLevel: 0)
-//
-//        return NSData(bytesNoCopy: textureData, length: dataSize, freeWhenDone: true)
-//    }
-//    
-//    func deserializeMTLTexture(textureData: Data) {
-//        guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor) else {
-//            return
-//        }
-//        
-//        
-//        textureData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
-//            let region = MTLRegionMake2D(0, 0, atlasTexture.width, atlasTexture.height)
-//            atlasTexture.replace(region: region, mipmapLevel: 0, withBytes: bytes.baseAddress!, bytesPerRow: atlasTexture.width * 4)
-//        }
-//    }
 }
 
 
@@ -235,10 +271,9 @@ public extension AtlasBuilder {
         try BuildBlock.start(with: link, targeting: atlasTexture)
     }
     
-    func finishAtlasUpdate(from block: BuildBlock) -> UpdatedAtlas {
+    func finishAtlasUpdate(from block: BuildBlock) {
         block.blitEncoder.endEncoding()
         block.commandBuffer.commit()
-        return (atlasTexture, uvPairCache)
     }
     
     func addGlyph(
@@ -283,9 +318,10 @@ public extension AtlasBuilder {
         
         // You will see this a lot:
         // (x = left, y = top, z = width, w = height)
-        uvPairCache[key] = TextureUVCache.Pair(
+        cacheRef[key] = TextureUVCache.Pair(
             u: LFloat4(topRight.x, topLeft.x, bottomLeft.x, bottomRight.x),
-            v: LFloat4(topRight.y, topLeft.y, bottomLeft.y, bottomRight.y)
+            v: LFloat4(topRight.y, topLeft.y, bottomLeft.y, bottomRight.y),
+            size: textureBundle.texture.simdSize
         )
     }
     

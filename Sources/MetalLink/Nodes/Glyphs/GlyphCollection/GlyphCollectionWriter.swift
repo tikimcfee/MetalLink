@@ -92,6 +92,7 @@ public struct GlyphCollectionWriter {
         if let cachedPair = linkAtlas.uvPairCache[key] {
             newGlyph.instanceConstants?.textureDescriptorU = cachedPair.u
             newGlyph.instanceConstants?.textureDescriptorV = cachedPair.v
+            newGlyph.setQuadSize(size: cachedPair.size)
         } else {
             print("--------------")
             print("MISSING UV PAIR")

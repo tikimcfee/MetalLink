@@ -49,9 +49,9 @@ public class AtlasPacking<T: AtlasPackable> {
     let canvasWidth: T.Number
     let canvasHeight: T.Number
     
-    private(set) var currentX: T.Number = .zero
-    private(set) var currentY: T.Number = .zero
-    private var largestHeightThisRow: T.Number = .zero
+    var currentX: T.Number = .zero
+    var currentY: T.Number = .zero
+    var largestHeightThisRow: T.Number = .zero
     
     public init(
         width: T.Number,

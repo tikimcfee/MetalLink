@@ -17,7 +17,7 @@ public class MetalLinkAtlas {
     private let link: MetalLink
     private let builder: AtlasBuilder
     public let nodeCache: MetalLinkGlyphNodeCache
-    public var uvPairCache: TextureUVCache
+    public let uvPairCache: TextureUVCache
     public var currentAtlas: MTLTexture { builder.atlasTexture }
     
 //    private var insertionLock = DispatchSemaphore(value: 1)
@@ -25,16 +25,22 @@ public class MetalLinkAtlas {
     
     public init(_ link: MetalLink) throws {
         self.link = link
-        self.uvPairCache = TextureUVCache()
+        let cache = TextureUVCache()
+        self.uvPairCache = cache
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
         self.builder = try AtlasBuilder(
             link,
-            textureCache: nodeCache.textureCache
+            textureCache: nodeCache.textureCache,
+            pairCache: cache
         )
     }
     
-    public func serialize() {
-        builder.serialize()
+    public func save() {
+        builder.save()
+    }
+    
+    public func load() {
+        builder.load()
     }
 }
 
@@ -54,7 +60,7 @@ public extension MetalLinkAtlas {
             
             let block = try builder.startAtlasUpdate()
             builder.addGlyph(key, block)
-            (_, uvPairCache) = builder.finishAtlasUpdate(from: block)
+            builder.finishAtlasUpdate(from: block)
             
             rwLock.unlock()
         } catch {

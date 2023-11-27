@@ -126,12 +126,20 @@ public struct GlyphCacheKey: Hashable, Equatable, Codable {
         #else
         let foreground = try container.decode([CGFloat].self, forKey: Keys.foreground)
         let background = try container.decode([CGFloat].self, forKey: Keys.background)
-        self.foreground = NSUIColor(
-            cgColor: CGColor(red: foreground[0], green: foreground[1], blue: foreground[2], alpha: foreground[3])
-        )!
-        self.background = NSUIColor(
-            cgColor: CGColor(red: background[0], green: background[1], blue: background[2], alpha: background[3])
-        )!
+        if foreground.count == 4 {
+            self.foreground = NSUIColor(
+                cgColor: CGColor(red: foreground[0], green: foreground[1], blue: foreground[2], alpha: foreground[3])
+            )!
+        } else {
+            self.foreground = NSUIColor.white
+        }
+        if background.count == 4 {
+            self.background = NSUIColor(
+                cgColor: CGColor(red: background[0], green: background[1], blue: background[2], alpha: background[3])
+            )!
+        } else {
+            self.background = NSUIColor.black
+        }
         #endif
     }
 }

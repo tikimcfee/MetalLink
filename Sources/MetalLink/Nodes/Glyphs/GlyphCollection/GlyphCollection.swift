@@ -56,6 +56,10 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     public override func render(in sdp: inout SafeDrawPass) {
         sdp.oncePerPass("glyph-collection-atlas") {
             $0.renderCommandEncoder.setFragmentTexture(
+                // MARK: Atlas texture setter
+                // Note that this is a computed property that reads whatever the current instance field is,
+                // which means that if this is reloaded, it'll reload for all rendered instance collections
+                // on the next pass.
                 linkAtlas.currentAtlas, index: 5
             )
         }
