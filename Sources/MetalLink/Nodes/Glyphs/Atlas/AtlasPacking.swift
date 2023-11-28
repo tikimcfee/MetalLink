@@ -44,6 +44,12 @@ public class AtlasPacking<T: AtlasPackable> {
         var currentX: T.Number = .zero
         var currentY: T.Number = .zero
         var largestHeightThisRow: T.Number = .zero
+        
+        enum CodingKeys: Int, CodingKey {
+            case currentX = 1
+            case currentY = 2
+            case largestHeightThisRow = 3
+        }
     }
     
     let canvasWidth: T.Number

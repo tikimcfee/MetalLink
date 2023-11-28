@@ -16,6 +16,12 @@ public class TextureUVCache: Codable {
             self.v = v
             self.size = size
         }
+        
+        enum CodingKeys: Int, CodingKey {
+            case u = 1
+            case v = 2
+            case size = 3
+        }
     }
 
     public var map = [GlyphCacheKey: Pair]()
@@ -27,5 +33,9 @@ public class TextureUVCache: Codable {
     public subscript(_ key: GlyphCacheKey) -> Pair? {
         get { map[key] }
         set { map[key] = newValue }
+    }
+    
+    enum CodingKeys: Int, CodingKey {
+        case map = 1
     }
 }

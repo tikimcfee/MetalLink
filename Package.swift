@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "main"),
+        .package(url: "https://github.com/christophhagen/BinaryCodable.git", exact: "2.0.1"),
     ],
     targets: [
         .target(
@@ -35,7 +36,8 @@ let package = Package(
             name: "MetalLink",
             dependencies: [
                 "MetalLinkResources",
-                "BitHandling"
+                "BitHandling",
+                "BinaryCodable"
             ]
         ),
         .testTarget(

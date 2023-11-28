@@ -42,6 +42,13 @@ public struct GlyphCacheKey: Codable, Hashable, Equatable {
         self.foreground = foreground.serializable
         self.background = background.serializable
     }
+    
+    enum CodingKeys: Int, CodingKey {
+        case source = 1
+        case glyph = 2
+        case foreground = 3
+        case background = 4
+    }
 }
 
 extension Character: Codable {

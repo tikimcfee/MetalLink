@@ -9,6 +9,7 @@ import MetalKit
 import Foundation
 import BitHandling
 import MetalLinkHeaders
+import BinaryCodable
 
 public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
@@ -68,7 +69,7 @@ public extension AtlasBuilder {
     }
     
     private func deserialize() {
-        let decoder = JSONDecoder()
+        let decoder = BinaryDecoder()
         do {
             let serializationData = try Data(contentsOf: AppFiles.atlasSerializationURL)
             let serialization = try decoder.decode(Serialization.self, from: serializationData)
@@ -97,7 +98,7 @@ public extension AtlasBuilder {
     }
     
     private func serialize() {
-        let encoder = JSONEncoder()
+        let encoder = BinaryEncoder()
         do {
             let serializedGraphemeData: Data
             if let currentGraphemeHashBuffer {
