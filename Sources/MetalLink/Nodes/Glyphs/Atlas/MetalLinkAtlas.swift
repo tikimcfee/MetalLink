@@ -19,6 +19,10 @@ public class MetalLinkAtlas {
     public let nodeCache: MetalLinkGlyphNodeCache
     public let uvPairCache: TextureUVCache
     public var currentAtlas: MTLTexture { builder.atlasTexture }
+    public var currentBuffer: MTLBuffer? {
+        get { builder.currentGraphemeHashBuffer }
+        set { builder.currentGraphemeHashBuffer = newValue }
+    }
     
 //    private var insertionLock = DispatchSemaphore(value: 1)
     private var rwLock = LockWrapper()

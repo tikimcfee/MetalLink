@@ -16,7 +16,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "main")
+        .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "main"),
+        .package(url: "https://github.com/orlandos-nl/IkigaJSON.git", exact: "2.2.0"),
     ],
     targets: [
         .target(
@@ -35,7 +36,8 @@ let package = Package(
             name: "MetalLink",
             dependencies: [
                 "MetalLinkResources",
-                "BitHandling"
+                "BitHandling",
+                "IkigaJSON"
             ]
         ),
         .testTarget(

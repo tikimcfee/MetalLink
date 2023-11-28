@@ -8,6 +8,10 @@
 import MetalKit
 import Foundation
 import BitHandling
+import MetalLinkHeaders
+import IkigaJSON
+
+public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
 public class AtlasBuilder {
     private let link: MetalLink
@@ -22,6 +26,8 @@ public class AtlasBuilder {
     private let cacheRef: TextureUVCache
     private let sourceOrigin = MTLOrigin()
     private var targetOrigin = MTLOrigin()
+    
+    internal var currentGraphemeHashBuffer: MTLBuffer?
     
     public init(
         _ link: MetalLink,
@@ -39,18 +45,27 @@ public class AtlasBuilder {
         atlasTexture.label = "MetalLinkAtlas"
     }
     
-    struct Serialization: Codable {
-        let uvState: AtlasPacking<UVRect>.State
-        let vertexState: AtlasPacking<VertexRect>.State
-        let pairCache: TextureUVCache
-        let dimensions: LFloat2
-    }
-    
     public func save() {
         serialize()
     }
     
     public func load() {
+        deserialize()
+    }
+}
+
+public extension AtlasBuilder {
+    struct Serialization: Codable {
+        let uvState: AtlasPacking<UVRect>.State
+        let vertexState: AtlasPacking<VertexRect>.State
+        let pairCache: TextureUVCache
+        let dimensions: LFloat2
+        
+        let graphemeHashData: Data
+        let graphemeHashCount: Int
+    }
+    
+    private func deserialize() {
         let decoder = JSONDecoder()
         
         do {
@@ -59,23 +74,66 @@ public class AtlasBuilder {
             
             let atlasData = try Data(contentsOf: AppFiles.atlasTextureURL)
             let serializer = TextureSerializer(device: link.device)
-            if let atlasTexture = serializer.deserialize(
+            guard let atlasTexture = serializer.deserialize(
                 data: atlasData,
                 width: atlasTexture.width,
                 height: atlasTexture.height
-            ) {
-                reloadFrom(serialization: serialization, texture: atlasTexture)
-            } else {
+            ) else {
                 throw LinkAtlasError.noTargetAtlasTexture
             }
+            
+            let graphemeData = serialization.graphemeHashData
+            let graphemeBuffer = link.device.loadToMTLBuffer(data: graphemeData)
+
+            reloadFrom(
+                serialization: serialization,
+                texture: atlasTexture,
+                buffer: graphemeBuffer
+            )
         }  catch {
             print(error)
         }
     }
     
+    private func serialize() {
+        let encoder = IkigaJSONEncoder()
+        do {
+            let serializedGraphemeData: Data
+            if let currentGraphemeHashBuffer {
+                let graphemePointer = currentGraphemeHashBuffer
+                    .boundPointer(as: GlyphMapKernelAtlasIn.self, count: GRAPHEME_BUFFER_DEFAULT_SIZE)
+                let unsafeBuffer = UnsafeBufferPointer(start: graphemePointer, count: GRAPHEME_BUFFER_DEFAULT_SIZE)
+                serializedGraphemeData = Data(buffer: unsafeBuffer)
+            } else {
+                serializedGraphemeData = Data()
+                print("-- no grapheme data to write")
+            }
+                
+            let serialization = Serialization(
+                uvState: uvPacking.save(),
+                vertexState: vertexPacking.save(),
+                pairCache: cacheRef,
+                dimensions: atlasSize,
+                graphemeHashData: serializedGraphemeData,
+                graphemeHashCount: GRAPHEME_BUFFER_DEFAULT_SIZE
+            )
+            
+            let serializationData = try encoder.encode(serialization)
+            try serializationData.write(to: AppFiles.atlasSerializationURL)
+            
+            let textureSerializer = TextureSerializer(device: link.device)
+            let textureData = textureSerializer.serialize(texture: atlasTexture)!
+            try textureData.write(to: AppFiles.atlasTextureURL)
+            print("Atlas was saved, I think.")
+        } catch {
+            print("Atlas was not saved, probably: ", error)
+        }
+    }
+    
     private func reloadFrom(
         serialization: Serialization,
-        texture: MTLTexture
+        texture: MTLTexture,
+        buffer: MTLBuffer?
     ) {
         self.uvPacking.currentX = serialization.uvState.currentX
         self.uvPacking.currentY = serialization.uvState.currentY
@@ -89,48 +147,7 @@ public class AtlasBuilder {
         self.atlasSize = serialization.dimensions
         
         self.atlasTexture = texture
-    }
-    
-    private func serialize(
-        _ encoder: JSONEncoder = JSONEncoder()
-    ) {
-        do {
-            let serialization = Serialization(
-                uvState: uvPacking.save(),
-                vertexState: vertexPacking.save(),
-                pairCache: cacheRef,
-                dimensions: atlasSize
-            )
-            
-            let serializationData = try encoder.encode(serialization)
-            try serializationData.write(to: AppFiles.atlasSerializationURL)
-            
-            let textureSerializer = TextureSerializer(device: link.device)
-            let textureData = textureSerializer.serialize(texture: atlasTexture)!
-            try textureData.write(to: AppFiles.atlasTextureURL)
-            print("Done")
-            
-//            let reloadedTexture = textureSerializer.deserialize(
-//                data: textureData,
-//                width: atlasTexture.width,
-//                height: atlasTexture.height
-//            )!
-//            
-//            let allIsRightWithWorld = [
-//                atlasTexture.pixelFormat == reloadedTexture.pixelFormat,
-//                atlasTexture.arrayLength == reloadedTexture.arrayLength,
-//                atlasTexture.sampleCount == reloadedTexture.sampleCount
-//            ].allSatisfy { $0 }
-//            
-//            atlasTexture = reloadedTexture
-//            if !allIsRightWithWorld {
-//                print("All is not right with the world.")
-//            } else {
-//                print("All is right with the world.")
-//            }
-        } catch {
-            print(error)
-        }
+        self.currentGraphemeHashBuffer = buffer
     }
 }
 
@@ -273,5 +290,15 @@ public extension AtlasBuilder {
         glyphDescriptor.height = canvasSize.y
         return glyphDescriptor
     }()
+}
+
+private extension MTLDevice {
+    func loadToMTLBuffer(data: Data) -> MTLBuffer? {
+        return data.withUnsafeBytes { bufferPointer -> MTLBuffer? in
+            guard let baseAddress = bufferPointer.baseAddress else { return nil }
+            return makeBuffer(bytes: baseAddress, length: data.count, options: [])
+        }
+    }
+
 }
 
