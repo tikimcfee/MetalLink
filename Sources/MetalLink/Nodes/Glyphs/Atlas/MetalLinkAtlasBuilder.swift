@@ -9,13 +9,13 @@ import MetalKit
 import Foundation
 import BitHandling
 import MetalLinkHeaders
-import IkigaJSON
 
 public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
 public class AtlasBuilder {
     private let link: MetalLink
-    private lazy var textureBuilder = BitmapCacheTextureBuilder(link: link)
+    
+    private let glyphBuilder = GlyphBuilder()
     
     var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
@@ -28,6 +28,7 @@ public class AtlasBuilder {
     private var targetOrigin = MTLOrigin()
     
     internal var currentGraphemeHashBuffer: MTLBuffer?
+    internal var unrenderableGlyphLocation: TextureUVCache.Pair?
     
     public init(
         _ link: MetalLink,
@@ -60,17 +61,18 @@ public extension AtlasBuilder {
         let pairCache: TextureUVCache
         let dimensions: LFloat2
         
+        let unrenderableGlyphLocation: TextureUVCache.Pair?
+        
         let graphemeHashData: Data
         let graphemeHashCount: Int
     }
     
     private func deserialize() {
         let decoder = JSONDecoder()
-        
         do {
             let serializationData = try Data(contentsOf: AppFiles.atlasSerializationURL)
             let serialization = try decoder.decode(Serialization.self, from: serializationData)
-            
+                        
             let atlasData = try Data(contentsOf: AppFiles.atlasTextureURL)
             let serializer = TextureSerializer(device: link.device)
             guard let atlasTexture = serializer.deserialize(
@@ -95,7 +97,7 @@ public extension AtlasBuilder {
     }
     
     private func serialize() {
-        let encoder = IkigaJSONEncoder()
+        let encoder = JSONEncoder()
         do {
             let serializedGraphemeData: Data
             if let currentGraphemeHashBuffer {
@@ -113,6 +115,7 @@ public extension AtlasBuilder {
                 vertexState: vertexPacking.save(),
                 pairCache: cacheRef,
                 dimensions: atlasSize,
+                unrenderableGlyphLocation: unrenderableGlyphLocation,
                 graphemeHashData: serializedGraphemeData,
                 graphemeHashCount: GRAPHEME_BUFFER_DEFAULT_SIZE
             )
@@ -121,11 +124,12 @@ public extension AtlasBuilder {
             try serializationData.write(to: AppFiles.atlasSerializationURL)
             
             let textureSerializer = TextureSerializer(device: link.device)
-            let textureData = textureSerializer.serialize(texture: atlasTexture)!
-            try textureData.write(to: AppFiles.atlasTextureURL)
+            let textureData = textureSerializer.serialize(texture: atlasTexture)
+            try textureData!.write(to: AppFiles.atlasTextureURL)
+            
             print("Atlas was saved, I think.")
         } catch {
-            print("Atlas was not saved, probably: ", error)
+            print(error, "::: Atlas was not saved, probably.")
         }
     }
     
@@ -147,6 +151,7 @@ public extension AtlasBuilder {
         
         self.atlasTexture = texture
         self.currentGraphemeHashBuffer = buffer
+        self.unrenderableGlyphLocation = serialization.unrenderableGlyphLocation
     }
 }
 
@@ -199,7 +204,29 @@ public extension AtlasBuilder {
         _ key: GlyphCacheKey,
         _ block: BuildBlock
     ) {
-        guard let texture = textureBuilder.make(key) else {
+        guard let bitmaps = glyphBuilder.makeBitmaps(key) else {
+            print("Missing bitmaps for \(key)")
+            return
+        }
+        
+        // The bad glyph is data from a tiff block, at this size. Just.. I know, ok?
+        #if os(macOS)
+        let isUnrenderable = bitmaps.requested.tiffRepresentation == __UNRENDERABLE__GLYPH__DATA__
+        #elseif os(iOS)
+        let isUnrenderable = bitmaps.requested.pngData() == __UNRENDERABLE__GLYPH__DATA__
+        #endif
+        
+        if isUnrenderable, let unrenderableGlyphLocation {
+            // Found an image we can't render with monospace font. Don't encode it.
+            // Just reuse the unrenderableGlyph. 
+            cacheRef[key] = unrenderableGlyphLocation
+            return
+        }
+
+        guard let texture = try? link.textureLoader.newTexture(
+            cgImage: bitmaps.requestedCG,
+            options: [.textureStorageMode: MTLStorageMode.private.rawValue]
+        ) else {
             print("Missing texture for \(key)")
             return
         }
@@ -237,11 +264,17 @@ public extension AtlasBuilder {
         
         // You will see this a lot:
         // (x = left, y = top, z = width, w = height)
-        cacheRef[key] = TextureUVCache.Pair(
+        let newPair = TextureUVCache.Pair(
             u: LFloat4(topRight.x, topLeft.x, bottomLeft.x, bottomRight.x),
             v: LFloat4(topRight.y, topLeft.y, bottomLeft.y, bottomRight.y),
             size: texture.simdSize
         )
+        cacheRef[key] = newPair
+        
+        if isUnrenderable && self.unrenderableGlyphLocation == nil {
+            self.unrenderableGlyphLocation = newPair
+            print("<!> Set unrenderable glyph location!")
+        }
     }
     
     func encodeBlit(

@@ -15,6 +15,8 @@ public class GlyphBuilder {
 //    public static let device: MTLDevice = MTLCreateSystemDefaultDevice()!
 //    public static let loader: MTKTextureLoader = MTKTextureLoader(device: device)
     
+    public init() { }
+    
     public let fontRenderer = FontRenderer.shared
     
     public func makeBitmaps(_ key: GlyphCacheKey) -> BitmapImages? {

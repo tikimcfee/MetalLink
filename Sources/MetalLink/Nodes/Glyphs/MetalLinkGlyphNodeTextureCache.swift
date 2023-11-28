@@ -57,20 +57,6 @@ public class MetalLinkGlyphTextureCache: LockingCache<GlyphCacheKey, MetalLinkGl
     }
 }
 
-public struct BitmapCacheTextureBuilder {
-    let link: MetalLink
-    let glyphBuilder = GlyphBuilder()
-
-    func make(_ key: GlyphCacheKey) -> MTLTexture? {
-        guard let bitmaps = glyphBuilder.makeBitmaps(key)
-        else { return nil }
-        return try? link.textureLoader.newTexture(
-            cgImage: bitmaps.requestedCG,
-            options: [.textureStorageMode: MTLStorageMode.private.rawValue]
-        )
-    }
-}
-
 public extension MetalLinkGlyphTextureCache {
     struct Bundle: Equatable {
         public let texture: MTLTexture
