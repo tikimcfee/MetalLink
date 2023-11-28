@@ -15,7 +15,7 @@ public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
 public class AtlasBuilder {
     private let link: MetalLink
-    private let textureCache: MetalLinkGlyphTextureCache
+    private lazy var textureBuilder = BitmapCacheTextureBuilder(link: link)
     
     var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
@@ -38,7 +38,6 @@ public class AtlasBuilder {
         else { throw LinkAtlasError.noTargetAtlasTexture }
         
         self.link = link
-        self.textureCache = textureCache
         self.atlasTexture = atlasTexture
         self.cacheRef = pairCache
         
@@ -200,20 +199,20 @@ public extension AtlasBuilder {
         _ key: GlyphCacheKey,
         _ block: BuildBlock
     ) {
-        guard let textureBundle = textureCache[key] else {
+        guard let texture = textureBuilder.make(key) else {
             print("Missing texture for \(key)")
             return
         }
         
         // Set Vertex and UV info for packing
-        let bundleUVSize = atlasUVSize(for: textureBundle)
+        let bundleUVSize = atlasUVSize(for: texture)
         let uvRect = UVRect()
         uvRect.width = bundleUVSize.x
         uvRect.height = bundleUVSize.y
         
         let vertexRect = VertexRect()
-        vertexRect.width = textureBundle.texture.width
-        vertexRect.height = textureBundle.texture.height
+        vertexRect.width = texture.width
+        vertexRect.height = texture.height
         
         // Pack it; Update origin from rect position
         uvPacking.packNextRect(uvRect)
@@ -222,7 +221,7 @@ public extension AtlasBuilder {
         targetOrigin.y = vertexRect.y
         
         // Ship it; Encode with current state
-        encodeBlit(for: textureBundle.texture, with: block)
+        encodeBlit(for: texture, with: block)
         
         // Compute UV corners for glyph
         let (left, top, width, height) = (
@@ -241,7 +240,7 @@ public extension AtlasBuilder {
         cacheRef[key] = TextureUVCache.Pair(
             u: LFloat4(topRight.x, topLeft.x, bottomLeft.x, bottomRight.x),
             v: LFloat4(topRight.y, topLeft.y, bottomLeft.y, bottomRight.y),
-            size: textureBundle.texture.simdSize
+            size: texture.simdSize
         )
     }
     
@@ -268,6 +267,11 @@ public extension AtlasBuilder {
 private extension AtlasBuilder {
     func atlasUVSize(for bundle: MetalLinkGlyphTextureCache.Bundle) -> LFloat2 {
         let bundleSize = bundle.texture.simdSize
+        return LFloat2(bundleSize.x / atlasSize.x, bundleSize.y / atlasSize.y)
+    }
+    
+    func atlasUVSize(for texture: MTLTexture) -> LFloat2 {
+        let bundleSize = texture.simdSize
         return LFloat2(bundleSize.x / atlasSize.x, bundleSize.y / atlasSize.y)
     }
 }
