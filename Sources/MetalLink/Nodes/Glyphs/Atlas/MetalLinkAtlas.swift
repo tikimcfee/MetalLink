@@ -11,6 +11,7 @@ import BitHandling
 public enum LinkAtlasError: Error {
     case noTargetAtlasTexture
     case noStateBuilder
+    case deserializationError
 }
 
 public class MetalLinkAtlas {

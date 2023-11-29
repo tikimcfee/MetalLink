@@ -25,6 +25,7 @@ public class UVRect: AtlasPackable {
     public var width: Float = .zero
     public var height: Float = .zero
     public var wasPacked = false
+    public init() { }
 }
 
 public class VertexRect: AtlasPackable {
@@ -33,11 +34,11 @@ public class VertexRect: AtlasPackable {
     public var width: Int = .zero
     public var height: Int = .zero
     public var wasPacked = false
+    public init() { }
 }
 
 public protocol AtlasContainer {
     associatedtype Packable: AtlasPackable
-    
     var canvasWidth: Packable.Number { get }
     var canvasHeight: Packable.Number { get }
     var currentX: Packable.Number { get set }
@@ -47,24 +48,36 @@ public protocol AtlasContainer {
 
 public struct AtlasContainerVertex: AtlasContainer, Codable {
     public typealias Packable = VertexRect
-    
     public var canvasWidth: Int
     public var canvasHeight: Int
-
     public var currentX: Int = .zero
     public var currentY: Int = .zero
     public var largestHeightThisRow: Int = .zero
+    
+    public init(
+        canvasWidth: Int,
+        canvasHeight: Int
+    ) {
+        self.canvasWidth = canvasWidth
+        self.canvasHeight = canvasHeight
+    }
 }
 
 public struct AtlasContainerUV: AtlasContainer, Codable {
     public typealias Packable = UVRect
-    
     public var canvasWidth: Float
     public var canvasHeight: Float
-    
     public var currentX: Float = .zero
     public var currentY: Float = .zero
     public var largestHeightThisRow: Float = .zero
+    
+    public init(
+        canvasWidth: Float,
+        canvasHeight: Float
+    ) {
+        self.canvasWidth = canvasWidth
+        self.canvasHeight = canvasHeight
+    }
 }
 
 public extension AtlasContainer {
