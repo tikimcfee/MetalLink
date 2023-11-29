@@ -34,8 +34,4 @@ public class TextureUVCache: Codable {
         get { map[key] }
         set { map[key] = newValue }
     }
-    
-    enum CodingKeys: Int, CodingKey {
-        case map = 1
-    }
 }

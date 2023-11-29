@@ -25,8 +25,6 @@ public class UVRect: AtlasPackable {
     public var width: Float = .zero
     public var height: Float = .zero
     public var wasPacked = false
-    
-    public init() { }
 }
 
 public class VertexRect: AtlasPackable {
@@ -35,39 +33,44 @@ public class VertexRect: AtlasPackable {
     public var width: Int = .zero
     public var height: Int = .zero
     public var wasPacked = false
-    
-    public init() { }
 }
 
-public class AtlasPacking<T: AtlasPackable> {
-    struct State: Codable {
-        var currentX: T.Number = .zero
-        var currentY: T.Number = .zero
-        var largestHeightThisRow: T.Number = .zero
-        
-        enum CodingKeys: Int, CodingKey {
-            case currentX = 1
-            case currentY = 2
-            case largestHeightThisRow = 3
-        }
-    }
+public protocol AtlasContainer {
+    associatedtype Packable: AtlasPackable
     
-    let canvasWidth: T.Number
-    let canvasHeight: T.Number
+    var canvasWidth: Packable.Number { get }
+    var canvasHeight: Packable.Number { get }
+    var currentX: Packable.Number { get set }
+    var currentY: Packable.Number { get set }
+    var largestHeightThisRow: Packable.Number { get set }
+}
+
+public struct AtlasContainerVertex: AtlasContainer, Codable {
+    public typealias Packable = VertexRect
     
-    var currentX: T.Number = .zero
-    var currentY: T.Number = .zero
-    var largestHeightThisRow: T.Number = .zero
+    public var canvasWidth: Int
+    public var canvasHeight: Int
+
+    public var currentX: Int = .zero
+    public var currentY: Int = .zero
+    public var largestHeightThisRow: Int = .zero
+}
+
+public struct AtlasContainerUV: AtlasContainer, Codable {
+    public typealias Packable = UVRect
     
-    public init(
-        width: T.Number,
-        height: T.Number
+    public var canvasWidth: Float
+    public var canvasHeight: Float
+    
+    public var currentX: Float = .zero
+    public var currentY: Float = .zero
+    public var largestHeightThisRow: Float = .zero
+}
+
+public extension AtlasContainer {
+    mutating func packNextRect(
+        _ rect: Packable
     ) {
-        self.canvasWidth = width
-        self.canvasHeight = height
-    }
-    
-    public func packNextRect(_ rect: T) {
         // If this rectangle will go past the width of the image
         // Then loop around to next row, using the largest height from the previous row
         if (currentX + rect.width) > canvasWidth {
@@ -95,20 +98,6 @@ public class AtlasPacking<T: AtlasPackable> {
         }
         
         // Success!
-        rect.wasPacked = true;
-    }
-    
-    func save() -> State {
-        State(
-            currentX: currentX,
-            currentY: currentY,
-            largestHeightThisRow: largestHeightThisRow
-        )
-    }
-    
-    func load(_ state: State) {
-        self.currentX = state.currentX
-        self.currentY = state.currentY
-        self.largestHeightThisRow = state.largestHeightThisRow
+        rect.wasPacked = true
     }
 }

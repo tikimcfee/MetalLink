@@ -54,7 +54,7 @@ public extension GlyphCollection {
                 static let fileOffsetMinimum: Float = -300
             }
             
-            if letterNode.key.source.isNewline {
+            if letterNode.key.glyph.first!.isNewline {
                 newLine(size)
                 
                 // lol 3d yo, if you have too many lines, we push you somewhere else

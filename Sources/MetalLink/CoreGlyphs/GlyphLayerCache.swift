@@ -10,23 +10,11 @@ import AppKit
 #endif
 import BitHandling
 
-/// [ character: [
-///     color:
-///         color: key
-///     ]
-/// ]
-
-// I'm a monster
-//typealias ForegroundCache = LockingCache<NSUIColor, GlyphCacheKey>
-//typealias CompositeCache = LockingCache<NSUIColor, ForegroundCache>
-//typealias CharCache = LockingCache<Character, CompositeCache>
-
 typealias ForegroundCache = [NSUIColor: GlyphCacheKey]
 typealias CompositeCache = [NSUIColor: ForegroundCache]
 typealias CharCache = [Character: CompositeCache]
 
 public struct GlyphCacheKey: Codable, Hashable, Equatable {
-    public let source: Character
     public let glyph: String
     
     public let foreground: SerialColor
@@ -37,17 +25,15 @@ public struct GlyphCacheKey: Codable, Hashable, Equatable {
         _ foreground: NSUIColor,
         _ background: NSUIColor = NSUIColor.black
     ) {
-        self.source = source
         self.glyph = String(source)
         self.foreground = foreground.serializable
         self.background = background.serializable
     }
     
     enum CodingKeys: Int, CodingKey {
-        case source = 1
-        case glyph = 2
-        case foreground = 3
-        case background = 4
+        case glyph = 1
+        case foreground = 2
+        case background = 3
     }
 }
 
@@ -64,6 +50,17 @@ extension Character: Codable {
     }
 }
 
+
+/// [ character: [
+///     color:
+///         color: key
+///     ]
+/// ]
+
+// I'm a monster
+//typealias ForegroundCache = LockingCache<NSUIColor, GlyphCacheKey>
+//typealias CompositeCache = LockingCache<NSUIColor, ForegroundCache>
+//typealias CharCache = LockingCache<Character, CompositeCache>
 
 extension GlyphCacheKey {
     static var rootCache = CharCache()

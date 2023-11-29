@@ -21,8 +21,11 @@ public class AtlasBuilder {
     var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
     
-    private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
-    private lazy var vertexPacking = AtlasPacking<VertexRect>(width: atlasTexture.width, height: atlasTexture.height)
+    private lazy var uvPacking = AtlasContainerUV(canvasWidth: 1.0, canvasHeight: 1.0)
+    private lazy var vertexPacking = AtlasContainerVertex(canvasWidth: atlasTexture.width, canvasHeight: atlasTexture.height)
+    
+//    private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
+//    private lazy var vertexPacking = AtlasPacking<VertexRect>(width: atlasTexture.width, height: atlasTexture.height)
     
     private let cacheRef: TextureUVCache
     private let sourceOrigin = MTLOrigin()
@@ -57,8 +60,8 @@ public class AtlasBuilder {
 
 public extension AtlasBuilder {
     struct Serialization: Codable {
-        let uvState: AtlasPacking<UVRect>.State
-        let vertexState: AtlasPacking<VertexRect>.State
+        let uvState: AtlasContainerUV
+        let vertexState: AtlasContainerVertex
         let pairCache: TextureUVCache
         let dimensions: LFloat2
         
@@ -72,6 +75,11 @@ public extension AtlasBuilder {
         let decoder = BinaryDecoder()
         do {
             let serializationData = try Data(contentsOf: AppFiles.atlasSerializationURL)
+            guard serializationData.count > 0 else {
+                print("< -- no saved data! -- >")
+                return
+            }
+            
             let serialization = try decoder.decode(Serialization.self, from: serializationData)
                         
             let atlasData = try Data(contentsOf: AppFiles.atlasTextureURL)
@@ -112,8 +120,8 @@ public extension AtlasBuilder {
             }
                 
             let serialization = Serialization(
-                uvState: uvPacking.save(),
-                vertexState: vertexPacking.save(),
+                uvState: uvPacking,
+                vertexState: vertexPacking,
                 pairCache: cacheRef,
                 dimensions: atlasSize,
                 unrenderableGlyphLocation: unrenderableGlyphLocation,
