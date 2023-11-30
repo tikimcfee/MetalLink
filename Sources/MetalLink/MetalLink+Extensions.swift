@@ -7,7 +7,6 @@
 
 import MetalKit
 import MetalLinkHeaders
-import System
 
 public extension MTLTexture {
     var simdSize: LFloat2 {

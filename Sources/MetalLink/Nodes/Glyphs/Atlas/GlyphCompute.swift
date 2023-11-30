@@ -21,7 +21,10 @@ public class ConvertCompute: MetalLinkReader {
     private lazy var rawRenderkernelFunction = library.makeFunction(name: rawRenderName)
     
     private let atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
-    private lazy var atlasRenderkernelFunction = library.makeFunction(name: atlasRenderName)
+    private lazy var atlasRenderKernelFunction = library.makeFunction(name: atlasRenderName)
+    
+    private let layoutKernelName = "utf32GlyphMapLayout"
+    private lazy var layoutKernelFunction = library.makeFunction(name: layoutKernelName)
     
     // Create a pipeline state from the kernel function, using the default name
     private func makeRawRenderPipelineState() throws -> MTLComputePipelineState {
@@ -31,9 +34,15 @@ public class ConvertCompute: MetalLinkReader {
     }
     
     private func makeAtlasRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let atlasRenderkernelFunction 
+        guard let atlasRenderKernelFunction
         else { throw ComputeError.missingFunction(atlasRenderName) }
-        return try device.makeComputePipelineState(function: atlasRenderkernelFunction)
+        return try device.makeComputePipelineState(function: atlasRenderKernelFunction)
+    }
+    
+    private func makeLayoutRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let layoutKernelFunction
+        else { throw ComputeError.missingFunction(layoutKernelName) }
+        return try device.makeComputePipelineState(function: layoutKernelFunction)
     }
     
     // Create a Metal buffer from the Data object
@@ -121,9 +130,11 @@ public class ConvertCompute: MetalLinkReader {
         guard let computeCommandEncoder, let commandBuffer
         else { throw ComputeError.startupFailure }
         
+        // MARK: -- Fire up atlas
+        
         let inputUTF8TextDataBuffer = try makeInputBuffer(inputData)
         let outputUTF32ConversionBuffer = try makeOutputBuffer(from: inputUTF8TextDataBuffer)
-        let computePipelineState = try makeAtlasRenderPipelineState()
+        let atlasPipelineState = try makeAtlasRenderPipelineState()
 
         // Set the compute kernel's parameters
         computeCommandEncoder.setBuffer(inputUTF8TextDataBuffer, offset: 0, index: 0)
@@ -138,15 +149,25 @@ public class ConvertCompute: MetalLinkReader {
         computeCommandEncoder.setBytes(&atlasBufferSize, length: MemoryLayout<Int>.size, index: 4)
         
         // Set the pipeline state
-        computeCommandEncoder.setComputePipelineState(computePipelineState)
+        computeCommandEncoder.setComputePipelineState(atlasPipelineState)
         
         // Calculate the number of threads and threadgroups
         // TODO: Explain why (boundsl, performance, et al), and make this better; this is probably off
-        let threadGroupSize = MTLSize(width: computePipelineState.threadExecutionWidth, height: 1, depth: 1)
+        let threadGroupSize = MTLSize(width: atlasPipelineState.threadExecutionWidth, height: 1, depth: 1)
         let threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
         let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // Dispatch the compute kernel
+        computeCommandEncoder.dispatchThreadgroups(
+            threadGroupsPerGrid,
+            threadsPerThreadgroup: threadGroupSize
+        )
+        
+        // MARK: -- Fire up layout. Oh boy.
+        let layoutPipelineState = try makeLayoutRenderPipelineState()
+        computeCommandEncoder.setComputePipelineState(layoutPipelineState)
+        
+        // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,
             threadsPerThreadgroup: threadGroupSize
@@ -157,9 +178,10 @@ public class ConvertCompute: MetalLinkReader {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        // Houston we have a buffer.
+        // Houston we have a buffer. Maybe, this time. Let's see what happened.
         return outputUTF32ConversionBuffer
     }
+
     
     public func cast(
         _ buffer: MTLBuffer

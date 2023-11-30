@@ -1,3 +1,4 @@
+#define METAL_SHADER
 #include <metal_stdlib>
 
 #include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
@@ -187,45 +188,49 @@ uint32_t codePointForSequence(
 // MARK: - Compute hash for given kernel output glyph
 
 uint64_t glyphHashKernel(
-    const GlyphMapKernelOut glyph
+    device GlyphMapKernelOut* utf32Buffer,
+    uint index
 ) {
+    
     const uint64_t prime = 31;
     uint64_t hash = 0;
     
-    uint64_t slot1 = glyph.unicodeSlot1;
+    uint64_t slot1 = utf32Buffer[index].unicodeSlot1;
     if (slot1 != 0) {
         hash = (hash * prime + slot1) % 1000000;
-    }
+    } else { return hash; }
 
-    uint64_t slot2 = glyph.unicodeSlot2;
+    uint64_t slot2 = utf32Buffer[index].unicodeSlot2;
     if (slot2 != 0) {
         hash = (hash * prime + slot2) % 1000000;
-    }
+    } else { return hash; }
     
-    uint64_t slot3 = glyph.unicodeSlot3;
+    uint64_t slot3 = utf32Buffer[index].unicodeSlot3;
     if (slot3 != 0) {
         hash = (hash * prime + slot3) % 1000000;
-    }
+    } else { return hash; }
     
-    uint64_t slot4 = glyph.unicodeSlot4;
+    uint64_t slot4 = utf32Buffer[index].unicodeSlot4;
     if (slot4 != 0) {
         hash = (hash * prime + slot4) % 1000000;
-    }
+    } else { return hash; }
     
-    uint64_t slot5 = glyph.unicodeSlot5;
+    uint64_t slot5 = utf32Buffer[index].unicodeSlot5;
     if (slot5 != 0) {
         hash = (hash * prime + slot5) % 1000000;
-    }
+    } else { return hash; }
     
-    uint64_t slot6 = glyph.unicodeSlot6;
+    uint64_t slot6 = utf32Buffer[index].unicodeSlot6;
     if (slot6 != 0) {
         hash = (hash * prime + slot6) % 1000000;
-    }
+    } else { return hash; }
     
-    uint64_t slot7 = glyph.unicodeSlot7;
+    uint64_t slot7 = utf32Buffer[index].unicodeSlot7;
     if (slot7 != 0) {
         hash = (hash * prime + slot7) % 1000000;
-    }
+    } else { return hash; }
+    
+    // moar slots
     
     return hash;
 }
@@ -378,17 +383,21 @@ uint indexOfCharacterAfter(
     return id;
 }
 
-void attemptNodeLayoutPass(
-   const device uint8_t* utf8Buffer,
-   device       GlyphMapKernelOut* utf32Buffer,
-                uint id,
-   constant     uint* utf8BufferSize
+kernel void utf32GlyphMapLayout(
+   const device uint8_t* utf8Buffer            [[buffer(0)]],
+   device       GlyphMapKernelOut* utf32Buffer [[buffer(1)]],
+                uint id                        [[thread_position_in_grid]],
+   constant     uint* utf8BufferSize           [[buffer(2)]]
 ) {
-    if (id < 0 || id > *utf8BufferSize) {
-        return;
-    }
+//    if (id < 0 || id > *utf8BufferSize) {
+//        return;
+//    }
     
-    GlyphMapKernelOut thisGlyph = utf32Buffer[id];
+    atomic_fetch_add_explicit(&utf32Buffer[id].xOffset,
+                              1000,
+                              memory_order_relaxed);
+    
+    uint nextGlyphAfterIdIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
     
     /* Use a bit of `chopsticks`:
      - If I'm a newline, I just change vertical offsets.
@@ -403,35 +412,43 @@ void attemptNodeLayoutPass(
         
     // If I'm a line feed, I need to add a vertical offset to the next glyph and I'm done.
     // But it needs to be the next GLYPH, so we need a 'find the next thing with a unicode hash'.
-    if (isLineFeed(thisGlyph)) {
-        uint nextId = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+    if (nextGlyphAfterIdIndex == id) {
+        // If the next glyph is ourselves, I guess we just terminate early?
+        return;
+    }
+    else if (utf32Buffer[id].codePoint == 10) {
+        atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
+                                  utf32Buffer[id].textureSize.y,
+                                  memory_order_relaxed);
         
-        GlyphMapKernelOut nextGlyph = utf32Buffer[nextId];
-        nextGlyph.position.y -= thisGlyph.textureSize.y;
-        utf32Buffer[nextId] = nextGlyph;
-        
-    } else {
-        uint nextGlyphIndex = id + 1;
-        bool inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+    }
+    else {
+        bool inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
         if (!inBounds) {
             return;
         }
-        
-        GlyphMapKernelOut nextGlyph = utf32Buffer[nextGlyphIndex];
-        
-        while (inBounds && !isLineFeed(nextGlyph)) {
-            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphIndex, utf8BufferSize);
-            if (possibleStopIndex == nextGlyphIndex) {
+                
+        while (inBounds 
+               && utf32Buffer[nextGlyphAfterIdIndex].codePoint > 0
+               && utf32Buffer[nextGlyphAfterIdIndex].codePoint != 10
+        ) {
+            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphAfterIdIndex, utf8BufferSize);
+            if (possibleStopIndex == nextGlyphAfterIdIndex) {
                 inBounds = false;
                 continue;
             }
             
-            nextGlyph = utf32Buffer[possibleStopIndex];
-            nextGlyph.position.x += thisGlyph.textureSize.x;
-            nextGlyph.position.y = thisGlyph.position.y; // repeated quite a lot
-            utf32Buffer[possibleStopIndex] = nextGlyph;
-            nextGlyphIndex += 1; // start at next immediate code point
-            inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+            atomic_fetch_add_explicit(&utf32Buffer[nextGlyphAfterIdIndex].xOffset,
+                                      utf32Buffer[id].textureSize.x,
+                                      memory_order_relaxed);
+            
+            float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
+            atomic_store_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
+                                  yOffset,
+                                  memory_order_relaxed);
+            
+            nextGlyphAfterIdIndex = possibleStopIndex; // start at next immediate code point
+            inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
         }
     }
 }
@@ -483,7 +500,7 @@ kernel void utf8ToUtf32Kernel(
        codePoint
      );
     
-    utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer[id]);
+    utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer, id);
 }
 
 // MARK: -- Atlas texture mapping from utf8 -> GlyphMapKernelOut
@@ -533,7 +550,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
        codePoint
      );
     
-    uint64_t hash = glyphHashKernel(utf32Buffer[id]);
+    uint64_t hash = glyphHashKernel(utf32Buffer, id);
     utf32Buffer[id].unicodeHash = hash;
     
     if (hash > 0 && hash < *atlasBufferSize) {

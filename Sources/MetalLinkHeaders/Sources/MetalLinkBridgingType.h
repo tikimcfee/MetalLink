@@ -77,6 +77,11 @@ struct GlyphMapKernelAtlasIn {
     simd_float4 textureDescriptorV;
 };
 
+// Metal-specific structures
+#ifdef METAL_SHADER
+#include <metal_stdlib>
+using namespace metal;
+
 struct GlyphMapKernelOut {
     // faux-nicode data
     enum GraphemeCategory graphemeCategory;
@@ -101,8 +106,40 @@ struct GlyphMapKernelOut {
     simd_float4 textureDescriptorV;
     
     // Layout
-    simd_float4 position;
+    metal::atomic<float> xOffset;
+    metal::atomic<float> yOffset;
+    metal::atomic<float> zOffset;
 };
+#else
+struct GlyphMapKernelOut {
+    // faux-nicode data
+    enum GraphemeCategory graphemeCategory;
+    uint codePointIndex;
+    uint32_t codePoint;
+    uint64_t unicodeHash;
+    
+    uint32_t unicodeSlot1;
+    uint32_t unicodeSlot2;
+    uint32_t unicodeSlot3;
+    uint32_t unicodeSlot4;
+    uint32_t unicodeSlot5;
+    uint32_t unicodeSlot6;
+    uint32_t unicodeSlot7;
+    
+    // texture
+    simd_float4 foreground;
+    simd_float4 background;
+    
+    simd_float2 textureSize;
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+    
+    // Layout
+    float xOffset;
+    float yOffset;
+    float zOffset;
+};
+#endif
 
 struct SceneConstants {
     float totalGameTime;
