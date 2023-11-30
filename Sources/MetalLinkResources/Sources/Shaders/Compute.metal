@@ -3,6 +3,8 @@
 #include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
+// MARK: - Simple helpers
+
 // Safely get byte at index, handling bounds check
 uint8_t getByte(
     const device uint8_t* bytes,
@@ -14,6 +16,39 @@ uint8_t getByte(
     }
     return bytes[index];
 }
+
+void setDataOnSlotAtIndex(
+   device       GlyphMapKernelOut* utf32Buffer,
+                uint id,
+                int slotNumber,
+                uint32_t data
+) {
+    switch (slotNumber) {
+        case 1:
+            utf32Buffer[id].unicodeSlot1 = data;
+            break;
+        case 2:
+            utf32Buffer[id].unicodeSlot2 = data;
+            break;
+        case 3:
+            utf32Buffer[id].unicodeSlot3 = data;
+            break;
+        case 4:
+            utf32Buffer[id].unicodeSlot4 = data;
+            break;
+        case 5:
+            utf32Buffer[id].unicodeSlot5 = data;
+            break;
+        case 6:
+            utf32Buffer[id].unicodeSlot6 = data;
+            break;
+        case 7:
+            utf32Buffer[id].unicodeSlot7 = data;
+            break;
+    }
+}
+
+// MARK: - faux-nicode parsing helpers
 
 // Get the expected byte sequence count from index in buffer.
 // -- return: 1-4 on success, something else if things go wrong.
@@ -99,37 +134,6 @@ GraphemeCategory categoryForGraphemeBytes(
     return utf32GlyphSingle;
 }
 
-void setDataOnSlotAtIndex(
-   device       GlyphMapKernelOut* utf32Buffer,
-                uint id,
-                int slotNumber,
-                uint32_t data
-) {
-    switch (slotNumber) {
-        case 1:
-            utf32Buffer[id].unicodeSlot1 = data;
-            break;
-        case 2:
-            utf32Buffer[id].unicodeSlot2 = data;
-            break;
-        case 3:
-            utf32Buffer[id].unicodeSlot3 = data;
-            break;
-        case 4:
-            utf32Buffer[id].unicodeSlot4 = data;
-            break;
-        case 5:
-            utf32Buffer[id].unicodeSlot5 = data;
-            break;
-        case 6:
-            utf32Buffer[id].unicodeSlot6 = data;
-            break;
-        case 7:
-            utf32Buffer[id].unicodeSlot7 = data;
-            break;
-    }
-}
-
 uint32_t decodeByteSequence_2(
     uint8_t firstByte,
     uint8_t secondByte
@@ -180,6 +184,8 @@ uint32_t codePointForSequence(
     return 0;
 }
 
+// MARK: - Compute hash for given kernel output glyph
+
 uint64_t glyphHashKernel(
     const GlyphMapKernelOut glyph
 ) {
@@ -223,6 +229,8 @@ uint64_t glyphHashKernel(
     
     return hash;
 }
+
+// MARK: -- <> Magix fauxnicode looking/lookbehind handling
 
 void attemptUnicodeScalarSetLookahead(
    const device uint8_t* utf8Buffer,
@@ -306,6 +314,8 @@ void attemptUnicodeScalarSetLookahead(
     }
 }
 
+// MARK: -- Layout v1
+
 /*
  Unicode   UInt32  Name                    Line Break   Platform
  U+000A    10      Line Feed (LF)          [\n]         *nix, macOS
@@ -322,20 +332,113 @@ bool isLineFeed(
     return glyph.codePoint == 10; // simplify life for now
 }
 
+uint indexOfCharacterBefore(
+   const device uint8_t* utf8Buffer,
+   device       GlyphMapKernelOut* utf32Buffer,
+                uint id,
+   constant     uint* utf8BufferSize
+) {
+    // If out of bounds, return id
+    if (id < 0 || id > *utf8BufferSize) {
+        return id;
+    }
+    
+    uint foundIndex = id - 1;
+    bool inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
+    while (inBounds) {
+        if (utf32Buffer[foundIndex].codePoint != 0) {
+            return foundIndex;
+        }
+        foundIndex -= 1;
+        inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
+    }
+    return id;
+}
+
+uint indexOfCharacterAfter(
+   const device uint8_t* utf8Buffer,
+   device       GlyphMapKernelOut* utf32Buffer,
+                uint id,
+   constant     uint* utf8BufferSize
+) {
+    // If out of bounds, return id
+    if (id < 0 || id > *utf8BufferSize) {
+        return id;
+    }
+    
+    uint foundIndex = id + 1;
+    bool inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
+    while (inBounds) {
+        if (utf32Buffer[foundIndex].codePoint != 0) {
+            return foundIndex;
+        }
+        foundIndex += 1;
+        inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
+    }
+    return id;
+}
 
 void attemptNodeLayoutPass(
    const device uint8_t* utf8Buffer,
    device       GlyphMapKernelOut* utf32Buffer,
                 uint id,
-   constant     uint* utf8BufferSize,
-                GraphemeCategory category,
-                uint32_t codePoint
+   constant     uint* utf8BufferSize
 ) {
     if (id < 0 || id > *utf8BufferSize) {
         return;
     }
     
+    GlyphMapKernelOut thisGlyph = utf32Buffer[id];
+    
+    /* Use a bit of `chopsticks`:
+     - If I'm a newline, I just change vertical offsets.
+     -- I to the appropriate side and set the vertical offset of the leader.
+     - If I'm adjacent to a newline, I'm the line leader or trailer, and I start and stop.
+     -- I'm responsible for 'resetting' the horizontal offset as appropriate for a row
+     - If I'm not, I get cheeky:
+     -- I iterate forward from my index down to my line trailer;
+     -- I add my texture size width to the offset of that character, and it will now be included in the total line size;
+     -- Eventually I will have my offset incremented by other leading characters, that will be doing the same thing.
+    */
+        
+    // If I'm a line feed, I need to add a vertical offset to the next glyph and I'm done.
+    // But it needs to be the next GLYPH, so we need a 'find the next thing with a unicode hash'.
+    if (isLineFeed(thisGlyph)) {
+        uint nextId = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+        
+        GlyphMapKernelOut nextGlyph = utf32Buffer[nextId];
+        nextGlyph.position.y -= thisGlyph.textureSize.y;
+        utf32Buffer[nextId] = nextGlyph;
+        
+    } else {
+        uint nextGlyphIndex = id + 1;
+        bool inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+        if (!inBounds) {
+            return;
+        }
+        
+        GlyphMapKernelOut nextGlyph = utf32Buffer[nextGlyphIndex];
+        
+        while (inBounds && !isLineFeed(nextGlyph)) {
+            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphIndex, utf8BufferSize);
+            if (possibleStopIndex == nextGlyphIndex) {
+                inBounds = false;
+                continue;
+            }
+            
+            nextGlyph = utf32Buffer[possibleStopIndex];
+            nextGlyph.position.x += thisGlyph.textureSize.x;
+            nextGlyph.position.y = thisGlyph.position.y; // repeated quite a lot
+            utf32Buffer[possibleStopIndex] = nextGlyph;
+            nextGlyphIndex += 1; // start at next immediate code point
+            inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+        }
+    }
 }
+
+
+// MARK: [Parsing and mapping]
+// MARK: -- Direct mapping from utf8 -> GlyphMapKernelOut
 
 kernel void utf8ToUtf32Kernel(
     const device uint8_t* utf8Buffer            [[buffer(0)]],
@@ -382,6 +485,8 @@ kernel void utf8ToUtf32Kernel(
     
     utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer[id]);
 }
+
+// MARK: -- Atlas texture mapping from utf8 -> GlyphMapKernelOut
 
 kernel void utf8ToUtf32KernelAtlasMapped(
     const device uint8_t* utf8Buffer                [[buffer(0)]],
