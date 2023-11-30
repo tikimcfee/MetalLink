@@ -42,7 +42,7 @@ int sequenceCountForByteAtIndex(
 
 // A fakeout function to give us a heuristic to pattern match
 // The pattern will be:
-// start/middle/middle/end == emoji;
+
 GraphemeStatus getDecodeStatus(uint8_t byte) {
     if ((byte & 0x80) == 0) {
         return SINGLE; // Single byte codepoint
@@ -56,36 +56,6 @@ GraphemeStatus getDecodeStatus(uint8_t byte) {
     return END; // End of sequence (default...)
 }
 
-uint32_t decodeByteSequence_2(
-    uint8_t firstByte,
-    uint8_t secondByte
-) {
-    return ((firstByte  & 0x1F) << 6)
-          | (secondByte & 0x3F);
-}
-
-uint32_t decodeByteSequence_3(
-    uint8_t firstByte,
-    uint8_t secondByte,
-    uint8_t thirdByte
-) {
-    return ((firstByte  & 0x0F) << 12)
-         | ((secondByte & 0x3F) << 6)
-         |  (thirdByte  & 0x3F);
-}
-
-uint32_t decodeByteSequence_4(
-    uint8_t firstByte,
-    uint8_t secondByte,
-    uint8_t thirdByte,
-    uint8_t fourthByte
-) {
-    return ((firstByte  & 0x07) << 18)
-         | ((secondByte & 0x3F) << 12)
-         | ((thirdByte  & 0x3F) << 6)
-         |  (fourthByte & 0x3F);
-}
-
 GraphemeCategory categoryForGraphemeBytes(
     uint8_t firstByte,
     uint8_t secondByte,
@@ -97,6 +67,7 @@ GraphemeCategory categoryForGraphemeBytes(
     GraphemeStatus byteStatus3 = getDecodeStatus(thirdByte);
     GraphemeStatus byteStatus4 = getDecodeStatus(fourthByte);
     
+    // start/middle/middle/end == emoji group 'prefix';
     if (
         byteStatus1 == START
      && byteStatus2 == MIDDLE
@@ -105,6 +76,7 @@ GraphemeCategory categoryForGraphemeBytes(
     ) {
         return utf32GlyphEmojiPrefix;
     }
+    // start/end/middle/end == tag;
     else if (
         byteStatus1 == START
      && byteStatus2 == END
@@ -113,6 +85,7 @@ GraphemeCategory categoryForGraphemeBytes(
     ) {
         return utf32GlyphTag;
     }
+    // start/middle/end/end == emoji single;
     else if (
         byteStatus1 == START
      && byteStatus2 == MIDDLE
@@ -122,6 +95,7 @@ GraphemeCategory categoryForGraphemeBytes(
         return utf32GlyphEmojiSingle;
     }
     
+    // anything not early-returned as `data` is a glyph;
     return utf32GlyphSingle;
 }
 
@@ -154,6 +128,36 @@ void setDataOnSlotAtIndex(
             utf32Buffer[id].unicodeSlot7 = data;
             break;
     }
+}
+
+uint32_t decodeByteSequence_2(
+    uint8_t firstByte,
+    uint8_t secondByte
+) {
+    return ((firstByte  & 0x1F) << 6)
+          | (secondByte & 0x3F);
+}
+
+uint32_t decodeByteSequence_3(
+    uint8_t firstByte,
+    uint8_t secondByte,
+    uint8_t thirdByte
+) {
+    return ((firstByte  & 0x0F) << 12)
+         | ((secondByte & 0x3F) << 6)
+         |  (thirdByte  & 0x3F);
+}
+
+uint32_t decodeByteSequence_4(
+    uint8_t firstByte,
+    uint8_t secondByte,
+    uint8_t thirdByte,
+    uint8_t fourthByte
+) {
+    return ((firstByte  & 0x07) << 18)
+         | ((secondByte & 0x3F) << 12)
+         | ((thirdByte  & 0x3F) << 6)
+         |  (fourthByte & 0x3F);
 }
 
 uint32_t codePointForSequence(
@@ -259,10 +263,12 @@ void attemptUnicodeScalarSetLookahead(
             uint8_t lookbehind4 = getByte(utf8Buffer, id - 1, *utf8BufferSize);
             GraphemeCategory lookbehindCategory = categoryForGraphemeBytes(lookbehind1, lookbehind2, lookbehind3, lookbehind4);
             
+            // .. but if lookbehind is also a prefix, it means a new emoji group will start, and we're data. probably.
             if (lookbehindCategory == utf32GlyphEmojiPrefix) {
                 return;
             }
             
+            // otherwise we're the glyph leader so store the points
             setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
             
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
@@ -273,14 +279,17 @@ void attemptUnicodeScalarSetLookahead(
         else if (lookaheadCategory == utf32GlyphTag) {
             setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
             
+            // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 7) {
                 setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
                 
+                // Move to the next slot and lookahead start
                 writeSlot += 1;
                 lookaheadStartIndex += 4;
                 
+                // grab the bytes, the sequence, and the category to write next, if we should
                 lookahead1 = getByte(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
                 lookahead2 = getByte(utf8Buffer, lookaheadStartIndex + 1, *utf8BufferSize);
                 lookahead3 = getByte(utf8Buffer, lookaheadStartIndex + 2, *utf8BufferSize);
@@ -295,6 +304,37 @@ void attemptUnicodeScalarSetLookahead(
         
         // Otherwise, just return, we don't want to set any other data.
     }
+}
+
+/*
+ Unicode   UInt32  Name                    Line Break   Platform
+ U+000A    10      Line Feed (LF)          [\n]         *nix, macOS
+ U+000B    11      Vertical Tab (VT)
+ U+000C    12      Form Feed (FF)
+ U+000D    13      Carriage Return (CR)    [\r\n]       Windows
+ U+0085    133     Next Line (NEL)
+ U+2028    8232    Line Separator
+ U+2029    8233    Paragraph Separator
+ */
+bool isLineFeed(
+   const GlyphMapKernelOut glyph
+) {
+    return glyph.codePoint == 10; // simplify life for now
+}
+
+
+void attemptNodeLayoutPass(
+   const device uint8_t* utf8Buffer,
+   device       GlyphMapKernelOut* utf32Buffer,
+                uint id,
+   constant     uint* utf8BufferSize,
+                GraphemeCategory category,
+                uint32_t codePoint
+) {
+    if (id < 0 || id > *utf8BufferSize) {
+        return;
+    }
+    
 }
 
 kernel void utf8ToUtf32Kernel(
@@ -326,12 +366,10 @@ kernel void utf8ToUtf32Kernel(
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
     
     utf32Buffer[id].graphemeCategory = category;
-    utf32Buffer[id].sourceValue = codePoint;
-    utf32Buffer[id].sourceValueIndex = id;
+    utf32Buffer[id].codePoint = codePoint;
+    utf32Buffer[id].codePointIndex = id;
     utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
     utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
-    utf32Buffer[id].textureDescriptorU = simd_float4(0.1, 0.2, 0.3, 0.4);
-    utf32Buffer[id].textureDescriptorV = simd_float4(0.1, 0.2, 0.3, 0.4);
     
     attemptUnicodeScalarSetLookahead(
        utf8Buffer,
@@ -376,8 +414,8 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
     
     utf32Buffer[id].graphemeCategory = category;
-    utf32Buffer[id].sourceValue = codePoint;
-    utf32Buffer[id].sourceValueIndex = id;
+    utf32Buffer[id].codePoint = codePoint;
+    utf32Buffer[id].codePointIndex = id;
     utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
     utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
     

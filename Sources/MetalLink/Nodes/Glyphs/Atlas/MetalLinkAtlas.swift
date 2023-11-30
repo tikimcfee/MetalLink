@@ -12,6 +12,7 @@ public enum LinkAtlasError: Error {
     case noTargetAtlasTexture
     case noStateBuilder
     case deserializationError
+    case deserializationErrorBuffer
 }
 
 public class MetalLinkAtlas {
@@ -20,12 +21,11 @@ public class MetalLinkAtlas {
     public let nodeCache: MetalLinkGlyphNodeCache
     public let uvPairCache: TextureUVCache
     public var currentAtlas: MTLTexture { builder.atlasTexture }
-    public var currentBuffer: MTLBuffer? {
+    public var currentBuffer: MTLBuffer {
         get { builder.currentGraphemeHashBuffer }
         set { builder.currentGraphemeHashBuffer = newValue }
     }
     
-//    private var insertionLock = DispatchSemaphore(value: 1)
     private var rwLock = LockWrapper()
     
     public init(_ link: MetalLink) throws {
@@ -51,7 +51,6 @@ public class MetalLinkAtlas {
 
 public extension MetalLinkAtlas {
     func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
-//        print("Adding glyph to Atlas: [\(key.glyph)]")
         rwLock.readLock()
         guard uvPairCache[key] == nil 
         else {
@@ -62,7 +61,7 @@ public extension MetalLinkAtlas {
         
         do {
             rwLock.writeLock()
-            
+
             let block = try builder.startAtlasUpdate()
             builder.addGlyph(key, block)
             builder.finishAtlasUpdate(from: block)

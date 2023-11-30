@@ -12,10 +12,20 @@ import MetalLinkHeaders
 
 public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
+public extension Character {
+    var glyphComputeHash: UInt64 {
+        let prime: UInt64 = 31;
+        return unicodeScalars.reduce(into: 0) { hash, scalar in
+            hash = (hash * prime + UInt64(scalar.value)) % 1_000_000
+        }
+    }
+}
+
 public class AtlasBuilder {
     private let link: MetalLink
     
     private let glyphBuilder = GlyphBuilder()
+    private let compute: ConvertCompute
     
     var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
@@ -30,7 +40,7 @@ public class AtlasBuilder {
     private let sourceOrigin = MTLOrigin()
     private var targetOrigin = MTLOrigin()
     
-    internal var currentGraphemeHashBuffer: MTLBuffer?
+    internal var currentGraphemeHashBuffer: MTLBuffer
     internal var unrenderableGlyphState: UnrenderableGlyph = .notSet
     
     public init(
@@ -41,6 +51,9 @@ public class AtlasBuilder {
         guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor)
         else { throw LinkAtlasError.noTargetAtlasTexture }
         
+        let compute = ConvertCompute(link: link)
+        self.compute = compute
+        self.currentGraphemeHashBuffer = try compute.makeGraphemeAtlasBuffer(size: GRAPHEME_BUFFER_DEFAULT_SIZE)
         self.link = link
         self.atlasTexture = atlasTexture
         self.cacheRef = pairCache
@@ -98,7 +111,9 @@ public extension AtlasBuilder {
             }
             
             let graphemeData = serialization.graphemeHashData
-            let graphemeBuffer = link.device.loadToMTLBuffer(data: graphemeData)
+            guard let graphemeBuffer = link.device.loadToMTLBuffer(data: graphemeData) else {
+                throw LinkAtlasError.deserializationErrorBuffer
+            }
 
             try reloadFrom(
                 serialization: serialization,
@@ -115,16 +130,11 @@ public extension AtlasBuilder {
         let encoder = PropertyListEncoder()
         encoder.outputFormat = .binary
         do {
-            let serializedGraphemeData: Data
-            if let currentGraphemeHashBuffer {
-                let graphemePointer = currentGraphemeHashBuffer
-                    .boundPointer(as: GlyphMapKernelAtlasIn.self, count: GRAPHEME_BUFFER_DEFAULT_SIZE)
-                let unsafeBuffer = UnsafeBufferPointer(start: graphemePointer, count: GRAPHEME_BUFFER_DEFAULT_SIZE)
-                serializedGraphemeData = Data(buffer: unsafeBuffer)
-            } else {
-                serializedGraphemeData = Data()
-                print("-- no grapheme data to write")
-            }
+            let graphemePointer = currentGraphemeHashBuffer.boundPointer(
+                as: GlyphMapKernelAtlasIn.self, count: GRAPHEME_BUFFER_DEFAULT_SIZE
+            )
+            let unsafeBuffer = UnsafeBufferPointer(start: graphemePointer, count: GRAPHEME_BUFFER_DEFAULT_SIZE)
+            let serializedGraphemeData: Data = Data(buffer: unsafeBuffer)
                 
             let serialization = Serialization(
                 uvState: uvPacking,
@@ -152,7 +162,7 @@ public extension AtlasBuilder {
     private func reloadFrom(
         serialization: Serialization,
         texture: MTLTexture,
-        buffer: MTLBuffer?
+        buffer: MTLBuffer
     ) throws {
         self.uvPacking.currentX = serialization.uvState.currentX
         self.uvPacking.currentY = serialization.uvState.currentY
@@ -238,6 +248,8 @@ public extension AtlasBuilder {
             // Found an image we can't render with monospace font. Don't encode it.
             // Just reuse the unrenderableGlyph.
             cacheRef[key] = glyph
+            return
+            
         default:
             break
         }
@@ -249,6 +261,8 @@ public extension AtlasBuilder {
             print("Missing texture for \(key)")
             return
         }
+        
+        print("Adding glyph to Atlas: [\(key.glyph)]")
         
         // Set Vertex and UV info for packing
         let bundleUVSize = atlasUVSize(for: texture)
@@ -289,6 +303,17 @@ public extension AtlasBuilder {
             size: texture.simdSize
         )
         cacheRef[key] = newPair
+        
+        let hash = key.glyph.first!.glyphComputeHash
+        let hashIndex = Int(hash)
+        let graphemePointer = currentGraphemeHashBuffer.boundPointer(
+            as: GlyphMapKernelAtlasIn.self,
+            count: GRAPHEME_BUFFER_DEFAULT_SIZE
+        )
+        graphemePointer[hashIndex].unicodeHash = hash
+        graphemePointer[hashIndex].textureDescriptorU = newPair.u
+        graphemePointer[hashIndex].textureDescriptorV = newPair.v
+        graphemePointer[hashIndex].textureSize = newPair.size
         
         switch (isUnrenderable, unrenderableGlyphState) {
         case (true, .notSet):

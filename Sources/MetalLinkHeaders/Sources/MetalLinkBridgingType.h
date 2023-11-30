@@ -78,8 +78,11 @@ struct GlyphMapKernelAtlasIn {
 };
 
 struct GlyphMapKernelOut {
-    uint32_t sourceValue;
-    uint sourceValueIndex;
+    // faux-nicode data
+    enum GraphemeCategory graphemeCategory;
+    uint codePointIndex;
+    uint32_t codePoint;
+    uint64_t unicodeHash;
     
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
@@ -89,8 +92,7 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot6;
     uint32_t unicodeSlot7;
     
-    uint64_t unicodeHash;
-    
+    // texture
     simd_float4 foreground;
     simd_float4 background;
     
@@ -98,7 +100,8 @@ struct GlyphMapKernelOut {
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
-    enum GraphemeCategory graphemeCategory;
+    // Layout
+    simd_float4 position;
 };
 
 struct SceneConstants {
