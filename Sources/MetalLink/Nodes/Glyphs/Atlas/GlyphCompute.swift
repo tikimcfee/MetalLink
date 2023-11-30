@@ -153,9 +153,9 @@ public class ConvertCompute: MetalLinkReader {
         
         // Calculate the number of threads and threadgroups
         // TODO: Explain why (boundsl, performance, et al), and make this better; this is probably off
-        let threadGroupSize = MTLSize(width: atlasPipelineState.threadExecutionWidth, height: 1, depth: 1)
-        let threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
-        let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
+        var threadGroupSize = MTLSize(width: atlasPipelineState.threadExecutionWidth, height: 1, depth: 1)
+        var threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
+        var threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // Dispatch the compute kernel
         computeCommandEncoder.dispatchThreadgroups(
@@ -166,6 +166,10 @@ public class ConvertCompute: MetalLinkReader {
         // MARK: -- Fire up layout. Oh boy.
         let layoutPipelineState = try makeLayoutRenderPipelineState()
         computeCommandEncoder.setComputePipelineState(layoutPipelineState)
+        
+        threadGroupSize = MTLSize(width: layoutPipelineState.threadExecutionWidth, height: 1, depth: 1)
+        threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
+        threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
         computeCommandEncoder.dispatchThreadgroups(

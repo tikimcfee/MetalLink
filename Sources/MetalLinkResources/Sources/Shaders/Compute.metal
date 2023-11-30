@@ -384,19 +384,17 @@ uint indexOfCharacterAfter(
 }
 
 kernel void utf32GlyphMapLayout(
-   const device uint8_t* utf8Buffer            [[buffer(0)]],
-   device       GlyphMapKernelOut* utf32Buffer [[buffer(1)]],
-                uint id                        [[thread_position_in_grid]],
-   constant     uint* utf8BufferSize           [[buffer(2)]]
+    const device uint8_t* utf8Buffer                [[buffer(0)]],
+    device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
+    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
+                 uint id                            [[thread_position_in_grid]],
+    constant     uint* utf8BufferSize               [[buffer(3)]],
+    constant     uint* atlasBufferSize              [[buffer(4)]]
 ) {
-//    if (id < 0 || id > *utf8BufferSize) {
-//        return;
-//    }
-    
-    atomic_fetch_add_explicit(&utf32Buffer[id].xOffset,
-                              1000,
-                              memory_order_relaxed);
-    
+    if (id < 0 || id > *utf8BufferSize) {
+        return;
+    }
+
     uint nextGlyphAfterIdIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
     
     /* Use a bit of `chopsticks`:
