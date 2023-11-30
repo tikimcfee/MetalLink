@@ -167,10 +167,6 @@ public class ConvertCompute: MetalLinkReader {
         let layoutPipelineState = try makeLayoutRenderPipelineState()
         computeCommandEncoder.setComputePipelineState(layoutPipelineState)
         
-        threadGroupSize = MTLSize(width: layoutPipelineState.threadExecutionWidth, height: 1, depth: 1)
-        threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
-        threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
-        
         // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,

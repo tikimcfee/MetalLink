@@ -351,7 +351,7 @@ uint indexOfCharacterBefore(
     uint foundIndex = id - 1;
     bool inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
     while (inBounds) {
-        if (utf32Buffer[foundIndex].codePoint != 0) {
+        if (utf32Buffer[foundIndex].unicodeHash != 0) {
             return foundIndex;
         }
         foundIndex -= 1;
@@ -374,7 +374,7 @@ uint indexOfCharacterAfter(
     uint foundIndex = id + 1;
     bool inBounds = foundIndex >= 0 && foundIndex < *utf8BufferSize;
     while (inBounds) {
-        if (utf32Buffer[foundIndex].codePoint != 0) {
+        if (utf32Buffer[foundIndex].unicodeHash != 0) {
             return foundIndex;
         }
         foundIndex += 1;
@@ -415,10 +415,10 @@ kernel void utf32GlyphMapLayout(
         return;
     }
     else if (utf32Buffer[id].codePoint == 10) {
-        atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
-                                  utf32Buffer[id].textureSize.y,
+        float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
+        atomic_fetch_add_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
+                                  yOffset - utf32Buffer[id].textureSize.y,
                                   memory_order_relaxed);
-        
     }
     else {
         bool inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
@@ -427,7 +427,7 @@ kernel void utf32GlyphMapLayout(
         }
                 
         while (inBounds 
-               && utf32Buffer[nextGlyphAfterIdIndex].codePoint > 0
+               && utf32Buffer[nextGlyphAfterIdIndex].unicodeHash > 0
                && utf32Buffer[nextGlyphAfterIdIndex].codePoint != 10
         ) {
             uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphAfterIdIndex, utf8BufferSize);
@@ -448,6 +448,12 @@ kernel void utf32GlyphMapLayout(
             nextGlyphAfterIdIndex = possibleStopIndex; // start at next immediate code point
             inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
         }
+        
+        // Finish the iterations.. but this is wrong =(
+        float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
+        atomic_store_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
+                              yOffset,
+                              memory_order_relaxed);
     }
 }
 
