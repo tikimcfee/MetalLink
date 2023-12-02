@@ -125,6 +125,9 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot5;
     uint32_t unicodeSlot6;
     uint32_t unicodeSlot7;
+    uint32_t unicodeSlot8;
+    uint32_t unicodeSlot9;
+    uint32_t unicodeSlot10;
     
     // texture
     simd_float4 foreground;

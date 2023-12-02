@@ -230,6 +230,21 @@ uint64_t glyphHashKernel(
         hash = (hash * prime + slot7) % 1000000;
     } else { return hash; }
     
+    uint64_t slot8 = utf32Buffer[index].unicodeSlot8;
+    if (slot8 != 0) {
+        hash = (hash * prime + slot8) % 1000000;
+    } else { return hash; }
+    
+    uint64_t slot9 = utf32Buffer[index].unicodeSlot9;
+    if (slot9 != 0) {
+        hash = (hash * prime + slot9) % 1000000;
+    } else { return hash; }
+    
+    uint64_t slot10 = utf32Buffer[index].unicodeSlot10;
+    if (slot10 != 0) {
+        hash = (hash * prime + slot10) % 1000000;
+    } else { return hash; }
+    
     // moar slots
     
     return hash;
@@ -331,12 +346,6 @@ void attemptUnicodeScalarSetLookahead(
  U+2028    8232    Line Separator
  U+2029    8233    Paragraph Separator
  */
-bool isLineFeed(
-   const GlyphMapKernelOut glyph
-) {
-    return glyph.codePoint == 10; // simplify life for now
-}
-
 uint indexOfCharacterBefore(
    const device uint8_t* utf8Buffer,
    device       GlyphMapKernelOut* utf32Buffer,
@@ -383,6 +392,16 @@ uint indexOfCharacterAfter(
     return id;
 }
 
+/* Use a bit of `chopsticks`:
+ - If I'm a newline, I just change vertical offsets.
+ -- I to the appropriate side and set the vertical offset of the leader.
+ - If I'm adjacent to a newline, I'm the line leader or trailer, and I start and stop.
+ -- I'm responsible for 'resetting' the horizontal offset as appropriate for a row
+ - If I'm not, I get cheeky:
+ -- I iterate forward from my index down to my line trailer;
+ -- I add my texture size width to the offset of that character, and it will now be included in the total line size;
+ -- Eventually I will have my offset incremented by other leading characters, that will be doing the same thing.
+*/
 kernel void utf32GlyphMapLayout(
     const device uint8_t* utf8Buffer                [[buffer(0)]],
     device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
@@ -395,65 +414,65 @@ kernel void utf32GlyphMapLayout(
         return;
     }
 
-    uint nextGlyphAfterIdIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+    uint nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+    uint previousGlyphIndex = indexOfCharacterBefore(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+    bool hasNext = nextGlyphIndex != id;
+    bool hasPrevious = previousGlyphIndex != id;
     
-    /* Use a bit of `chopsticks`:
-     - If I'm a newline, I just change vertical offsets.
-     -- I to the appropriate side and set the vertical offset of the leader.
-     - If I'm adjacent to a newline, I'm the line leader or trailer, and I start and stop.
-     -- I'm responsible for 'resetting' the horizontal offset as appropriate for a row
-     - If I'm not, I get cheeky:
-     -- I iterate forward from my index down to my line trailer;
-     -- I add my texture size width to the offset of that character, and it will now be included in the total line size;
-     -- Eventually I will have my offset incremented by other leading characters, that will be doing the same thing.
-    */
-        
-    // If I'm a line feed, I need to add a vertical offset to the next glyph and I'm done.
-    // But it needs to be the next GLYPH, so we need a 'find the next thing with a unicode hash'.
-    if (nextGlyphAfterIdIndex == id) {
-        // If the next glyph is ourselves, I guess we just terminate early?
+    if (!(hasNext || hasPrevious)) {
         return;
     }
-    else if (utf32Buffer[id].codePoint == 10) {
-        float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
-        atomic_fetch_add_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
-                                  yOffset - utf32Buffer[id].textureSize.y,
+    
+    // If I'm a line feed, I'm... going to go on an adventure.
+    // I'm going to just iterate over every single character after me and update its y-offset.
+    // Same idea as x-offset but like.. worse, because it does't have early termination.
+    if (utf32Buffer[id].codePoint == 10) {
+        
+        float previousYOffset = 0;
+        if (previousGlyphIndex != id) {
+            previousYOffset = atomic_load_explicit(&utf32Buffer[previousGlyphIndex].yOffset, 
+                                                   memory_order_relaxed);
+        }
+        atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
+                                  previousYOffset - utf32Buffer[id].textureSize.y,
                                   memory_order_relaxed);
     }
     else {
-        bool inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
+        bool inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
         if (!inBounds) {
             return;
         }
                 
         while (inBounds 
-               && utf32Buffer[nextGlyphAfterIdIndex].unicodeHash > 0
-               && utf32Buffer[nextGlyphAfterIdIndex].codePoint != 10
+               && utf32Buffer[nextGlyphIndex].unicodeHash > 0
+               && utf32Buffer[nextGlyphIndex].codePoint != 10
         ) {
-            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphAfterIdIndex, utf8BufferSize);
-            if (possibleStopIndex == nextGlyphAfterIdIndex) {
+            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphIndex, utf8BufferSize);
+            if (possibleStopIndex == nextGlyphIndex) {
                 inBounds = false;
                 continue;
             }
             
-            atomic_fetch_add_explicit(&utf32Buffer[nextGlyphAfterIdIndex].xOffset,
+            atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].xOffset,
                                       utf32Buffer[id].textureSize.x,
                                       memory_order_relaxed);
             
             float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
-            atomic_store_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
+            atomic_store_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
                                   yOffset,
                                   memory_order_relaxed);
             
-            nextGlyphAfterIdIndex = possibleStopIndex; // start at next immediate code point
-            inBounds = nextGlyphAfterIdIndex > 0 && nextGlyphAfterIdIndex < *utf8BufferSize;
+            nextGlyphIndex = possibleStopIndex; // start at next immediate code point
+            inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
         }
         
         // Finish the iterations.. but this is wrong =(
-        float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
-        atomic_store_explicit(&utf32Buffer[nextGlyphAfterIdIndex].yOffset,
-                              yOffset,
-                              memory_order_relaxed);
+        if (utf32Buffer[nextGlyphIndex].unicodeHash > 0) {
+            float yOffset = atomic_load_explicit(&09eutf32Buffer[id].yOffset, memory_order_relaxed);
+            atomic_store_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
+                                  yOffset- ,
+                                  memory_order_relaxed);
+        }
     }
 }
 

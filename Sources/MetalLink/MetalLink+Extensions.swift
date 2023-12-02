@@ -123,6 +123,9 @@ public extension GlyphMapKernelOut {
                 UnicodeScalar(unicodeSlot5)!,
                 UnicodeScalar(unicodeSlot6)!,
                 UnicodeScalar(unicodeSlot7)!,
+                UnicodeScalar(unicodeSlot8)!,
+                UnicodeScalar(unicodeSlot9)!,
+                UnicodeScalar(unicodeSlot10)!,
             ])
         )
     }
@@ -136,9 +139,11 @@ public extension GlyphMapKernelOut {
          unicodeSlot5,
          unicodeSlot6,
          unicodeSlot7,
+         unicodeSlot8,
+         unicodeSlot9,
+         unicodeSlot10,
         ]
         .filter { $0 != .zero }
-//        .filter { $0 != .zero }
         
         return scalars
     }
