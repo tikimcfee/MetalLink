@@ -153,9 +153,9 @@ public class ConvertCompute: MetalLinkReader {
         
         // Calculate the number of threads and threadgroups
         // TODO: Explain why (boundsl, performance, et al), and make this better; this is probably off
-        var threadGroupSize = MTLSize(width: atlasPipelineState.threadExecutionWidth, height: 1, depth: 1)
-        var threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
-        var threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
+        let threadGroupSize = MTLSize(width: atlasPipelineState.threadExecutionWidth, height: 1, depth: 1)
+        let threadGroupsWidthCeil = (inputUTF8TextDataBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
+        let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // Dispatch the compute kernel
         computeCommandEncoder.dispatchThreadgroups(
@@ -175,6 +175,11 @@ public class ConvertCompute: MetalLinkReader {
 
         // Finalize encoding and commit the command buffer
         computeCommandEncoder.endEncoding()
+        commandBuffer.addCompletedHandler { handler in
+            if let error = handler.error {
+                print(error)
+            }
+        }
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 

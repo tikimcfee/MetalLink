@@ -191,10 +191,8 @@ uint64_t glyphHashKernel(
     device GlyphMapKernelOut* utf32Buffer,
     uint index
 ) {
-    
     const uint64_t prime = 31;
     uint64_t hash = 0;
-    
     uint64_t slot1 = utf32Buffer[index].unicodeSlot1;
     if (slot1 != 0) {
         hash = (hash * prime + slot1) % 1000000;
@@ -310,7 +308,7 @@ void attemptUnicodeScalarSetLookahead(
             // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
-            while (lookaheadCategory == utf32GlyphTag && writeSlot <= 7) {
+            while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
                 setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
                 
                 // Move to the next slot and lookahead start
@@ -415,63 +413,48 @@ kernel void utf32GlyphMapLayout(
     }
 
     uint nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
-    uint previousGlyphIndex = indexOfCharacterBefore(utf8Buffer, utf32Buffer, id, utf8BufferSize);
+//    uint previousGlyphIndex = indexOfCharacterBefore(utf8Buffer, utf32Buffer, id, utf8BufferSize);
     bool hasNext = nextGlyphIndex != id;
-    bool hasPrevious = previousGlyphIndex != id;
+//    bool hasPrevious = previousGlyphIndex != id;
+    bool isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
     
-    if (!(hasNext || hasPrevious)) {
+    if (!(hasNext && isNextInBounds)) {
         return;
     }
     
-    // If I'm a line feed, I'm... going to go on an adventure.
+    // If starting this `id` as a line feed, I'm... going to go on an adventure.
     // I'm going to just iterate over every single character after me and update its y-offset.
     // Same idea as x-offset but like.. worse, because it does't have early termination.
     if (utf32Buffer[id].codePoint == 10) {
         
-        float previousYOffset = 0;
-        if (previousGlyphIndex != id) {
-            previousYOffset = atomic_load_explicit(&utf32Buffer[previousGlyphIndex].yOffset, 
-                                                   memory_order_relaxed);
+        uint myHeight = utf32Buffer[id].textureSize.y;
+        while (hasNext && isNextInBounds) {
+            atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
+                                      myHeight,
+                                      memory_order_relaxed);
+            
+            uint currentIndex = nextGlyphIndex;
+            nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
+            isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+            hasNext = nextGlyphIndex > currentIndex && nextGlyphIndex != currentIndex;
         }
-        atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
-                                  previousYOffset - utf32Buffer[id].textureSize.y,
-                                  memory_order_relaxed);
     }
+    // If I'm starting as any other character in the grid, I just add up some x-offsets
     else {
-        bool inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
-        if (!inBounds) {
-            return;
-        }
-                
-        while (inBounds 
+        uint myWidth = utf32Buffer[id].textureSize.x;
+        while (hasNext
+               && isNextInBounds
                && utf32Buffer[nextGlyphIndex].unicodeHash > 0
                && utf32Buffer[nextGlyphIndex].codePoint != 10
         ) {
-            uint possibleStopIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, nextGlyphIndex, utf8BufferSize);
-            if (possibleStopIndex == nextGlyphIndex) {
-                inBounds = false;
-                continue;
-            }
-            
             atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].xOffset,
-                                      utf32Buffer[id].textureSize.x,
+                                      myWidth,
                                       memory_order_relaxed);
             
-            float yOffset = atomic_load_explicit(&utf32Buffer[id].yOffset, memory_order_relaxed);
-            atomic_store_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
-                                  yOffset,
-                                  memory_order_relaxed);
-            
-            nextGlyphIndex = possibleStopIndex; // start at next immediate code point
-            inBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
-        }
-        
-        // Finish the iterations.. but this is wrong =(
-        if (utf32Buffer[nextGlyphIndex].unicodeHash > 0) {
-            float yOffset = atomic_load_explicit(&09eutf32Buffer[id].yOffset, memory_order_relaxed);
-            atomic_store_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
-                                  yOffset- ,
-                                  memory_order_relaxed);
+            uint currentIndex = nextGlyphIndex;
+            nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
+            isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
+            hasNext = nextGlyphIndex > currentIndex && nextGlyphIndex != currentIndex;
         }
     }
 }
