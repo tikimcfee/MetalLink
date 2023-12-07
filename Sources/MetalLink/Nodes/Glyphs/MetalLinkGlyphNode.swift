@@ -15,7 +15,6 @@ public typealias SortedNodeSet = [GlyphNode]
 
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
-//    public let texture: MTLTexture
     public var meta: Meta
     
     public var quad: MetalLinkQuadMesh
@@ -30,30 +29,22 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
         ) * scale
     }
     
-    public init(_ link: MetalLink,
-         key: GlyphCacheKey,
-//         texture: MTLTexture,
-         quad: MetalLinkQuadMesh) {
+    public init(
+        _ link: MetalLink,
+        key: GlyphCacheKey,
+        quad: MetalLinkQuadMesh
+    ) {
         self.key = key
-//        self.texture = texture
         self.quad = quad
         self.meta = Meta()
         super.init(link, mesh: quad)
-//        setQuadSize()
     }
     
     public func setQuadSize(size: LFloat2) {
         guard !quad.initialSizeSet else { return }
-//        let size = UnitSize.from(texture.simdSize)
         let size = UnitSize.from(size)
         quad.setSize(size)
     }
-    
-//    // TODO: This isn't really used anymore, glyphs are done with instancing now.
-//    // This allow glyphs to be drawing without said instancing though.
-//    public override func applyTextures(_ sdp: inout SafeDrawPass) {
-//        sdp.renderCommandEncoder.setFragmentTexture(texture, index: 0)
-//    }
 }
 
 public extension MetalLinkGlyphNode {

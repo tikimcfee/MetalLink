@@ -89,6 +89,8 @@ struct GlyphMapKernelOut {
     uint32_t codePoint;
     uint64_t unicodeHash;
     
+    uint unicodeCodePointLength;
+    metal::atomic<uint> totalUnicodeSequenceCount;
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
     uint32_t unicodeSlot3;
@@ -99,6 +101,10 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot8;
     uint32_t unicodeSlot9;
     uint32_t unicodeSlot10;
+    
+    // buffer indexing
+    uint sourceUtf8BufferIndex; // the previous character's index
+    metal::atomic<uint> sourceRenderableStringIndex;       // the index for this glyph as it appears in its source, rendered 'text'
     
     // texture
     simd_float4 foreground;
@@ -121,6 +127,8 @@ struct GlyphMapKernelOut {
     uint32_t codePoint;
     uint64_t unicodeHash;
     
+    uint unicodeCodePointLength;
+    uint totalUnicodeSequenceCount;
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
     uint32_t unicodeSlot3;
@@ -131,6 +139,10 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot8;
     uint32_t unicodeSlot9;
     uint32_t unicodeSlot10;
+    
+    // buffer indexing
+    uint sourceUtf8BufferIndex;             // the previous character's index
+    uint sourceRenderableStringIndex;       // the index for this glyph as it appears in its source, rendered 'text'
     
     // texture
     simd_float4 foreground;

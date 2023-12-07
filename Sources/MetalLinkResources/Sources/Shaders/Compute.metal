@@ -18,6 +18,24 @@ uint8_t getByte(
     return bytes[index];
 }
 
+// TODO: I mean you could just keep a count and hash it all at once but then debugging is just lulz
+uint getUnicodeLengthFromSlots(
+   device       GlyphMapKernelOut* utf32Buffer,
+                uint id
+) {
+    if (utf32Buffer[id].unicodeSlot10 != 0) { return 10; }
+    if (utf32Buffer[id].unicodeSlot9 != 0) { return 9; }
+    if (utf32Buffer[id].unicodeSlot8 != 0) { return 8; }
+    if (utf32Buffer[id].unicodeSlot7 != 0) { return 7; }
+    if (utf32Buffer[id].unicodeSlot6 != 0) { return 6; }
+    if (utf32Buffer[id].unicodeSlot5 != 0) { return 5; }
+    if (utf32Buffer[id].unicodeSlot4 != 0) { return 4; }
+    if (utf32Buffer[id].unicodeSlot3 != 0) { return 3; }
+    if (utf32Buffer[id].unicodeSlot2 != 0) { return 2; }
+    if (utf32Buffer[id].unicodeSlot1 != 0) { return 1; }
+    return 0;
+}
+
 void setDataOnSlotAtIndex(
    device       GlyphMapKernelOut* utf32Buffer,
                 uint id,
@@ -45,6 +63,15 @@ void setDataOnSlotAtIndex(
             break;
         case 7:
             utf32Buffer[id].unicodeSlot7 = data;
+            break;
+        case 8:
+            utf32Buffer[id].unicodeSlot8 = data;
+            break;
+        case 9:
+            utf32Buffer[id].unicodeSlot9 = data;
+            break;
+        case 10:
+            utf32Buffer[id].unicodeSlot10 = data;
             break;
     }
 }
@@ -272,11 +299,23 @@ void attemptUnicodeScalarSetLookahead(
     // this particular lookahead is done.
     if (category == utf32GlyphSingle || category == utf32GlyphData) {
         setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+        
+        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+        atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
+                                  mySequenceCount,
+                                  memory_order_relaxed);
+//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
     else if (category == utf32GlyphEmojiSingle) {
         setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+        
+        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+        atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
+                                  mySequenceCount,
+                                  memory_order_relaxed);
+//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's a prefix, we do some work
@@ -299,17 +338,34 @@ void attemptUnicodeScalarSetLookahead(
             
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             setDataOnSlotAtIndex(utf32Buffer, id, 2, nextCodePoint);
+            
+            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+            const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
+            atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
+                                      nextSequenceCount,
+                                      memory_order_relaxed);
+//            utf32Buffer[id].totalUnicodeSequenceCount = nextSequenceCount;
         }
         
         // If it's a tag, we start doing some special lookahead magic...
         else if (lookaheadCategory == utf32GlyphTag) {
             setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+            atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
+                                      mySequenceCount,
+                                      memory_order_relaxed);
+            
+//            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
             
             // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
+            int lookaheadSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
                 setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
+                atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
+                                          lookaheadSequenceCount,
+                                          memory_order_relaxed);
                 
                 // Move to the next slot and lookahead start
                 writeSlot += 1;
@@ -321,8 +377,10 @@ void attemptUnicodeScalarSetLookahead(
                 lookahead3 = getByte(utf8Buffer, lookaheadStartIndex + 2, *utf8BufferSize);
                 lookahead4 = getByte(utf8Buffer, lookaheadStartIndex + 3, *utf8BufferSize);
                 
-                int sequenceCount = sequenceCountForByteAtIndex(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
-                codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, sequenceCount);
+                lookaheadSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
+                codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, lookaheadSequenceCount);
+                
+//                utf32Buffer[id].totalUnicodeSequenceCount += sequenceCount;
                 
                 lookaheadCategory = categoryForGraphemeBytes(lookahead1, lookahead2, lookahead3, lookahead4);
             }
@@ -413,25 +471,57 @@ kernel void utf32GlyphMapLayout(
     }
 
     uint nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
-//    uint previousGlyphIndex = indexOfCharacterBefore(utf8Buffer, utf32Buffer, id, utf8BufferSize);
     bool hasNext = nextGlyphIndex != id;
-//    bool hasPrevious = previousGlyphIndex != id;
     bool isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
     
     if (!(hasNext && isNextInBounds)) {
         return;
     }
     
+    /* MARK: Buffer compressomaticleanerating [Pass 2.0]
+    Every known glyph has a known starting index now. So it can be futzed with.
+    Every newline character visits every other character in the buffer,
+     and every non-new-line visits the following characters in that line.
+    
+     If we expand the newline characters to include the starting character, we can
+     do a bit of work:
+      -- if I'm the starting ID, then I'm going pretend I'm a newline character, and
+        participate in visiting all over characters
+      -- ... or I can just.. do it.. my.. self.. and lock up..a.. thread?... I'm.. a monster...
+        .... am I going to lock up an entire thread group to iterate over every character on the
+        .... initial ID to do all the offsets?.. I... guess I am.. and I know I will pay a price.
+    */
+    
+    
     // If starting this `id` as a line feed, I'm... going to go on an adventure.
     // I'm going to just iterate over every single character after me and update its y-offset.
     // Same idea as x-offset but like.. worse, because it does't have early termination.
-    if (utf32Buffer[id].codePoint == 10) {
-        
-        uint myHeight = utf32Buffer[id].textureSize.y;
+    const bool isLineSeparator = utf32Buffer[id].codePoint == 10;
+    const bool isInitialID = id == 0;
+    
+    if (isLineSeparator /*|| isInitialID*/) {
+        // Unicode length index offset is my length, -1. Hooray pointer offsets.
+//        const uint myUnicodeLengthOffset = getUnicodeLengthFromSlots(utf32Buffer, id) - 1;
+        uint myHeight = 0;
+        if (isLineSeparator) {
+            myHeight = utf32Buffer[id].textureSize.y;
+        }
+
         while (hasNext && isNextInBounds) {
-            atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
-                                      myHeight,
-                                      memory_order_relaxed);
+            /* MARK: Buffer compressomaticleanerating [Pass 2.1]
+             Well, we found our next index, so.. go ahead and decrement it's known index by our length.
+             Hoo boy.
+            */
+//            if (myUnicodeLengthOffset > 1) {
+//                atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].sourceRenderableStringIndex,
+//                                          myUnicodeLengthOffset,
+//                                          memory_order_relaxed);
+//            } else if (isLineSeparator) {
+            if (isLineSeparator) {
+                atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
+                                          myHeight,
+                                          memory_order_relaxed);
+            }
             
             uint currentIndex = nextGlyphIndex;
             nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
@@ -441,7 +531,7 @@ kernel void utf32GlyphMapLayout(
     }
     // If I'm starting as any other character in the grid, I just add up some x-offsets
     else {
-        uint myWidth = utf32Buffer[id].textureSize.x;
+        const uint myWidth = utf32Buffer[id].textureSize.x;
         while (hasNext
                && isNextInBounds
                && utf32Buffer[nextGlyphIndex].unicodeHash > 0
@@ -511,6 +601,31 @@ kernel void utf8ToUtf32Kernel(
 
 // MARK: -- Atlas texture mapping from utf8 -> GlyphMapKernelOut
 
+kernel void processNewUtf32AtlasMapping(
+//    const device uint8_t* utf8Buffer                [[buffer(0)]],
+    device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(1)]],
+//    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
+                 uint id                            [[thread_position_in_grid]],
+    constant     uint* utf8BufferSize               [[buffer(3)]],
+//    constant     uint* atlasBufferSize              [[buffer(4)]]
+    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(5)]]
+) {
+    // The plan:
+    
+    // If the glyph at [id] has a hash value, then it means it's a character, but it could any one of the very many in the buffer.
+    // -- Otherwise, we can skip.
+    
+    /*
+    // How do we figure out our position?...
+    // Well, we know the character before us. We know how many utf8 bytes it has in the offset.
+    // So.. we could take our ID, then.. find the last character..
+    // -- We'll memoize since we're concurrent, and if the glyph already has a known index, then we just + 1 that one.
+    //    This only works safely and naively on the first character there, so don't do that recursively yet.
+    // -- If it doesn't then we start to a'compute.
+    //    Use the last character's utf8 offset size, and
+    */
+}
+
 kernel void utf8ToUtf32KernelAtlasMapped(
     const device uint8_t* utf8Buffer                [[buffer(0)]],
     device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
@@ -565,5 +680,15 @@ kernel void utf8ToUtf32KernelAtlasMapped(
         utf32Buffer[id].textureSize = atlasData.textureSize;
         utf32Buffer[id].textureDescriptorU = atlasData.textureDescriptorU;
         utf32Buffer[id].textureDescriptorV = atlasData.textureDescriptorV;
+        
+        /* MARK: Buffer compressomaticleanerating [Pass 1]
+         Set the buffer index we started at. Set the original source index, to track both states. lolmemorywhat
+        */
+        utf32Buffer[id].sourceUtf8BufferIndex = id;
+        utf32Buffer[id].unicodeCodePointLength = getUnicodeLengthFromSlots(utf32Buffer, id);
+        
+        atomic_store_explicit(&utf32Buffer[id].sourceRenderableStringIndex,
+                              id,
+                              memory_order_relaxed);
     }
 }
