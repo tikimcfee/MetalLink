@@ -26,6 +26,9 @@ public class ConvertCompute: MetalLinkReader {
     private let layoutKernelName = "utf32GlyphMapLayout"
     private lazy var layoutKernelFunction = library.makeFunction(name: layoutKernelName)
     
+    private let compressionKernalName = "processNewUtf32AtlasMapping"
+    private lazy var compressionKernelFunction = library.makeFunction(name: compressionKernalName)
+    
     // Create a pipeline state from the kernel function, using the default name
     private func makeRawRenderPipelineState() throws -> MTLComputePipelineState {
         guard let rawRenderkernelFunction 
@@ -45,6 +48,12 @@ public class ConvertCompute: MetalLinkReader {
         return try device.makeComputePipelineState(function: layoutKernelFunction)
     }
     
+    private func makeCompressionRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let compressionKernelFunction
+        else { throw ComputeError.missingFunction(compressionKernalName) }
+        return try device.makeComputePipelineState(function: compressionKernelFunction)
+    }
+    
     // Create a Metal buffer from the Data object
     private func makeInputBuffer(_ data: NSData) throws -> MTLBuffer {
         guard let metalBuffer = device.makeBuffer(
@@ -53,6 +62,14 @@ public class ConvertCompute: MetalLinkReader {
             options: []
         )
         else { throw ComputeError.bufferCreationFailed }
+        return metalBuffer
+    }
+    
+    // Teeny buffer to write total character count
+    private func makeCharacterCountBuffer() throws -> MTLBuffer {
+        guard let metalBuffer = try? link.makeBuffer(of: UInt32.self, count: 1)
+        else { throw ComputeError.bufferCreationFailed }
+        
         return metalBuffer
     }
     
@@ -147,6 +164,11 @@ public class ConvertCompute: MetalLinkReader {
         
         var atlasBufferSize = atlasBuffer.length
         computeCommandEncoder.setBytes(&atlasBufferSize, length: MemoryLayout<Int>.size, index: 4)
+        
+        // And also pass a mutable count to tally up the total hashed up characters. This will be used to setup
+        // a final output buffer.
+        let characterCountBuffer = try makeCharacterCountBuffer()
+        computeCommandEncoder.setBuffer(characterCountBuffer, offset: 0, index: 5)
         
         // Set the pipeline state
         computeCommandEncoder.setComputePipelineState(atlasPipelineState)

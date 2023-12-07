@@ -83,7 +83,7 @@ struct GlyphMapKernelAtlasIn {
 using namespace metal;
 
 struct GlyphMapKernelOut {
-    // faux-nicode data
+    // -- faux-nicode data
     enum GraphemeCategory graphemeCategory;
     uint codePointIndex;
     uint32_t codePoint;
@@ -102,11 +102,13 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot9;
     uint32_t unicodeSlot10;
     
-    // buffer indexing
-    uint sourceUtf8BufferIndex; // the previous character's index
-    metal::atomic<uint> sourceRenderableStringIndex;       // the index for this glyph as it appears in its source, rendered 'text'
+    // -- buffer indexing
+    uint sourceUtf8BufferIndex;
     
-    // texture
+    // the index for this glyph as it appears in its source, rendered 'text'
+    metal::atomic<uint> sourceRenderableStringIndex;
+    
+    // -- texture
     simd_float4 foreground;
     simd_float4 background;
     
@@ -114,11 +116,61 @@ struct GlyphMapKernelOut {
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
-    // Layout
+    // -- Layout
     metal::atomic<float> xOffset;
     metal::atomic<float> yOffset;
     metal::atomic<float> zOffset;
 };
+
+void GlyphMapKernelOut__Copy(
+ const device GlyphMapKernelOut &source,
+       device GlyphMapKernelOut &target
+) {
+    target.codePointIndex = source.codePointIndex;
+    target.codePoint = source.codePoint;
+    target.unicodeHash = source.unicodeHash;
+
+    target.unicodeCodePointLength = source.unicodeCodePointLength;
+
+    uint count = atomic_load_explicit(&source.totalUnicodeSequenceCount, memory_order_relaxed);
+    atomic_store_explicit(&target.totalUnicodeSequenceCount, count, memory_order_relaxed);
+
+    target.unicodeSlot1 = source.unicodeSlot1;
+    target.unicodeSlot2 = source.unicodeSlot2;
+    target.unicodeSlot3 = source.unicodeSlot3;
+    target.unicodeSlot4 = source.unicodeSlot4;
+    target.unicodeSlot5 = source.unicodeSlot5;
+    target.unicodeSlot6 = source.unicodeSlot6;
+    target.unicodeSlot7 = source.unicodeSlot7;
+    target.unicodeSlot8 = source.unicodeSlot8;
+    target.unicodeSlot9 = source.unicodeSlot9;
+    target.unicodeSlot10 = source.unicodeSlot10;
+
+    // -- buffer indexing
+    target.sourceUtf8BufferIndex = source.sourceUtf8BufferIndex;
+
+    // the index for this glyph as it appears in its source, rendered 'text'
+    uint index = atomic_load_explicit(&source.sourceRenderableStringIndex, memory_order_relaxed);
+    atomic_store_explicit(&target.sourceRenderableStringIndex, index, memory_order_relaxed);
+
+    // -- texture
+    target.foreground = source.foreground;
+    target.background = source.background;
+
+    target.textureSize = source.textureSize;
+    target.textureDescriptorU = source.textureDescriptorU;
+    target.textureDescriptorV = source.textureDescriptorV;
+
+    // -- Layout
+    float xOffset = atomic_load_explicit(&source.xOffset, memory_order_relaxed);
+    float yOffset = atomic_load_explicit(&source.yOffset, memory_order_relaxed);
+    float zOffset = atomic_load_explicit(&source.zOffset, memory_order_relaxed);
+    
+    atomic_store_explicit(&target.xOffset, xOffset, memory_order_relaxed);
+    atomic_store_explicit(&target.yOffset, yOffset, memory_order_relaxed);
+    atomic_store_explicit(&target.zOffset, zOffset, memory_order_relaxed);
+}
+
 #else
 struct GlyphMapKernelOut {
     // faux-nicode data

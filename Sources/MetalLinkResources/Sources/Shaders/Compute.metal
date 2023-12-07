@@ -591,23 +591,15 @@ kernel void processNewUtf32AtlasMapping(
 //    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
                  uint id                            [[thread_position_in_grid]],
     constant     uint* utf8BufferSize               [[buffer(3)]],
-//    constant     uint* atlasBufferSize              [[buffer(4)]]
-    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(5)]]
+//    constant     uint* atlasBufferSize              [[buffer(4)]],
+//    device       atomic_uint* totalCharacterCount   [[buffer(5)]],
+    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(6)]]
 ) {
-    // The plan:
-    
-    // If the glyph at [id] has a hash value, then it means it's a character, but it could any one of the very many in the buffer.
-    // -- Otherwise, we can skip.
-    
-    /*
-    // How do we figure out our position?...
-    // Well, we know the character before us. We know how many utf8 bytes it has in the offset.
-    // So.. we could take our ID, then.. find the last character..
-    // -- We'll memoize since we're concurrent, and if the glyph already has a known index, then we just + 1 that one.
-    //    This only works safely and naively on the first character there, so don't do that recursively yet.
-    // -- If it doesn't then we start to a'compute.
-    //    Use the last character's utf8 offset size, and
-    */
+    if (unprocessedGlyphs[id].unicodeHash > 0) {
+        uint targetBufferIndex = atomic_load_explicit(&unprocessedGlyphs[id].sourceRenderableStringIndex, memory_order_relaxed);
+        GlyphMapKernelOut__Copy(/*from*/ unprocessedGlyphs[id],
+                                /*to*/   cleanGlyphBuffer[targetBufferIndex]);
+    }
 }
 
 kernel void utf8ToUtf32KernelAtlasMapped(
@@ -616,7 +608,8 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
                  uint id                            [[thread_position_in_grid]],
     constant     uint* utf8BufferSize               [[buffer(3)]],
-    constant     uint* atlasBufferSize              [[buffer(4)]]
+    constant     uint* atlasBufferSize              [[buffer(4)]],
+    device       atomic_uint* totalCharacterCount   [[buffer(5)]]
 ) {
     // Boundary check
     if (id >= *utf8BufferSize) {
@@ -674,5 +667,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
         atomic_store_explicit(&utf32Buffer[id].sourceRenderableStringIndex,
                               id,
                               memory_order_relaxed);
+        
+        atomic_fetch_add_explicit(totalCharacterCount, 1, memory_order_relaxed);
     }
 }
