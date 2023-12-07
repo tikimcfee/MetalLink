@@ -45,4 +45,5 @@ extension Vertex: MemoryLayoutSizable { }
 extension ForceLayoutEdge: MemoryLayoutSizable { }
 extension ForceLayoutNode: MemoryLayoutSizable { }
 extension GlyphMapKernelAtlasIn: MemoryLayoutSizable { }
+extension GlyphMapKernelOut: MemoryLayoutSizable { }
 

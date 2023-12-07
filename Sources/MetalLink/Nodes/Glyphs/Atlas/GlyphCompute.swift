@@ -11,89 +11,15 @@ public enum ComputeError: Error {
     case missingFunction(String)
     case bufferCreationFailed
     case startupFailure
+    case compressionFailure
 }
 
 public class ConvertCompute: MetalLinkReader {
     public let link: MetalLink
     public init(link: MetalLink) { self.link = link }
     
-    private let rawRenderName = "utf8ToUtf32Kernel"
-    private lazy var rawRenderkernelFunction = library.makeFunction(name: rawRenderName)
+    private lazy var functions = ConvertComputeFunctions(link: link)
     
-    private let atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
-    private lazy var atlasRenderKernelFunction = library.makeFunction(name: atlasRenderName)
-    
-    private let layoutKernelName = "utf32GlyphMapLayout"
-    private lazy var layoutKernelFunction = library.makeFunction(name: layoutKernelName)
-    
-    private let compressionKernalName = "processNewUtf32AtlasMapping"
-    private lazy var compressionKernelFunction = library.makeFunction(name: compressionKernalName)
-    
-    // Create a pipeline state from the kernel function, using the default name
-    private func makeRawRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let rawRenderkernelFunction 
-        else { throw ComputeError.missingFunction(rawRenderName) }
-        return try device.makeComputePipelineState(function: rawRenderkernelFunction)
-    }
-    
-    private func makeAtlasRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let atlasRenderKernelFunction
-        else { throw ComputeError.missingFunction(atlasRenderName) }
-        return try device.makeComputePipelineState(function: atlasRenderKernelFunction)
-    }
-    
-    private func makeLayoutRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let layoutKernelFunction
-        else { throw ComputeError.missingFunction(layoutKernelName) }
-        return try device.makeComputePipelineState(function: layoutKernelFunction)
-    }
-    
-    private func makeCompressionRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let compressionKernelFunction
-        else { throw ComputeError.missingFunction(compressionKernalName) }
-        return try device.makeComputePipelineState(function: compressionKernelFunction)
-    }
-    
-    // Create a Metal buffer from the Data object
-    private func makeInputBuffer(_ data: NSData) throws -> MTLBuffer {
-        guard let metalBuffer = device.makeBuffer(
-            bytes: data.bytes, 
-            length: data.count,
-            options: []
-        )
-        else { throw ComputeError.bufferCreationFailed }
-        return metalBuffer
-    }
-    
-    // Teeny buffer to write total character count
-    private func makeCharacterCountBuffer() throws -> MTLBuffer {
-        guard let metalBuffer = try? link.makeBuffer(of: UInt32.self, count: 1)
-        else { throw ComputeError.bufferCreationFailed }
-        
-        return metalBuffer
-    }
-    
-    // Create an output buffer matching the GlyphMapKernelOut structure
-    // MARK: NOTE / TAKE CARE / BE AWARE [Buffer size]
-    // Check it out the length is div 4 so the end buffer is
-    private func makeOutputBuffer(from inputBuffer: MTLBuffer) throws -> MTLBuffer {
-        let safeSize = max(1, inputBuffer.length)
-        let safeOutputBufferSize = safeSize * MemoryLayout<GlyphMapKernelOut>.stride
-        guard let outputBuffer = device.makeBuffer(length: safeOutputBufferSize, options: [])
-        else { throw ComputeError.bufferCreationFailed }
-        return outputBuffer
-    }
-    
-    public func makeGraphemeAtlasBuffer(
-        size: Int
-    ) throws -> MTLBuffer {
-        guard let metalBuffer = device.makeBuffer(
-            length: size * MemoryLayout<GlyphMapKernelAtlasIn>.stride,
-            options: [ /*.cpuCacheModeWriteCombined*/ ] // TODO: is this a safe performance trick?
-        ) else { throw ComputeError.bufferCreationFailed }
-        return metalBuffer
-    }
-
     // Give me .utf8 text data and I'll do weird things to a buffer and give it back.
     public func execute(
         inputData: NSData
@@ -104,8 +30,8 @@ public class ConvertCompute: MetalLinkReader {
         else { throw ComputeError.startupFailure }
         
         let inputUTF8TextDataBuffer = try makeInputBuffer(inputData)
-        let outputUTF32ConversionBuffer = try makeOutputBuffer(from: inputUTF8TextDataBuffer)
-        let computePipelineState = try makeRawRenderPipelineState()
+        let outputUTF32ConversionBuffer = try makeRawOutputBuffer(from: inputUTF8TextDataBuffer)
+        let computePipelineState = try functions.makeRawRenderPipelineState()
 
         // Set the compute kernel's parameters
         computeCommandEncoder.setBuffer(inputUTF8TextDataBuffer, offset: 0, index: 0)
@@ -141,7 +67,7 @@ public class ConvertCompute: MetalLinkReader {
     public func executeWithAtlas(
         inputData: NSData,
         atlasBuffer: MTLBuffer
-    ) throws -> MTLBuffer {
+    ) throws -> (MTLBuffer, UInt32) {
         let commandBuffer = commandQueue.makeCommandBuffer()
         let computeCommandEncoder = commandBuffer?.makeComputeCommandEncoder()
         guard let computeCommandEncoder, let commandBuffer
@@ -150,8 +76,8 @@ public class ConvertCompute: MetalLinkReader {
         // MARK: -- Fire up atlas
         
         let inputUTF8TextDataBuffer = try makeInputBuffer(inputData)
-        let outputUTF32ConversionBuffer = try makeOutputBuffer(from: inputUTF8TextDataBuffer)
-        let atlasPipelineState = try makeAtlasRenderPipelineState()
+        let outputUTF32ConversionBuffer = try makeRawOutputBuffer(from: inputUTF8TextDataBuffer)
+        let atlasPipelineState = try functions.makeAtlasRenderPipelineState()
 
         // Set the compute kernel's parameters
         computeCommandEncoder.setBuffer(inputUTF8TextDataBuffer, offset: 0, index: 0)
@@ -186,7 +112,7 @@ public class ConvertCompute: MetalLinkReader {
         )
         
         // MARK: -- Fire up layout. Oh boy.
-        let layoutPipelineState = try makeLayoutRenderPipelineState()
+        let layoutPipelineState = try functions.makeLayoutRenderPipelineState()
         computeCommandEncoder.setComputePipelineState(layoutPipelineState)
         
         // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
@@ -199,18 +125,169 @@ public class ConvertCompute: MetalLinkReader {
         computeCommandEncoder.endEncoding()
         commandBuffer.addCompletedHandler { handler in
             if let error = handler.error {
-                print(error)
+                print("""
+                        -- Compute kernel Error --
+                        \(error)
+                        --------------------------
+                      """)
             }
         }
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
         // Houston we have a buffer. Maybe, this time. Let's see what happened.
-        return outputUTF32ConversionBuffer
+        let finalCount = characterCountBuffer.boundPointer(as: UInt32.self, count: 1)
+        return (outputUTF32ConversionBuffer, finalCount.pointee)
     }
-
     
-    public func cast(
+    public func compressFreshMappedBuffer(
+        unprocessedBuffer: MTLBuffer,
+        expectedCount: UInt32
+    ) throws -> MTLBuffer {
+        let cleanedOutputBuffer = try makeCleanedOutputBuffer(length: expectedCount)
+        let commandBuffer = commandQueue.makeCommandBuffer()
+        let computeCommandEncoder = commandBuffer?.makeComputeCommandEncoder()
+        let compressionPipelineState = try functions.makeCompressionRenderPipelineState()
+        guard let computeCommandEncoder, let commandBuffer
+        else { throw ComputeError.startupFailure }
+        
+        // MARK: -- Fire up the compressenator
+        computeCommandEncoder.setBuffer(unprocessedBuffer, offset: 0, index: 0)
+        computeCommandEncoder.setBuffer(cleanedOutputBuffer, offset: 0, index: 1)
+        
+        computeCommandEncoder.setComputePipelineState(compressionPipelineState)
+        
+        let threadGroupSize = MTLSize(width: compressionPipelineState.threadExecutionWidth, height: 1, depth: 1)
+        let threadGroupsWidthCeil = (unprocessedBuffer.length + threadGroupSize.width - 1) / threadGroupSize.width
+        let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
+        
+        // Dispatch the compute kernel
+        computeCommandEncoder.dispatchThreadgroups(
+            threadGroupsPerGrid,
+            threadsPerThreadgroup: threadGroupSize
+        )
+        
+        // Finalize encoding and commit the command buffer
+        computeCommandEncoder.endEncoding()
+        commandBuffer.addCompletedHandler { handler in
+            if let error = handler.error {
+                print("""
+                        -- Compute kernel Error --
+                        \(error)
+                        --------------------------
+                      """)
+            }
+        }
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        return cleanedOutputBuffer
+    }
+}
+
+// MARK: - Kernel functions + Pipeline states
+
+private class ConvertComputeFunctions: MetalLinkReader {
+    let link: MetalLink
+    init(link: MetalLink) { self.link = link }
+    
+    let rawRenderName = "utf8ToUtf32Kernel"
+    lazy var rawRenderkernelFunction = library.makeFunction(name: rawRenderName)
+    
+    let atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
+    lazy var atlasRenderKernelFunction = library.makeFunction(name: atlasRenderName)
+    
+    let layoutKernelName = "utf32GlyphMapLayout"
+    lazy var layoutKernelFunction = library.makeFunction(name: layoutKernelName)
+    
+    let compressionKernalName = "processNewUtf32AtlasMapping"
+    lazy var compressionKernelFunction = library.makeFunction(name: compressionKernalName)
+    
+    func makeRawRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let rawRenderkernelFunction
+        else { throw ComputeError.missingFunction(rawRenderName) }
+        return try device.makeComputePipelineState(function: rawRenderkernelFunction)
+    }
+    
+    func makeAtlasRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let atlasRenderKernelFunction
+        else { throw ComputeError.missingFunction(atlasRenderName) }
+        return try device.makeComputePipelineState(function: atlasRenderKernelFunction)
+    }
+    
+    func makeLayoutRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let layoutKernelFunction
+        else { throw ComputeError.missingFunction(layoutKernelName) }
+        return try device.makeComputePipelineState(function: layoutKernelFunction)
+    }
+    
+    func makeCompressionRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let compressionKernelFunction
+        else { throw ComputeError.missingFunction(compressionKernalName) }
+        return try device.makeComputePipelineState(function: compressionKernelFunction)
+    }
+}
+
+// MARK: - Default buffer builders
+
+extension ConvertCompute {
+    // Create a Metal buffer from the Data object
+    private func makeInputBuffer(_ data: NSData) throws -> MTLBuffer {
+        guard let metalBuffer = device.makeBuffer(
+            bytes: data.bytes,
+            length: data.count,
+            options: []
+        )
+        else { throw ComputeError.bufferCreationFailed }
+        return metalBuffer
+    }
+    
+    // Teeny buffer to write total character count
+    private func makeCharacterCountBuffer() throws -> MTLBuffer {
+        guard let metalBuffer = try? link.makeBuffer(of: UInt32.self, count: 1)
+        else { throw ComputeError.bufferCreationFailed }
+        
+        return metalBuffer
+    }
+    
+    // Create an output buffer matching the GlyphMapKernelOut structure
+    private func makeRawOutputBuffer(from inputBuffer: MTLBuffer) throws -> MTLBuffer {
+        let safeSize = max(1, inputBuffer.length)
+        let safeOutputBufferSize = safeSize * MemoryLayout<GlyphMapKernelOut>.stride
+        guard let outputBuffer = device.makeBuffer(
+            length: safeOutputBufferSize,
+            options: []
+        )
+        else { throw ComputeError.bufferCreationFailed }
+        return outputBuffer
+    }
+    
+    // Create an output with an expected output size
+    // TODO: This can make directly to instanced constants hnnnggh
+    private func makeCleanedOutputBuffer(length: UInt32) throws -> MTLBuffer {
+        let safeSize = max(1, length)
+        let outputBuffer = try link.makeBuffer(
+            of: GlyphMapKernelOut.self,
+            count: Int(safeSize)
+        )
+        return outputBuffer
+    }
+    
+    public func makeGraphemeAtlasBuffer(
+        size: Int
+    ) throws -> MTLBuffer {
+        guard let metalBuffer = device.makeBuffer(
+            length: size * MemoryLayout<GlyphMapKernelAtlasIn>.stride,
+            options: [ /*.cpuCacheModeWriteCombined*/ ] // TODO: is this a safe performance trick?
+        ) else { throw ComputeError.bufferCreationFailed }
+        return metalBuffer
+    }
+}
+
+// MARK: - Pointer helpers, String Builders
+
+public extension ConvertCompute {
+    func cast(
         _ buffer: MTLBuffer
     ) -> (UnsafeMutablePointer<GlyphMapKernelOut>, Int) {
         let numberOfElements = buffer.length / MemoryLayout<GlyphMapKernelOut>.stride
@@ -223,7 +300,7 @@ public class ConvertCompute: MetalLinkReader {
         )
     }
     
-    public func makeString(
+    func makeString(
         from pointer: UnsafeMutablePointer<GlyphMapKernelOut>,
         count: Int
     ) -> String {
@@ -241,7 +318,7 @@ public class ConvertCompute: MetalLinkReader {
         return scalarString
     }
     
-    public func makeGraphemeBasedString(
+    func makeGraphemeBasedString(
         from pointer: UnsafeMutablePointer<GlyphMapKernelOut>,
         count: Int
     ) -> String {
@@ -262,5 +339,3 @@ public class ConvertCompute: MetalLinkReader {
         return manualGraphemeString
     }
 }
-
-

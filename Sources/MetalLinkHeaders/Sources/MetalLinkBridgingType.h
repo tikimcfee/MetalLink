@@ -90,7 +90,6 @@ struct GlyphMapKernelOut {
     uint64_t unicodeHash;
     
     uint unicodeCodePointLength;
-    metal::atomic<uint> totalUnicodeSequenceCount;
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
     uint32_t unicodeSlot3;
@@ -104,10 +103,7 @@ struct GlyphMapKernelOut {
     
     // -- buffer indexing
     uint sourceUtf8BufferIndex;
-    
-    // the index for this glyph as it appears in its source, rendered 'text'
-    metal::atomic<uint> sourceRenderableStringIndex;
-    
+
     // -- texture
     simd_float4 foreground;
     simd_float4 background;
@@ -115,6 +111,12 @@ struct GlyphMapKernelOut {
     simd_float2 textureSize;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
+    
+    // <Atomics>
+    metal::atomic<uint> totalUnicodeSequenceCount;
+    
+    // the index for this glyph as it appears in its source, rendered 'text'
+    metal::atomic<uint> sourceRenderableStringIndex;
     
     // -- Layout
     metal::atomic<float> xOffset;
@@ -126,14 +128,15 @@ void GlyphMapKernelOut__Copy(
  const device GlyphMapKernelOut &source,
        device GlyphMapKernelOut &target
 ) {
+    target.graphemeCategory = source.graphemeCategory;
     target.codePointIndex = source.codePointIndex;
     target.codePoint = source.codePoint;
     target.unicodeHash = source.unicodeHash;
 
     target.unicodeCodePointLength = source.unicodeCodePointLength;
-
-    uint count = atomic_load_explicit(&source.totalUnicodeSequenceCount, memory_order_relaxed);
-    atomic_store_explicit(&target.totalUnicodeSequenceCount, count, memory_order_relaxed);
+    
+    uint sourceCount = atomic_load_explicit(&source.totalUnicodeSequenceCount, memory_order_relaxed);
+    atomic_store_explicit(&target.totalUnicodeSequenceCount, sourceCount, memory_order_relaxed);
 
     target.unicodeSlot1 = source.unicodeSlot1;
     target.unicodeSlot2 = source.unicodeSlot2;
@@ -150,8 +153,8 @@ void GlyphMapKernelOut__Copy(
     target.sourceUtf8BufferIndex = source.sourceUtf8BufferIndex;
 
     // the index for this glyph as it appears in its source, rendered 'text'
-    uint index = atomic_load_explicit(&source.sourceRenderableStringIndex, memory_order_relaxed);
-    atomic_store_explicit(&target.sourceRenderableStringIndex, index, memory_order_relaxed);
+    uint sourceIndex = atomic_load_explicit(&source.sourceRenderableStringIndex, memory_order_relaxed);
+    atomic_store_explicit(&target.sourceRenderableStringIndex, sourceIndex, memory_order_relaxed);
 
     // -- texture
     target.foreground = source.foreground;
@@ -162,13 +165,12 @@ void GlyphMapKernelOut__Copy(
     target.textureDescriptorV = source.textureDescriptorV;
 
     // -- Layout
-    float xOffset = atomic_load_explicit(&source.xOffset, memory_order_relaxed);
-    float yOffset = atomic_load_explicit(&source.yOffset, memory_order_relaxed);
-    float zOffset = atomic_load_explicit(&source.zOffset, memory_order_relaxed);
-    
-    atomic_store_explicit(&target.xOffset, xOffset, memory_order_relaxed);
-    atomic_store_explicit(&target.yOffset, yOffset, memory_order_relaxed);
-    atomic_store_explicit(&target.zOffset, zOffset, memory_order_relaxed);
+    float sourceXOffset = atomic_load_explicit(&source.xOffset, memory_order_relaxed);
+    float sourceYOffset = atomic_load_explicit(&source.yOffset, memory_order_relaxed);
+    float sourceZOffset = atomic_load_explicit(&source.zOffset, memory_order_relaxed);
+    atomic_store_explicit(&target.xOffset, sourceXOffset, memory_order_relaxed);
+    atomic_store_explicit(&target.yOffset, sourceYOffset, memory_order_relaxed);
+    atomic_store_explicit(&target.zOffset, sourceZOffset, memory_order_relaxed);
 }
 
 #else
@@ -180,7 +182,6 @@ struct GlyphMapKernelOut {
     uint64_t unicodeHash;
     
     uint unicodeCodePointLength;
-    uint totalUnicodeSequenceCount;
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
     uint32_t unicodeSlot3;
@@ -194,7 +195,6 @@ struct GlyphMapKernelOut {
     
     // buffer indexing
     uint sourceUtf8BufferIndex;             // the previous character's index
-    uint sourceRenderableStringIndex;       // the index for this glyph as it appears in its source, rendered 'text'
     
     // texture
     simd_float4 foreground;
@@ -203,6 +203,10 @@ struct GlyphMapKernelOut {
     simd_float2 textureSize;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
+    
+    // <|NON|Atomics>
+    uint totalUnicodeSequenceCount;
+    uint sourceRenderableStringIndex;       // the index for this glyph as it appears in its source, rendered 'text'
     
     // Layout
     float xOffset;

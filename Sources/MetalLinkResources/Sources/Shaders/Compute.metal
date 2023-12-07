@@ -501,27 +501,33 @@ kernel void utf32GlyphMapLayout(
     } else {
         // If I'm starting as any other character in the grid, I just add up some x-offsets
         const uint myWidth = utf32Buffer[id].textureSize.x;
+        bool shouldSetXOffset = utf32Buffer[nextGlyphIndex].codePoint != 10;
         
         // Unicode length index offset is my length, -1. Hooray pointer offsets.
         const uint myUnicodeLengthOffset = atomic_load_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                                                memory_order_relaxed); // <--- there's the -1 (- 1).
+                                                                memory_order_relaxed);
         while (hasNext
                && isNextInBounds
                && utf32Buffer[nextGlyphIndex].unicodeHash > 0
-               && utf32Buffer[nextGlyphIndex].codePoint != 10
         ) {
-            atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].xOffset,
-                                      myWidth,
-                                      memory_order_relaxed);
-            
             /* MARK: Buffer compressomaticleanerating [Pass 2.1]
+             We're hitching a ride on the xOffset express, except we've got a ticket for the end of the
+             line. We'll stop setting xOffset once we hit our first newline.
+            */
+            if (shouldSetXOffset) {
+                atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].xOffset,
+                                          myWidth,
+                                          memory_order_relaxed);
+            }
+            
+            /* MARK: Buffer compressomaticleanerating [Pass 2.2]
              Well, we found our next index, so.. go ahead and decrement it's known index by our length.
              Hoo boy. We can safely ignore the `\n` case since it's a single codepoint anyway, one byte,
              and doesn't interact with the overall index anyway. Noice.
             */
             if (myUnicodeLengthOffset > 1) {
                 atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].sourceRenderableStringIndex,
-                                          myUnicodeLengthOffset - 1,
+                                          myUnicodeLengthOffset - 1,  // <--- there's the -1 (- 1)
                                           memory_order_relaxed);
             }
             
@@ -529,6 +535,11 @@ kernel void utf32GlyphMapLayout(
             nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
             isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
             hasNext = nextGlyphIndex > currentIndex && nextGlyphIndex != currentIndex;
+            
+            // Toggle it off; we should only set if we already are, and the next glyph isn't a separator.
+            // If it is, then [shouldSet = (true) && !(true) => true && false => false]
+            // And the next iteration, [shouldSet = false && !(false) => false && true => false]
+            shouldSetXOffset = shouldSetXOffset && !(utf32Buffer[nextGlyphIndex].codePoint != 10);
         }
     }
 }
@@ -586,17 +597,13 @@ kernel void utf8ToUtf32Kernel(
 // MARK: -- Atlas texture mapping from utf8 -> GlyphMapKernelOut
 
 kernel void processNewUtf32AtlasMapping(
-//    const device uint8_t* utf8Buffer                [[buffer(0)]],
-    device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(1)]],
-//    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
-                 uint id                            [[thread_position_in_grid]],
-    constant     uint* utf8BufferSize               [[buffer(3)]],
-//    constant     uint* atlasBufferSize              [[buffer(4)]],
-//    device       atomic_uint* totalCharacterCount   [[buffer(5)]],
-    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(6)]]
+    device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
+                 uint id                                  [[thread_position_in_grid]],
+    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(1)]]
 ) {
     if (unprocessedGlyphs[id].unicodeHash > 0) {
-        uint targetBufferIndex = atomic_load_explicit(&unprocessedGlyphs[id].sourceRenderableStringIndex, memory_order_relaxed);
+        uint targetBufferIndex = atomic_load_explicit(&unprocessedGlyphs[id].sourceRenderableStringIndex,
+                                                      memory_order_relaxed);
         GlyphMapKernelOut__Copy(/*from*/ unprocessedGlyphs[id],
                                 /*to*/   cleanGlyphBuffer[targetBufferIndex]);
     }
