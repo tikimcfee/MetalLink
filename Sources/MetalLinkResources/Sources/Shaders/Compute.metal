@@ -570,16 +570,17 @@ kernel void processNewUtf32AtlasMapping(
     if (id < 0 || id >= *unprocessedSize) {
         return;
     }
-    if (unprocessedGlyphs[id].unicodeHash == 0) {
+    GlyphMapKernelOut glyphCopy = unprocessedGlyphs[id];
+    if (glyphCopy.unicodeHash == 0) {
         return;
     }
     
-    uint targetBufferIndex = unprocessedGlyphs[id].sourceRenderableStringIndex;
+    uint targetBufferIndex = glyphCopy.sourceRenderableStringIndex;
     if (targetBufferIndex < 0 || targetBufferIndex >= *cleanOutputSize) {
         return;
     }
     
-    cleanGlyphBuffer[targetBufferIndex] = unprocessedGlyphs[id];
+    cleanGlyphBuffer[targetBufferIndex] = glyphCopy;
 }
 
 kernel void utf8ToUtf32KernelAtlasMapped(

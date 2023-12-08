@@ -158,8 +158,8 @@ public class ConvertCompute: MetalLinkReader {
         var unprocessedSize: Int = unprocessedBuffer.length
         computeCommandEncoder.setBytes(&unprocessedSize, length: Int.memSize, index: 2)
         
-        var cleanOutputSize: Int = cleanedOutputBuffer.length
-        computeCommandEncoder.setBytes(&cleanOutputSize, length: Int.memSize, index: 3)
+        var cleanBufferCount: Int = Int(expectedCount)
+        computeCommandEncoder.setBytes(&cleanBufferCount, length: Int.memSize, index: 3)
         
         computeCommandEncoder.setComputePipelineState(compressionPipelineState)
         

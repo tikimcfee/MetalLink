@@ -45,7 +45,6 @@ public class AtlasBuilder {
     
     public init(
         _ link: MetalLink,
-        textureCache: MetalLinkGlyphTextureCache,
         pairCache: TextureUVCache
     ) throws {
         guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor)
@@ -345,7 +344,7 @@ public extension AtlasBuilder {
 }
 
 private extension AtlasBuilder {
-    func atlasUVSize(for bundle: MetalLinkGlyphTextureCache.Bundle) -> LFloat2 {
+    func atlasUVSize(for bundle: TextureBundle) -> LFloat2 {
         let bundleSize = bundle.texture.simdSize
         return LFloat2(bundleSize.x / atlasSize.x, bundleSize.y / atlasSize.y)
     }

@@ -35,7 +35,6 @@ public class MetalLinkAtlas {
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
         self.builder = try AtlasBuilder(
             link,
-            textureCache: nodeCache.textureCache,
             pairCache: cache
         )
     }
