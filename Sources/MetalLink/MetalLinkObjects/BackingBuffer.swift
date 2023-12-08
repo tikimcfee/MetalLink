@@ -48,6 +48,10 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         self.pointer = buffer.boundPointer(as: Stored.self, count: currentBufferSize)
     }
     
+    public func remakePointer() {
+        self.pointer = buffer.boundPointer(as: Stored.self, count: currentBufferSize)
+    }
+    
     public func createNext(
         _ withUpdates: ((inout Stored) -> Void)? = nil
     ) throws -> Stored {

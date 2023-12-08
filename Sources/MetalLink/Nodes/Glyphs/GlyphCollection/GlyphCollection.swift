@@ -52,6 +52,19 @@ final public class GlyphCollection: MetalLinkInstancedObject<
             }
         )
     }
+    
+    public init(
+        link: MetalLink,
+        linkAtlas: MetalLinkAtlas,
+        instanceState: InstanceState<GlyphCacheKey, MetalLinkGlyphNode>
+    ) throws {
+        self.linkAtlas = linkAtlas
+        try super.init(
+            link,
+            mesh: link.meshLibrary[.Quad],
+            instanceState: instanceState
+        )
+    }
 
     public override func render(in sdp: inout SafeDrawPass) {
         sdp.oncePerPass("glyph-collection-atlas") {
@@ -75,7 +88,57 @@ public extension GlyphCollection {
     }
 }
 
+// MARK: --- Compute Helpers
+
 public extension GlyphCollection {
+    func rebuildInstanceNodesFromState() {
+        // TODO: This part sucks... I need to get rid of the `GlyphNode` abstraction I think.
+        // It's nice that I can interact with it like regular Nodes, but it means I have to
+        // create all those instances, which sorta undoes a lot of the speedups.
+        // Also had the idea to tweak it so it's a still a node, but can only be initialized
+        // around a source buffer, and it can end up reading / writing directly to it kinda
+        // like it does now.. maybe even some kind of delegating protocol that's like:
+        //
+        // `node.renderDelegate = <something>`
+        // .. and the render delegate could be a function or a true protocol handler that,
+        // maybe just given a node or a specific index, can reach into the buffer to create
+        // a facade wrapper just to do updates. That way the objects can still masquerade, but
+        // all the gnarly mapping is done behind the scenes. It kinda does that now, but only through
+        // the `generateInstance` flow, so...
+        
+        let state = instanceState
+        let nodeCache = linkAtlas.nodeCache
+        let glyphCache = linkAtlas.builder.cacheRef
+        
+        state.constants.remakePointer()
+        let constantsPointer = state.constants.pointer
+        let count = state.instanceBufferCount
+        
+        for index in (0..<count) {
+            let constants = constantsPointer[index] // this should match...
+            guard constants.unicodeHash > 0 else {
+                continue
+            }
+            
+            if let cacheKey = glyphCache.safeReadUnicodeHash(hash: constants.unicodeHash),
+               let newNode = nodeCache.create(cacheKey)
+            {
+                newNode.parent = self
+                newNode.instanceConstants = constants
+                newNode.position = LFloat3(constants.positionOffset.x,
+                                           constants.positionOffset.y,
+                                           constants.positionOffset.z)
+                newNode.instanceUpdate = state.updateBufferOnChange
+                newNode.setQuadUnitSize(size: constants.textureSize)
+                newNode.rebuildNow()
+                state.instanceIdNodeLookup[constants.instanceID] = newNode
+                state.nodes.append(newNode)
+            }
+        }
+        
+        setRootMesh()
+    }
+    
     func setRootMesh() {
         // ***********************************************************************************
         // TODO: mesh instance hack

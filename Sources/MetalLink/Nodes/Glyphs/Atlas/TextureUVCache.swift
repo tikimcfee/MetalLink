@@ -37,7 +37,9 @@ public class TextureUVCache: Codable {
         self.unicodeMap = try container.decodeIfPresent([UInt64: GlyphCacheKey].self, forKey: .unicodeMap) ?? [:]
         
         if unicodeMap.isEmpty && !map.isEmpty {
-            map.keys.forEach { unicodeMap[$0.unicodeHash] = $0 }
+            map.keys.forEach {
+                unicodeMap[$0.unicodeHash] = $0
+            }
         }
     }
 

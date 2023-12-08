@@ -52,6 +52,17 @@ open class MetalLinkInstancedObject<
         super.init()
     }
     
+    public init(
+        _ link: MetalLink,
+        mesh: any MetalLinkMesh,
+        instanceState: InstanceState<InstanceKey, InstancedNodeType>
+    ) throws {
+        self.link = link
+        self.mesh = mesh
+        self.instanceState = instanceState
+        super.init()
+    }
+    
     open func generateInstance(
         _ key: InstanceKey
     ) -> InstancedNodeType? {

@@ -32,10 +32,14 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         modelMatrix = matrix_identity_float4x4
         textureDescriptorU = .zero
         textureDescriptorV = .zero
+        textureSize = .zero
+        positionOffset = .zero
+        
+        unicodeHash = .zero
+        
         instanceID = .zero
         addedColor = .zero
         bufferIndex = .zero
-        unicodeHash = .zero
         useParentMatrix = 1
     }
 }

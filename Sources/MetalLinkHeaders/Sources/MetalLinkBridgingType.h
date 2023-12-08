@@ -22,6 +22,8 @@ struct InstancedConstants {
     simd_float4x4 modelMatrix;
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
+    simd_float2 textureSize;
+    simd_float4 positionOffset;
     
     uint64_t unicodeHash;
     

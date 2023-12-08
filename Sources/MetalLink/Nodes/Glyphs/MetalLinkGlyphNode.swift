@@ -45,6 +45,11 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
         let size = UnitSize.from(size)
         quad.setSize(size)
     }
+    
+    public func setQuadUnitSize(size: LFloat2) {
+        guard !quad.initialSizeSet else { return }
+        quad.setSize(size)
+    }
 }
 
 public extension MetalLinkGlyphNode {

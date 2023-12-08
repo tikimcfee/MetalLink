@@ -36,7 +36,7 @@ public class AtlasBuilder {
 //    private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
 //    private lazy var vertexPacking = AtlasPacking<VertexRect>(width: atlasTexture.width, height: atlasTexture.height)
     
-    private let cacheRef: TextureUVCache
+    public let cacheRef: TextureUVCache = TextureUVCache()
     private let sourceOrigin = MTLOrigin()
     private var targetOrigin = MTLOrigin()
     
@@ -45,17 +45,15 @@ public class AtlasBuilder {
     
     public init(
         _ link: MetalLink,
-        pairCache: TextureUVCache
+        compute: ConvertCompute
     ) throws {
         guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor)
         else { throw LinkAtlasError.noTargetAtlasTexture }
         
-        let compute = ConvertCompute(link: link)
         self.compute = compute
         self.currentGraphemeHashBuffer = try compute.makeGraphemeAtlasBuffer(size: GRAPHEME_BUFFER_DEFAULT_SIZE)
         self.link = link
         self.atlasTexture = atlasTexture
-        self.cacheRef = pairCache
         
         atlasTexture.label = "MetalLinkAtlas"
     }
@@ -172,6 +170,7 @@ public extension AtlasBuilder {
         self.vertexPacking.largestHeightThisRow = serialization.vertexState.largestHeightThisRow
         
         self.cacheRef.map = serialization.pairCache.map
+        self.cacheRef.unicodeMap = serialization.pairCache.unicodeMap
         
         self.atlasSize = serialization.dimensions
         

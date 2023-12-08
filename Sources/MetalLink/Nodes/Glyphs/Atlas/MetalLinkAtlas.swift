@@ -17,9 +17,8 @@ public enum LinkAtlasError: Error {
 
 public class MetalLinkAtlas {
     private let link: MetalLink
-    private let builder: AtlasBuilder
+    public let builder: AtlasBuilder
     public let nodeCache: MetalLinkGlyphNodeCache
-    public let uvPairCache: TextureUVCache
     public var currentAtlas: MTLTexture { builder.atlasTexture }
     public var currentBuffer: MTLBuffer {
         get { builder.currentGraphemeHashBuffer }
@@ -28,14 +27,15 @@ public class MetalLinkAtlas {
     
     private var rwLock = LockWrapper()
     
-    public init(_ link: MetalLink) throws {
+    public init(
+        _ link: MetalLink,
+        compute: ConvertCompute
+    ) throws {
         self.link = link
-        let cache = TextureUVCache()
-        self.uvPairCache = cache
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
         self.builder = try AtlasBuilder(
             link,
-            pairCache: cache
+            compute: compute
         )
     }
     
@@ -51,7 +51,7 @@ public class MetalLinkAtlas {
 public extension MetalLinkAtlas {
     func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
         rwLock.readLock()
-        guard uvPairCache[key] == nil 
+        guard builder.cacheRef[key] == nil 
         else {
             rwLock.unlock()
             return

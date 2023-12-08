@@ -89,7 +89,7 @@ public struct GlyphCollectionWriter {
         }
         newGlyph.parent = target
         
-        if let cachedPair = linkAtlas.uvPairCache[key] {
+        if let cachedPair = linkAtlas.builder.cacheRef[key] {
             newGlyph.instanceConstants?.textureDescriptorU = cachedPair.u
             newGlyph.instanceConstants?.textureDescriptorV = cachedPair.v
             newGlyph.setQuadSize(size: cachedPair.size)

@@ -622,11 +622,15 @@ kernel void blitGlyphsIntoConstants(
     uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
     targetConstants[targetBufferIndex].instanceID = myID;
     targetConstants[targetBufferIndex].bufferIndex = targetBufferIndex;
+    targetConstants[targetBufferIndex].addedColor = float4(0.0);
+    targetConstants[targetBufferIndex].useParentMatrix = 1;
+    
+    targetConstants[targetBufferIndex].unicodeHash = glyphCopy.unicodeHash;
     targetConstants[targetBufferIndex].modelMatrix = glyphCopy.modelMatrix;
     targetConstants[targetBufferIndex].textureDescriptorU = glyphCopy.textureDescriptorU;
     targetConstants[targetBufferIndex].textureDescriptorV = glyphCopy.textureDescriptorV;
-    targetConstants[targetBufferIndex].addedColor = float4(0.0);
-    targetConstants[targetBufferIndex].useParentMatrix = 1;
+    targetConstants[targetBufferIndex].textureSize = glyphCopy.textureSize;
+    targetConstants[targetBufferIndex].positionOffset = glyphCopy.positionOffset;
 }
 
 
