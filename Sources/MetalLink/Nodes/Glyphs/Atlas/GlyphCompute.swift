@@ -151,9 +151,15 @@ public class ConvertCompute: MetalLinkReader {
         guard let computeCommandEncoder, let commandBuffer
         else { throw ComputeError.startupFailure }
         
-        // MARK: -- Fire up the compressenator
+        // MARK: -- Compressenator
         computeCommandEncoder.setBuffer(unprocessedBuffer, offset: 0, index: 0)
         computeCommandEncoder.setBuffer(cleanedOutputBuffer, offset: 0, index: 1)
+        
+        var unprocessedSize: Int = unprocessedBuffer.length
+        computeCommandEncoder.setBytes(&unprocessedSize, length: Int.memSize, index: 2)
+        
+        var cleanOutputSize: Int = cleanedOutputBuffer.length
+        computeCommandEncoder.setBytes(&cleanOutputSize, length: Int.memSize, index: 3)
         
         computeCommandEncoder.setComputePipelineState(compressionPipelineState)
         
@@ -273,6 +279,18 @@ extension ConvertCompute {
         return outputBuffer
     }
     
+    func roundUp(
+        number: UInt32,
+        toMultipleOf multiple: UInt32
+    ) -> UInt32 {
+      let remainder = number % multiple
+      if (remainder == 0) {
+          return number;
+      } else {
+          return number + multiple - remainder
+      }
+    }
+    
     public func makeGraphemeAtlasBuffer(
         size: Int
     ) throws -> MTLBuffer {
@@ -328,8 +346,8 @@ public extension ConvertCompute {
                 .map { pointer[$0].allSequentialScalars }
                 .filter { !$0.isEmpty }
                 .map { scalarList in
-                    scalarList.lazy.map { scalar in
-                        UnicodeScalar(scalar)!
+                    scalarList.lazy.compactMap { scalar in
+                        UnicodeScalar(scalar)
                     }
                 }
                 .reduce(into: String.UnicodeScalarView()) { view, scalars in

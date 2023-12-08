@@ -135,7 +135,7 @@ GraphemeCategory categoryForGraphemeBytes(
         byteStatus1 == START
      && byteStatus2 == MIDDLE
      && byteStatus3 == MIDDLE
-     && byteStatus4 == END
+     && (byteStatus4 == END || byteStatus4 == MIDDLE)
     ) {
         return utf32GlyphEmojiPrefix;
     }
@@ -301,9 +301,7 @@ void attemptUnicodeScalarSetLookahead(
         setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
         
         const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-        atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                  mySequenceCount,
-                                  memory_order_relaxed);
+        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
@@ -311,9 +309,7 @@ void attemptUnicodeScalarSetLookahead(
         setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
         
         const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-        atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                  mySequenceCount,
-                                  memory_order_relaxed);
+        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's a prefix, we do some work
@@ -339,18 +335,14 @@ void attemptUnicodeScalarSetLookahead(
             
             const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
             const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
-            atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                      mySequenceCount + nextSequenceCount,
-                                      memory_order_relaxed);
+            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount + nextSequenceCount;
         }
         
         // If it's a tag, we start doing some special lookahead magic...
         else if (lookaheadCategory == utf32GlyphTag) {
             setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
             const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-            atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                      mySequenceCount,
-                                      memory_order_relaxed);
+            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
             
             // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
@@ -358,9 +350,7 @@ void attemptUnicodeScalarSetLookahead(
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
                 setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
-                atomic_fetch_add_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                          lookaheadSequenceCount,
-                                          memory_order_relaxed);
+                utf32Buffer[id].totalUnicodeSequenceCount += lookaheadSequenceCount;
                 
                 // Move to the next slot and lookahead start
                 writeSlot += 1;
@@ -462,86 +452,60 @@ kernel void utf32GlyphMapLayout(
     if (id < 0 || id > *utf8BufferSize) {
         return;
     }
-
-    uint nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, id, utf8BufferSize);
-    bool hasNext = nextGlyphIndex != id;
-    bool isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
     
-    if (!(hasNext && isNextInBounds)) {
+    if (utf32Buffer[id].unicodeHash == 0) {
         return;
     }
-    
-    /* MARK: Buffer compressomaticleanerating [Pass 2.0]
-    Every known glyph has a known starting index now. So it can be futzed with.
-    Every newline character visits every other character in the buffer,
-     and every non-new-line visits the following characters in that line.
-    
-     If we expand the newline characters to include the starting character, we can
-     do a bit of work:
-      -- if I'm the starting ID, then I'm going pretend I'm a newline character, and
-        participate in visiting all over characters
-      -- ... or I can just.. do it.. my.. self.. and lock up..a.. thread?... I'm.. a monster...
-        .... am I going to lock up an entire thread group to iterate over every character on the
-        .... initial ID to do all the offsets?.. I... guess I am.. and I know I will pay a price.
-    */
-    
-    if (utf32Buffer[id].codePoint == 10) {
-        uint myHeight = utf32Buffer[id].textureSize.y;
 
-        while (hasNext && isNextInBounds) {
-            atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].yOffset,
-                                      myHeight,
-                                      memory_order_relaxed);
-            
-            uint currentIndex = nextGlyphIndex;
-            nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
-            isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
-            hasNext = nextGlyphIndex > currentIndex && nextGlyphIndex != currentIndex;
+    float currentXOffset = 0;
+    float currentYOffset = 0;
+    float currentCharacterOffset = 0;
+    bool foundLineStart = false;
+    bool shouldContinueBacktrack = true;
+    
+    uint previousGlyphIndex = id;
+    previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
+                                                utf32Buffer,
+                                                previousGlyphIndex,
+                                                utf8BufferSize);
+    while (shouldContinueBacktrack) {
+        // Early return; no previous, no previous to read.
+        if (previousGlyphIndex == id) {
+            shouldContinueBacktrack = false;
+            continue;
         }
-    } else {
-        // If I'm starting as any other character in the grid, I just add up some x-offsets
-        const uint myWidth = utf32Buffer[id].textureSize.x;
-        bool shouldSetXOffset = utf32Buffer[nextGlyphIndex].codePoint != 10;
         
-        // Unicode length index offset is my length, -1. Hooray pointer offsets.
-        const uint myUnicodeLengthOffset = atomic_load_explicit(&utf32Buffer[id].totalUnicodeSequenceCount,
-                                                                memory_order_relaxed);
-        while (hasNext
-               && isNextInBounds
-               && utf32Buffer[nextGlyphIndex].unicodeHash > 0
-        ) {
-            /* MARK: Buffer compressomaticleanerating [Pass 2.1]
-             We're hitching a ride on the xOffset express, except we've got a ticket for the end of the
-             line. We'll stop setting xOffset once we hit our first newline.
-            */
-            if (shouldSetXOffset) {
-                atomic_fetch_add_explicit(&utf32Buffer[nextGlyphIndex].xOffset,
-                                          myWidth,
-                                          memory_order_relaxed);
-            }
-            
-            /* MARK: Buffer compressomaticleanerating [Pass 2.2]
-             Well, we found our next index, so.. go ahead and decrement it's known index by our length.
-             Hoo boy. We can safely ignore the `\n` case since it's a single codepoint anyway, one byte,
-             and doesn't interact with the overall index anyway. Noice.
-            */
-            if (myUnicodeLengthOffset > 1) {
-                atomic_fetch_sub_explicit(&utf32Buffer[nextGlyphIndex].sourceRenderableStringIndex,
-                                          myUnicodeLengthOffset - 1,  // <--- there's the -1 (- 1)
-                                          memory_order_relaxed);
-            }
-            
-            uint currentIndex = nextGlyphIndex;
-            nextGlyphIndex = indexOfCharacterAfter(utf8Buffer, utf32Buffer, currentIndex, utf8BufferSize);
-            isNextInBounds = nextGlyphIndex > 0 && nextGlyphIndex < *utf8BufferSize;
-            hasNext = nextGlyphIndex > currentIndex && nextGlyphIndex != currentIndex;
-            
-            // Toggle it off; we should only set if we already are, and the next glyph isn't a separator.
-            // If it is, then [shouldSet = (true) && !(true) => true && false => false]
-            // And the next iteration, [shouldSet = false && !(false) => false && true => false]
-            shouldSetXOffset = shouldSetXOffset && !(utf32Buffer[nextGlyphIndex].codePoint != 10);
+        // --- Do the offset mathing
+        GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
+        // If we found a new line, add to the current y offset..
+        if (previousGlyph.codePoint == 10) {
+            currentYOffset -= previousGlyph.textureSize.y;
+            foundLineStart = true;
         }
+        // And if we're still iterating backward in the same line, accumulate some width
+        if (!foundLineStart) {
+            currentXOffset += previousGlyph.textureSize.x;
+        }
+        currentCharacterOffset += 1;
+        // ---
+        
+        // --- Do the iterator backtracking
+        // Grab the current index, and check the last one
+        uint currentIndex = previousGlyphIndex;
+        previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
+                                                    utf32Buffer,
+                                                    previousGlyphIndex,
+                                                    utf8BufferSize);
+        
+        // Stop backtracking if the index we get back as 'before' is us, which means we're done.
+        // Also said, you should keep going iff the previous index is not the current index.
+        shouldContinueBacktrack = previousGlyphIndex != currentIndex;
     }
+    
+    // --- Set the final values all safe like because we're the only writer.. lol.
+    utf32Buffer[id].xOffset = currentXOffset;
+    utf32Buffer[id].yOffset = currentYOffset;
+    utf32Buffer[id].sourceRenderableStringIndex = currentCharacterOffset;
 }
 
 
@@ -599,14 +563,23 @@ kernel void utf8ToUtf32Kernel(
 kernel void processNewUtf32AtlasMapping(
     device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
                  uint id                                  [[thread_position_in_grid]],
-    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(1)]]
+    device       GlyphMapKernelOut* cleanGlyphBuffer      [[buffer(1)]],
+    constant     uint* unprocessedSize                    [[buffer(2)]],
+    constant     uint* cleanOutputSize                    [[buffer(3)]]
 ) {
-    if (unprocessedGlyphs[id].unicodeHash > 0) {
-        uint targetBufferIndex = atomic_load_explicit(&unprocessedGlyphs[id].sourceRenderableStringIndex,
-                                                      memory_order_relaxed);
-        GlyphMapKernelOut__Copy(/*from*/ unprocessedGlyphs[id],
-                                /*to*/   cleanGlyphBuffer[targetBufferIndex]);
+    if (id < 0 || id >= *unprocessedSize) {
+        return;
     }
+    if (unprocessedGlyphs[id].unicodeHash == 0) {
+        return;
+    }
+    
+    uint targetBufferIndex = unprocessedGlyphs[id].sourceRenderableStringIndex;
+    if (targetBufferIndex < 0 || targetBufferIndex >= *cleanOutputSize) {
+        return;
+    }
+    
+    cleanGlyphBuffer[targetBufferIndex] = unprocessedGlyphs[id];
 }
 
 kernel void utf8ToUtf32KernelAtlasMapped(
@@ -671,10 +644,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
         utf32Buffer[id].sourceUtf8BufferIndex = id;
         utf32Buffer[id].unicodeCodePointLength = getUnicodeLengthFromSlots(utf32Buffer, id);
         
-        atomic_store_explicit(&utf32Buffer[id].sourceRenderableStringIndex,
-                              id,
-                              memory_order_relaxed);
-        
+        utf32Buffer[id].sourceRenderableStringIndex = id;
         atomic_fetch_add_explicit(totalCharacterCount, 1, memory_order_relaxed);
     }
 }
