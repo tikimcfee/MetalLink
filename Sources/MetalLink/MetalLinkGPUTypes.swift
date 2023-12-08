@@ -35,6 +35,7 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         instanceID = .zero
         addedColor = .zero
         bufferIndex = .zero
+        unicodeHash = .zero
         useParentMatrix = 1
     }
 }

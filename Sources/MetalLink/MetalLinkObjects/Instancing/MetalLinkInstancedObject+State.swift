@@ -9,6 +9,8 @@ import Foundation
 import Metal
 import BitHandling
 import MetalLinkHeaders
+import MetalLinkResources
+import MetalLinkHeaders
 
 public class InstanceState<
     InstanceKey,
@@ -73,7 +75,7 @@ public class InstanceState<
     }
     
     // lol get generic'd on
-    private func updateBufferOnChange<Node: MetalLinkNode> (
+    public func updateBufferOnChange<Node: MetalLinkNode> (
         newConstants: InstancedConstants,
         updated: Node
     ) {

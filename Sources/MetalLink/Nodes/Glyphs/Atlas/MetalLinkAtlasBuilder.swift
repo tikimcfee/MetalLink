@@ -375,7 +375,7 @@ public extension AtlasBuilder {
     }()
 }
 
-private extension MTLDevice {
+public extension MTLDevice {
     func loadToMTLBuffer(data: Data) -> MTLBuffer? {
         return data.withUnsafeBytes { bufferPointer -> MTLBuffer? in
             guard let baseAddress = bufferPointer.baseAddress else { return nil }

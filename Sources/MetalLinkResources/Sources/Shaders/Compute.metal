@@ -6,6 +6,20 @@
 
 // MARK: - Simple helpers
 
+float4x4 translationOf(float3 offset) {
+    return float4x4(float4( 1, 0, 0, 0),
+                    float4( 0, 1, 0, 0),
+                    float4( 0, 0, 1, 0),
+                    float4( offset.x, offset.y, offset.z, 1));
+}
+
+float2 unitSize(float2 source) {
+    float unitWidth = 1.0 / source.x;
+    float unitHeight = 1.0 / source.y;
+    return float2(min(source.x * unitHeight, 1.0),
+                  min(source.y * unitWidth, 1.0));
+}
+
 // Safely get byte at index, handling bounds check
 uint8_t getByte(
     const device uint8_t* bytes,
@@ -503,8 +517,9 @@ kernel void utf32GlyphMapLayout(
     }
     
     // --- Set the final values all safe like because we're the only writer.. lol.
-    utf32Buffer[id].xOffset = currentXOffset;
-    utf32Buffer[id].yOffset = currentYOffset;
+    utf32Buffer[id].positionOffset.x = currentXOffset;
+    utf32Buffer[id].positionOffset.y = currentYOffset;
+    utf32Buffer[id].modelMatrix = float4x4(1.0) * translationOf(float3(currentXOffset, currentYOffset, 0));
     utf32Buffer[id].sourceRenderableStringIndex = currentCharacterOffset;
 }
 
@@ -583,6 +598,38 @@ kernel void processNewUtf32AtlasMapping(
     cleanGlyphBuffer[targetBufferIndex] = glyphCopy;
 }
 
+kernel void blitGlyphsIntoConstants(
+    device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
+                 uint id                                  [[thread_position_in_grid]],
+    device       InstancedConstants* targetConstants      [[buffer(1)]],
+    constant     uint* unprocessedSize                    [[buffer(2)]],
+    constant     uint* expectedCharacterCount             [[buffer(3)]],
+    device       atomic_uint* instanceCounter             [[buffer(4)]]
+) {
+    if (id < 0 || id >= *unprocessedSize) {
+        return;
+    }
+    GlyphMapKernelOut glyphCopy = unprocessedGlyphs[id];
+    if (glyphCopy.unicodeHash == 0) {
+        return;
+    }
+    
+    uint targetBufferIndex = glyphCopy.sourceRenderableStringIndex;
+    if (targetBufferIndex < 0 || targetBufferIndex >= *expectedCharacterCount) {
+        return;
+    }
+    
+    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
+    targetConstants[targetBufferIndex].instanceID = myID;
+    targetConstants[targetBufferIndex].bufferIndex = targetBufferIndex;
+    targetConstants[targetBufferIndex].modelMatrix = glyphCopy.modelMatrix;
+    targetConstants[targetBufferIndex].textureDescriptorU = glyphCopy.textureDescriptorU;
+    targetConstants[targetBufferIndex].textureDescriptorV = glyphCopy.textureDescriptorV;
+    targetConstants[targetBufferIndex].addedColor = float4(0.0);
+    targetConstants[targetBufferIndex].useParentMatrix = 1;
+}
+
+
 kernel void utf8ToUtf32KernelAtlasMapped(
     const device uint8_t* utf8Buffer                [[buffer(0)]],
     device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
@@ -635,7 +682,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     if (hash > 0 && hash < *atlasBufferSize) {
         GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
         
-        utf32Buffer[id].textureSize = atlasData.textureSize;
+        utf32Buffer[id].textureSize = unitSize(atlasData.textureSize);
         utf32Buffer[id].textureDescriptorU = atlasData.textureDescriptorU;
         utf32Buffer[id].textureDescriptorV = atlasData.textureDescriptorV;
         

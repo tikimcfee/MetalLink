@@ -16,6 +16,7 @@ public class MetalLinkGlyphNodeMeshCache: LockingCache<GlyphCacheKey, MetalLinkQ
     }
     
     public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
-        MetalLinkQuadMesh(link)
+        let newMesh = MetalLinkQuadMesh(link)
+        return newMesh
     }
 }

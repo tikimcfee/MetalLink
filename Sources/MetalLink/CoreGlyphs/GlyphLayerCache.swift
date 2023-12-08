@@ -20,6 +20,10 @@ public struct GlyphCacheKey: Codable, Hashable, Equatable {
     public let foreground: SerialColor
     public let background: SerialColor
     
+    var unicodeHash: UInt64 {
+        glyph.first!.glyphComputeHash
+    }
+    
     public init(
         source: Character,
         _ foreground: NSUIColor,
@@ -34,19 +38,6 @@ public struct GlyphCacheKey: Codable, Hashable, Equatable {
         case glyph = 1
         case foreground = 2
         case background = 3
-    }
-}
-
-extension Character: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let string = try container.decode(String.self)
-        self = string.first!
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(String(self))
     }
 }
 

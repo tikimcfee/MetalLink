@@ -23,6 +23,8 @@ struct InstancedConstants {
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
+    uint64_t unicodeHash;
+    
     uint instanceID;
     simd_float4 addedColor;
     uint bufferIndex; // index of self in cpu mtlbuffer
@@ -111,9 +113,8 @@ struct GlyphMapKernelOut {
     simd_float4 textureDescriptorV;
     
     // --- layout
-    float xOffset;
-    float yOffset;
-    float zOffset;
+    simd_float4 positionOffset;
+    simd_float4x4 modelMatrix;
 };
 
 struct SceneConstants {

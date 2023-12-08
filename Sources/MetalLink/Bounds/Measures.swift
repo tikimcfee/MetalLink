@@ -215,7 +215,6 @@ extension MetalLinkNode {
 
 
 public extension Measures {
-    
     func computeLocalSize() -> Bounds {
         var totalBounds = Bounds.forBaseComputing
 
