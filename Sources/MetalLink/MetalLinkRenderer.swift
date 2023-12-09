@@ -9,6 +9,7 @@ public protocol MetalLinkRendererDelegate {
 #if os(xrOS)
 public class MetalLinkRenderer : NSObject, MetalLinkReader {
     public var link: MetalLink
+    public var paused = false
     
     public init(link: MetalLink) {
         self.link = link
@@ -20,6 +21,7 @@ public class MetalLinkRenderer : NSObject, MetalLinkReader {
 public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     public let link: MetalLink
     public var renderDelegate: MetalLinkRendererDelegate?
+    public var paused = false
 
     public init(link: MetalLink) throws {
         self.link = link
@@ -32,6 +34,8 @@ public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     }
     
     public func draw(in view: MTKView) {
+        if paused { return }
+        
         guard var sdp = SafeDrawPass.wrap(link)
         else {
             print("Cannot create SafeDrawPass")

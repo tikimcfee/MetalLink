@@ -35,6 +35,27 @@ final public class GlyphCollection: MetalLinkInstancedObject<
             totalBounds.union(with: node.sizeBounds)
         }
         return totalBounds * scale
+        
+        // TODO: So this works, but it's a bit slower, likely from offset creation...
+//        return pointerBounds() * scale
+    }
+    
+    private func pointerBounds() -> Bounds {
+        var totalBounds = Bounds.forBaseComputing
+        let pointer = instanceState.constants.pointer
+        for index in instanceState.instanceBufferRange {
+            let constants = pointer[index]
+            let size = constants.textureSize
+            var sizeBounds = Bounds(
+                LFloat3(-size.x / 2.0, -size.y / 2.0, 0),
+                LFloat3( size.x / 2.0,  size.y / 2.0, 1)
+            )
+            sizeBounds = sizeBounds + LFloat3(constants.positionOffset.x,
+                                              constants.positionOffset.y,
+                                              constants.positionOffset.z)
+            totalBounds.union(with: sizeBounds)
+        }
+        return totalBounds
     }
         
     public init(
@@ -114,6 +135,7 @@ public extension GlyphCollection {
         let constantsPointer = state.constants.pointer
         let count = state.instanceBufferCount
         
+        pausedInvalidate = true
         for index in (0..<count) {
             let constants = constantsPointer[index] // this should match...
             guard constants.unicodeHash > 0 else {
@@ -123,6 +145,8 @@ public extension GlyphCollection {
             if let cacheKey = glyphCache.safeReadUnicodeHash(hash: constants.unicodeHash),
                let newNode = nodeCache.create(cacheKey)
             {
+                newNode.pausedInvalidate = true
+                
                 newNode.instanceConstants = constants
                 newNode.position = LFloat3(constants.positionOffset.x,
                                            constants.positionOffset.y,
@@ -132,10 +156,36 @@ public extension GlyphCollection {
                 state.instanceIdNodeLookup[constants.instanceID] = newNode
                 state.nodes.append(newNode)
                 newNode.parent = self
+                
+                newNode.pausedInvalidate = false
             }
         }
+        pausedInvalidate = false
         
-        setRootMesh()
+        setRootMeshPointer()
+    }
+    
+    func setRootMeshPointer() {
+        guard instanceState.constants.endIndex != 0,
+              !instanceState.didSetRoot
+        else {
+            return
+        }
+        
+        // TODO: Use safe
+        let pointer = instanceState.constants.pointer
+        guard let firstIndex = instanceState.instanceBufferRange.first(where: { index in
+            pointer[index].textureSize.x > 0.1
+        }) else {
+            return
+        }
+        let firstSize = pointer[firstIndex].textureSize
+        
+        instanceState.didSetRoot = true
+        let newMesh = MetalLinkQuadMesh(link)
+        newMesh.setSize(firstSize)
+        
+        mesh = newMesh
     }
     
     func setRootMesh() {

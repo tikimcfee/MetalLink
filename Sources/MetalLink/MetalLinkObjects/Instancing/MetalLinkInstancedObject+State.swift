@@ -30,6 +30,7 @@ public class InstanceState<
     public let constants: BackingBuffer<InstancedConstants>
     public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
     
+    public var instanceBufferRange: Range<Int> { (0..<constants.currentEndIndex) }
     public var instanceBufferCount: Int { constants.currentEndIndex }
     public var instanceBuffer: MTLBuffer { constants.buffer }
     public var rawPointer: UnsafeMutablePointer<InstancedConstants> {

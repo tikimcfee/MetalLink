@@ -27,6 +27,7 @@ public class MetalLinkPickingTexture: MetalLinkReader {
     public let link: MetalLink
     public var pickingTexture: MTLTexture?
     public var generateNewTexture: Bool = false
+    public var pickingPaused: Bool = false
     
     public var currentHover: InstanceIDType = .zero {
         didSet { pickingHover.send(currentHover) }
@@ -70,6 +71,8 @@ public class MetalLinkPickingTexture: MetalLinkReader {
 
 private extension MetalLinkPickingTexture {
     func onMouseMove(_ mouseMove: OSEvent) {
+        guard !pickingPaused else { return }
+        
         let (x, y) = (mouseMove.locationInWindow.x.float,
                       mouseMove.locationInWindow.y.float)
         let position = convertToDrawablePosition(windowX: x, windowY: y)

@@ -27,7 +27,7 @@ public class ConvertCompute: MetalLinkReader {
     
     // Give me .utf8 text data and I'll do weird things to a buffer and give it back.
     public func execute(
-        inputData: NSData
+        inputData: Data
     ) throws -> MTLBuffer {
         let commandBuffer = commandQueue.makeCommandBuffer()
         let computeCommandEncoder = commandBuffer?.makeComputeCommandEncoder()
@@ -68,10 +68,8 @@ public class ConvertCompute: MetalLinkReader {
         return outputUTF32ConversionBuffer
     }
     
-
-    
-    public func executeWithAtlas(
-        inputData: NSData,
+    public func executeWithAtlasBuffer(
+        inputData: Data,
         atlasBuffer: MTLBuffer
     ) throws -> (MTLBuffer, UInt32) {
         guard let commandBuffer = commandQueue.makeCommandBuffer()
@@ -82,7 +80,7 @@ public class ConvertCompute: MetalLinkReader {
             characterCountBuffer,
             _
         ) = try setupAtlasLayoutCommandEncoder(
-            for: inputData,
+            for: try makeInputBuffer(inputData),
             in: commandBuffer,
             atlasBuffer: atlasBuffer
         )
@@ -217,14 +215,30 @@ private class ConvertComputeFunctions: MetalLinkReader {
 
 extension ConvertCompute {
     // Create a Metal buffer from the Data object
-    private func makeInputBuffer(_ data: NSData) throws -> MTLBuffer {
-        guard let metalBuffer = device.makeBuffer(
-            bytes: data.bytes,
-            length: data.count,
-            options: []
-        )
-        else { throw ComputeError.bufferCreationFailed }
-        return metalBuffer
+    private func makeInputBuffer(_ data: Data) throws -> MTLBuffer {
+        #if os(iOS)
+        let mode = MTLResourceOptions.storageModeShared
+        #else
+        let mode = MTLResourceOptions.storageModeManaged
+        #endif
+        
+        let buffer: MTLBuffer? = data.withUnsafeBytes { rawBufferPointer in
+            if let base = rawBufferPointer.baseAddress {
+                return device.makeBuffer(
+                    bytes: base,
+                    length: data.count,
+                    options: [mode]
+                )
+            } else {
+                return nil
+            }
+        }
+        
+        guard let buffer else {
+            throw ComputeError.bufferCreationFailed
+        }
+        
+        return buffer
     }
     
     // Teeny buffer to write total character count
@@ -361,26 +375,82 @@ public extension ConvertCompute {
 // MARK: - Glyph Magic
 
 public extension ConvertCompute {
+    typealias InputBufferList = ConcurrentArray<(URL, MTLBuffer)>
+    typealias ErrorList = ConcurrentArray<Error>
+    typealias ResultList = ConcurrentArray<EncodeResult>
+    
     func executeManyWithAtlas(
         sources: [URL],
         atlas: MetalLinkAtlas
     ) throws -> [EncodeResult] {
-        // MARK: ------ [Many Atlas layout]
-        let dispatchGroup = DispatchGroup()
+        let errors = ConcurrentArray<Error>()
+
+        // MARK: ------ [Many Buffer build]
+        // Setup buffers from CPU side...
+        let loadedData = dispatchMapToBuffers(
+            sources: sources,
+            errors: errors
+        )
         
+        // MARK: ------ [Many Atlas layout]
+        // Map all of them to atlas mapping and layout encoding
         guard let commandBufferLayout = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
+        let results = encodeLayout(
+            for: loadedData,
+            in: commandBufferLayout,
+            atlas: atlas,
+            errors: errors
+        )
+        // All atlas encoders are ready; commit the command buffer and wait for it to complete
+        commandBufferLayout.commit()
+        commandBufferLayout.waitUntilCompleted()
         
-        let results = ConcurrentArray<EncodeResult>()
-        let errors = ConcurrentArray<Error>()
-        let loadedData = ConcurrentArray<(URL, Data)>()
-
+        
+        // MARK: ------ [Many Copy Blit]
+        // TODO: just process on CPU maybe?... could be parallel too... =(
+        guard let commandBufferBlit = commandQueue.makeCommandBuffer()
+        else { throw ComputeError.startupFailure }
+        encodeConstantsBlit(
+            into: results,
+            in: commandBufferBlit,
+            atlas: atlas,
+            errors: errors
+        )
+        commandBufferBlit.commit()
+        commandBufferBlit.waitUntilCompleted()
+        
+        // MARK: ----- [Many Grid Rebuild]
+        // Iterate again and rebuild all the instance state objects.
+        // The more we do this, the more it gets closers to all being GPU...
+        dispatchCollectionRebuilds(
+            for: results,
+            atlas: atlas
+        )
+        
+        return results.values
+    }
+    
+    private func dispatchMapToBuffers(
+        sources: [URL],
+        errors: ErrorList
+    ) -> InputBufferList {
+        let loadedData = InputBufferList()
+        let dispatchGroup = DispatchGroup()
+        
         for source in sources {
             dispatchGroup.enter()
-            WorkerPool.shared.nextWorker().async {
+            WorkerPool.shared.nextConcurrentWorker().async { [makeInputBuffer] in
                 do {
-                    let data = try Data(contentsOf: source, options: .alwaysMapped)
-                    loadedData.append((source, data))
+                    var data = try Data(
+                        contentsOf: source,
+                        options: [.alwaysMapped]
+                    )
+                    if data.count == 0 {
+                        data = String("<empty-file>").data(using: .utf8)!
+                    }
+                    let buffer = try makeInputBuffer(data)
+                    loadedData.append((source, buffer))
                 } catch {
                     errors.append(error)
                 }
@@ -388,8 +458,18 @@ public extension ConvertCompute {
             }
         }
         dispatchGroup.wait()
+        return loadedData
+    }
+    
+    private func encodeLayout(
+        for loadedData: InputBufferList,
+        in commandBuffer: MTLCommandBuffer,
+        atlas: MetalLinkAtlas,
+        errors: ErrorList
+    ) -> ResultList {
+        let results = ResultList()
         
-        for (source, data) in loadedData.values {
+        for (source, buffer) in loadedData.values {
             do {
                 // Setup the first atlas + layout encoder
                 let (
@@ -397,8 +477,8 @@ public extension ConvertCompute {
                     characterCountBuffer,
                     computeCommandEncoder
                 ) = try self.setupAtlasLayoutCommandEncoder(
-                    for: data as NSData,
-                    in: commandBufferLayout,
+                    for: buffer,
+                    in: commandBuffer,
                     atlasBuffer: atlas.currentBuffer
                 )
                 
@@ -417,41 +497,54 @@ public extension ConvertCompute {
             }
         }
         
-        commandBufferLayout.commit()
-        commandBufferLayout.waitUntilCompleted()
-        
-        
-        // MARK: ------ [Many Copy Blit]
-        // TODO: just process on CPU maybe?... could be parallel too... =(
-        
-        guard let commandBufferBlit = commandQueue.makeCommandBuffer()
-        else { throw ComputeError.startupFailure }
-        
+        return results
+    }
+    
+    private func encodeConstantsBlit(
+        into results: ResultList,
+        in commandBuffer: MTLCommandBuffer,
+        atlas: MetalLinkAtlas,
+        errors: ErrorList
+    ) {
         for result in results.values {
             switch result.blitEncoder {
             case .notSet:
-                // Create a new instance state to
-                let newState = try InstanceState(
-                    link: link,
-                    instanceBuilder: atlas.nodeCache.create
-                )
+                // Create a new instance state to blit our glyph data into
+                guard result.finalCount > 0 else {
+                    print("-- (Couldn't map; empty final count for: \(result.sourceURL.lastPathComponent)")
+                    continue
+                }
                 
-                // Setup the blitter which maps the unicode magic to the render magic
-                let blitEncoder = try setupCopyBlitCommandEncoder(
-                    for: result.outputBuffer,
-                    targeting: newState,
-                    expectedCharacterCount: result.finalCount,
-                    in: commandBufferBlit
-                )
-                result.blitEncoder = .set(blitEncoder, newState)
+                do {
+                    let newState = try InstanceState(
+                        link: link,
+                        bufferSize: Int(Float(result.finalCount) * 1.5),
+                        instanceBuilder: atlas.nodeCache.create
+                    )
+                    
+                    // Setup the blitter which maps the unicode magic to the render magic
+                    let blitEncoder = try setupCopyBlitCommandEncoder(
+                        for: result.outputBuffer,
+                        targeting: newState,
+                        expectedCharacterCount: result.finalCount,
+                        in: commandBuffer
+                    )
+                    result.blitEncoder = .set(blitEncoder, newState)
+                } catch {
+                    errors.append(error)
+                }
 
             case .set(_, _):
                 fatalError("this.. how!?")
             }
         }
-        commandBufferBlit.commit()
-        commandBufferBlit.waitUntilCompleted()
-        
+    }
+    
+    private func dispatchCollectionRebuilds(
+        for results: ResultList,
+        atlas: MetalLinkAtlas
+    ) {
+        let dispatchGroup = DispatchGroup()
         for result in results.values {
             switch result.blitEncoder {
             case .notSet:
@@ -459,10 +552,9 @@ public extension ConvertCompute {
 
             case .set(_, let state):
                 dispatchGroup.enter()
-                WorkerPool.shared.nextWorker().async { [link] in
+                WorkerPool.shared.nextConcurrentWorker().async { [link] in
                     do {
                         state.constants.currentEndIndex = Int(result.finalCount)
-                        state.constants.remakePointer()
                         let collection = try GlyphCollection(
                             link: link,
                             linkAtlas: atlas,
@@ -478,49 +570,8 @@ public extension ConvertCompute {
             }
         }
         dispatchGroup.wait()
-        
-        return results.values
     }
-    
-    func executeManyWithAtlasBuffer(
-        sources: [URL],
-        atlasBuffer: MTLBuffer
-    ) throws -> [EncodeResult] {
-        guard let commandBuffer = commandQueue.makeCommandBuffer()
-        else { throw ComputeError.startupFailure }
-        
-        var results = [EncodeResult]()
-        var errors = [Error]()
-        for source in sources {
-            do {
-                let data = try Data(contentsOf: source, options: .alwaysMapped)
-                let (
-                    outputUTF32ConversionBuffer,
-                    characterCountBuffer,
-                    computeCommandEncoder
-                ) = try setupAtlasLayoutCommandEncoder(
-                    for: data as NSData,
-                    in: commandBuffer,
-                    atlasBuffer: atlasBuffer
-                )
-                
-                results.append(EncodeResult(
-                    sourceURL: source,
-                    outputBuffer: outputUTF32ConversionBuffer,
-                    characterCountBuffer: characterCountBuffer,
-                    sourceEncoder: computeCommandEncoder
-                ))
-            } catch {
-                errors.append(error)
-            }
-        }
-        
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
-        
-        return results
-    }
-    
+
     private func setupCopyBlitCommandEncoder(
         for unprocessedBuffer: MTLBuffer,
         targeting targetConstants: InstanceState<GlyphCacheKey, MetalLinkGlyphNode>,
@@ -531,11 +582,7 @@ public extension ConvertCompute {
         let constantsBlitPipelineState = try functions.makeConstantsBlitPipelineState()
         guard let computeCommandEncoder
         else { throw ComputeError.startupFailure }
-        
-        try targetConstants
-            .constants
-            .expandBuffer(nextSize: Int(expectedCharacterCount), force: true)
-        
+    
         // MARK: -- Fire up Compressenator.
         
         // Source / target buffers
@@ -582,7 +629,7 @@ public extension ConvertCompute {
     
     // Give me .utf8 text data and an atlas buffer and I'll do even weirder things
     private func setupAtlasLayoutCommandEncoder(
-        for inputData: NSData,
+        for inputUTF8TextDataBuffer: MTLBuffer,
         in commandBuffer: MTLCommandBuffer,
         atlasBuffer: MTLBuffer
     ) throws -> (
@@ -595,7 +642,6 @@ public extension ConvertCompute {
         else { throw ComputeError.startupFailure }
         
         // MARK: -- Fire up atlas
-        let inputUTF8TextDataBuffer = try makeInputBuffer(inputData)
         let outputUTF32ConversionBuffer = try makeRawOutputBuffer(from: inputUTF8TextDataBuffer)
         let atlasPipelineState = try functions.makeAtlasRenderPipelineState()
         

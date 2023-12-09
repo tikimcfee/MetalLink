@@ -9,9 +9,9 @@ import BitHandling
 public extension TextureUVCache {
     private static let lock = LockWrapper()
     func safeReadUnicodeHash(hash: UInt64) -> GlyphCacheKey? {
-        Self.lock.readLock()
+//        Self.lock.readLock()
         let value = unicodeMap[hash]
-        Self.lock.unlock()
+//        Self.lock.unlock()
         return value
     }
     

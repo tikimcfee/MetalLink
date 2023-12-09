@@ -10,7 +10,7 @@ float4x4 translationOf(float3 offset) {
     return float4x4(float4( 1, 0, 0, 0),
                     float4( 0, 1, 0, 0),
                     float4( 0, 0, 1, 0),
-                    float4( offset.x, offset.y, offset.z, 1));
+                    float4(offset.x, offset.y, offset.z, 1));
 }
 
 float2 unitSize(float2 source) {
@@ -475,7 +475,8 @@ kernel void utf32GlyphMapLayout(
     float currentYOffset = 0;
     float currentZOffset = 0;
     float currentCharacterOffset = 0;
-    const float MAX_X_OFFSET = 300; // because width is just too precious
+    const float MAX_X_OFFSET = 300;  // because some rectangles are just whacky.
+    const float MIN_Y_OFFSET = -500; // because some rectangles are just whacky.
     
     bool foundLineStart = false;
     bool shouldContinueBacktrack = true;
@@ -494,6 +495,7 @@ kernel void utf32GlyphMapLayout(
         
         // --- Do the offset mathing
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
+        
         // If we found a new line, add to the current y offset..
         if (previousGlyph.codePoint == 10) {
             currentYOffset -= previousGlyph.textureSize.y;
@@ -503,12 +505,20 @@ kernel void utf32GlyphMapLayout(
         if (!foundLineStart) {
             currentXOffset += previousGlyph.textureSize.x;
         }
-        // .. and we're kind to the reader and we break out a little early when we see long lengths.. we don't change Z yet.. YET.
+        
+        // .. If we're running off max-x, the go back to the leading, drop a line, and move back.
         if (currentXOffset >= MAX_X_OFFSET) {
             currentXOffset = 0;
-            currentYOffset -= 1.5; // Make it a little more visually distinct than a regular /n
             currentZOffset -= 2.0; // Make it a little more visually distinct than a regular /n
         }
+        
+        // .. We're adding up offset for every previous character, but we need to move ourselves.
+        // If we're off the bottom, jump back to top and move backward.
+        if (currentYOffset <= MIN_Y_OFFSET) {
+            currentYOffset = 0;
+            currentZOffset -= 16.0;
+        }
+        
         currentCharacterOffset += 1;
         // ---
         
@@ -523,6 +533,9 @@ kernel void utf32GlyphMapLayout(
         // Stop backtracking if the index we get back as 'before' is us, which means we're done.
         // Also said, you should keep going iff the previous index is not the current index.
         shouldContinueBacktrack = previousGlyphIndex != currentIndex;
+        shouldContinueBacktrack = shouldContinueBacktrack
+                               && previousGlyphIndex >= 0
+                               && previousGlyphIndex <* utf8BufferSize;
     }
     
     // --- Set the final values all safe like because we're the only writer.. lol.
