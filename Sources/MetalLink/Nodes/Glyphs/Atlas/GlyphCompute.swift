@@ -379,9 +379,27 @@ public extension ConvertCompute {
     typealias ErrorList = ConcurrentArray<Error>
     typealias ResultList = ConcurrentArray<EncodeResult>
     
+    enum Event {
+        case bufferMapped(String)
+        case layoutEncoded(String)
+        case copyEncoded(String)
+        case collectionReady(String)
+        
+        var name: String {
+            switch self {
+            case let .bufferMapped(name),
+                let .layoutEncoded(name),
+                let .copyEncoded(name),
+                let .collectionReady(name):
+                return name
+            }
+        }
+    }
+    
     func executeManyWithAtlas(
         sources: [URL],
-        atlas: MetalLinkAtlas
+        atlas: MetalLinkAtlas,
+        onEvent: @escaping (Event) -> Void = { _ in }
     ) throws -> [EncodeResult] {
         let errors = ConcurrentArray<Error>()
 
@@ -389,43 +407,37 @@ public extension ConvertCompute {
         // Setup buffers from CPU side...
         let loadedData = dispatchMapToBuffers(
             sources: sources,
-            errors: errors
+            errors: errors,
+            onEvent: onEvent
         )
         
         // MARK: ------ [Many Atlas layout]
         // Map all of them to atlas mapping and layout encoding
-        guard let commandBufferLayout = commandQueue.makeCommandBuffer()
-        else { throw ComputeError.startupFailure }
-        let results = encodeLayout(
+        let results = try encodeLayout(
             for: loadedData,
-            in: commandBufferLayout,
+            in: commandQueue,
             atlas: atlas,
-            errors: errors
+            errors: errors,
+            onEvent: onEvent
         )
-        // All atlas encoders are ready; commit the command buffer and wait for it to complete
-        commandBufferLayout.commit()
-        commandBufferLayout.waitUntilCompleted()
-        
         
         // MARK: ------ [Many Copy Blit]
         // TODO: just process on CPU maybe?... could be parallel too... =(
-        guard let commandBufferBlit = commandQueue.makeCommandBuffer()
-        else { throw ComputeError.startupFailure }
-        encodeConstantsBlit(
+        try encodeConstantsBlit(
             into: results,
-            in: commandBufferBlit,
+            in: commandQueue,
             atlas: atlas,
-            errors: errors
+            errors: errors,
+            onEvent: onEvent
         )
-        commandBufferBlit.commit()
-        commandBufferBlit.waitUntilCompleted()
-        
+
         // MARK: ----- [Many Grid Rebuild]
         // Iterate again and rebuild all the instance state objects.
         // The more we do this, the more it gets closers to all being GPU...
         dispatchCollectionRebuilds(
             for: results,
-            atlas: atlas
+            atlas: atlas,
+            onEvent: onEvent
         )
         
         return results.values
@@ -433,14 +445,15 @@ public extension ConvertCompute {
     
     private func dispatchMapToBuffers(
         sources: [URL],
-        errors: ErrorList
+        errors: ErrorList,
+        onEvent: @escaping (Event) -> Void = { _ in }
     ) -> InputBufferList {
         let loadedData = InputBufferList()
         let dispatchGroup = DispatchGroup()
         
         for source in sources {
             dispatchGroup.enter()
-            WorkerPool.shared.nextConcurrentWorker().async { [makeInputBuffer] in
+            WorkerPool.shared.nextWorker().async { [makeInputBuffer] in
                 do {
                     var data = try Data(
                         contentsOf: source,
@@ -451,6 +464,8 @@ public extension ConvertCompute {
                     }
                     let buffer = try makeInputBuffer(data)
                     loadedData.append((source, buffer))
+                    
+                    onEvent(.bufferMapped(source.lastPathComponent))
                 } catch {
                     errors.append(error)
                 }
@@ -463,10 +478,15 @@ public extension ConvertCompute {
     
     private func encodeLayout(
         for loadedData: InputBufferList,
-        in commandBuffer: MTLCommandBuffer,
+        in queue: MTLCommandQueue,
         atlas: MetalLinkAtlas,
-        errors: ErrorList
-    ) -> ResultList {
+        errors: ErrorList,
+        onEvent: @escaping (Event) -> Void = { _ in }
+    ) throws -> ResultList {
+        // All atlas encoders are ready; commit the command buffer and wait for it to complete
+        guard let commandBuffer = commandQueue.makeCommandBuffer()
+        else { throw ComputeError.startupFailure }
+        
         let results = ResultList()
         
         for (source, buffer) in loadedData.values {
@@ -492,20 +512,29 @@ public extension ConvertCompute {
                 
                 // We're off to the races <3
                 results.append(mappedLayout)
+                
+                onEvent(.layoutEncoded(source.lastPathComponent))
             } catch {
                 errors.append(error)
             }
         }
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
         
         return results
     }
     
     private func encodeConstantsBlit(
         into results: ResultList,
-        in commandBuffer: MTLCommandBuffer,
+        in queue: MTLCommandQueue,
         atlas: MetalLinkAtlas,
-        errors: ErrorList
-    ) {
+        errors: ErrorList,
+        onEvent: @escaping (Event) -> Void = { _ in }
+    ) throws {
+        guard let commandBuffer = commandQueue.makeCommandBuffer()
+        else { throw ComputeError.startupFailure }
+        
         for result in results.values {
             switch result.blitEncoder {
             case .notSet:
@@ -530,6 +559,8 @@ public extension ConvertCompute {
                         in: commandBuffer
                     )
                     result.blitEncoder = .set(blitEncoder, newState)
+                    
+                    onEvent(.copyEncoded(result.sourceURL.lastPathComponent))
                 } catch {
                     errors.append(error)
                 }
@@ -538,11 +569,15 @@ public extension ConvertCompute {
                 fatalError("this.. how!?")
             }
         }
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
     }
     
     private func dispatchCollectionRebuilds(
         for results: ResultList,
-        atlas: MetalLinkAtlas
+        atlas: MetalLinkAtlas,
+        onEvent: @escaping (Event) -> Void = { _ in }
     ) {
         let dispatchGroup = DispatchGroup()
         for result in results.values {
@@ -552,7 +587,7 @@ public extension ConvertCompute {
 
             case .set(_, let state):
                 dispatchGroup.enter()
-                WorkerPool.shared.nextConcurrentWorker().async { [link] in
+                WorkerPool.shared.nextWorker().async { [link] in
                     do {
                         state.constants.currentEndIndex = Int(result.finalCount)
                         let collection = try GlyphCollection(
@@ -562,6 +597,8 @@ public extension ConvertCompute {
                         )
                         collection.rebuildInstanceNodesFromState()
                         result.collection = .built(collection)
+                        
+                        onEvent(.collectionReady(result.sourceURL.lastPathComponent))
                     } catch {
                         fatalError("-- What happen? Someone set us up a bomb?\n\(error)")
                     }
