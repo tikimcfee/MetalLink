@@ -115,6 +115,12 @@ open class MetalLinkNode: Measures {
     
     // MARK: Rendering
     
+    private var willUpdate: Bool {
+        currentModel.willUpdate
+        || cachedSize.willUpdate
+        || cachedBounds.willUpdate
+    }
+    
     open func rebuildTreeState() {
         guard !pausedInvalidate else { return }
         
@@ -123,6 +129,7 @@ open class MetalLinkNode: Measures {
         cachedSize.dirty()
         
         for child in children {
+            if child.willUpdate { continue }
             child.rebuildTreeState()
         }
     }
