@@ -1,5 +1,5 @@
 //
-//  2ETimeTutorialShader.metal
+//  SwiftGlyphsInstancingShader.metal
 //  MetalSimpleInstancing
 //
 //  Created by Ivan Lugo on 8/6/22.
