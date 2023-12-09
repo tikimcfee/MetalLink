@@ -457,7 +457,7 @@ public extension ConvertCompute {
         return results
     }
     
-    func executeManyWithAtlas(
+    func executeManyWithAtlasBuffer(
         sources: [URL],
         atlasBuffer: MTLBuffer
     ) throws -> [EncodeResult] {
