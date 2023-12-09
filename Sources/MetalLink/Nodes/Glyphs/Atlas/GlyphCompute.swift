@@ -6,6 +6,7 @@
 import Foundation
 import MetalKit
 import MetalLinkHeaders
+import BitHandling
 
 public enum ComputeRenderError: Error {
     case invalidUrl(URL)
@@ -365,23 +366,37 @@ public extension ConvertCompute {
         atlas: MetalLinkAtlas
     ) throws -> [EncodeResult] {
         // MARK: ------ [Many Atlas layout]
+        let dispatchGroup = DispatchGroup()
         
         guard let commandBufferLayout = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
         
-        var results = [EncodeResult]()
-        var errors = [Error]()
+        let results = ConcurrentArray<EncodeResult>()
+        let errors = ConcurrentArray<Error>()
+        let loadedData = ConcurrentArray<(URL, Data)>()
+
         for source in sources {
+            dispatchGroup.enter()
+            WorkerPool.shared.nextWorker().async {
+                do {
+                    let data = try Data(contentsOf: source, options: .alwaysMapped)
+                    loadedData.append((source, data))
+                } catch {
+                    errors.append(error)
+                }
+                dispatchGroup.leave()
+            }
+        }
+        dispatchGroup.wait()
+        
+        for (source, data) in loadedData.values {
             do {
-                // Read the URL data directly
-                let data = try Data(contentsOf: source, options: .alwaysMapped)
-                
                 // Setup the first atlas + layout encoder
                 let (
                     outputUTF32ConversionBuffer,
                     characterCountBuffer,
                     computeCommandEncoder
-                ) = try setupAtlasLayoutCommandEncoder(
+                ) = try self.setupAtlasLayoutCommandEncoder(
                     for: data as NSData,
                     in: commandBufferLayout,
                     atlasBuffer: atlas.currentBuffer
@@ -401,8 +416,10 @@ public extension ConvertCompute {
                 errors.append(error)
             }
         }
+        
         commandBufferLayout.commit()
         commandBufferLayout.waitUntilCompleted()
+        
         
         // MARK: ------ [Many Copy Blit]
         // TODO: just process on CPU maybe?... could be parallel too... =(
@@ -410,7 +427,7 @@ public extension ConvertCompute {
         guard let commandBufferBlit = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
         
-        for result in results {
+        for result in results.values {
             switch result.blitEncoder {
             case .notSet:
                 // Create a new instance state to
@@ -435,26 +452,34 @@ public extension ConvertCompute {
         commandBufferBlit.commit()
         commandBufferBlit.waitUntilCompleted()
         
-        for result in results {
+        for result in results.values {
             switch result.blitEncoder {
             case .notSet:
                 break
 
             case .set(_, let state):
-                state.constants.currentEndIndex = Int(result.finalCount)
-                state.constants.remakePointer()
-                let collection = try GlyphCollection(
-                    link: link,
-                    linkAtlas: atlas,
-                    instanceState: state
-                )
-                collection.rebuildInstanceNodesFromState()
-                result.collection = .built(collection)
-                print("well there's a state now...")
+                dispatchGroup.enter()
+                WorkerPool.shared.nextWorker().async { [link] in
+                    do {
+                        state.constants.currentEndIndex = Int(result.finalCount)
+                        state.constants.remakePointer()
+                        let collection = try GlyphCollection(
+                            link: link,
+                            linkAtlas: atlas,
+                            instanceState: state
+                        )
+                        collection.rebuildInstanceNodesFromState()
+                        result.collection = .built(collection)
+                    } catch {
+                        fatalError("-- What happen? Someone set us up a bomb?\n\(error)")
+                    }
+                    dispatchGroup.leave()
+                }
             }
         }
+        dispatchGroup.wait()
         
-        return results
+        return results.values
     }
     
     func executeManyWithAtlasBuffer(

@@ -473,7 +473,10 @@ kernel void utf32GlyphMapLayout(
 
     float currentXOffset = 0;
     float currentYOffset = 0;
+    float currentZOffset = 0;
     float currentCharacterOffset = 0;
+    const float MAX_X_OFFSET = 300; // because width is just too precious
+    
     bool foundLineStart = false;
     bool shouldContinueBacktrack = true;
     
@@ -500,6 +503,12 @@ kernel void utf32GlyphMapLayout(
         if (!foundLineStart) {
             currentXOffset += previousGlyph.textureSize.x;
         }
+        // .. and we're kind to the reader and we break out a little early when we see long lengths.. we don't change Z yet.. YET.
+        if (currentXOffset >= MAX_X_OFFSET) {
+            currentXOffset = 0;
+            currentYOffset -= 1.5; // Make it a little more visually distinct than a regular /n
+            currentZOffset -= 2.0; // Make it a little more visually distinct than a regular /n
+        }
         currentCharacterOffset += 1;
         // ---
         
@@ -519,7 +528,8 @@ kernel void utf32GlyphMapLayout(
     // --- Set the final values all safe like because we're the only writer.. lol.
     utf32Buffer[id].positionOffset.x = currentXOffset;
     utf32Buffer[id].positionOffset.y = currentYOffset;
-    utf32Buffer[id].modelMatrix = float4x4(1.0) * translationOf(float3(currentXOffset, currentYOffset, 0));
+    utf32Buffer[id].positionOffset.z = currentZOffset;
+    utf32Buffer[id].modelMatrix = float4x4(1.0) * translationOf(float3(currentXOffset, currentYOffset, currentZOffset));
     utf32Buffer[id].sourceRenderableStringIndex = currentCharacterOffset;
 }
 

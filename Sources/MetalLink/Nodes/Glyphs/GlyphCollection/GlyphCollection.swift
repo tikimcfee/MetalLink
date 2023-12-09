@@ -123,16 +123,15 @@ public extension GlyphCollection {
             if let cacheKey = glyphCache.safeReadUnicodeHash(hash: constants.unicodeHash),
                let newNode = nodeCache.create(cacheKey)
             {
-                newNode.parent = self
                 newNode.instanceConstants = constants
                 newNode.position = LFloat3(constants.positionOffset.x,
                                            constants.positionOffset.y,
                                            constants.positionOffset.z)
                 newNode.instanceUpdate = state.updateBufferOnChange
                 newNode.setQuadUnitSize(size: constants.textureSize)
-                newNode.rebuildNow()
                 state.instanceIdNodeLookup[constants.instanceID] = newNode
                 state.nodes.append(newNode)
+                newNode.parent = self
             }
         }
         
