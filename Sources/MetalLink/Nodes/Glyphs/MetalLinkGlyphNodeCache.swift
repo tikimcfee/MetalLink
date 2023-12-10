@@ -12,15 +12,14 @@ import MetalKit
 public class MetalLinkGlyphNodeCache {
     public let link: MetalLink
     
-    public let meshCache: MetalLinkGlyphNodeMeshCache
+    private lazy var sharedMesh = MetalLinkQuadMesh(link)
     
     public init(link: MetalLink) {
         self.link = link
-        self.meshCache = MetalLinkGlyphNodeMeshCache(link: link)
     }
     
     public func create(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
-        let mesh = meshCache[key]
+        let mesh = sharedMesh
         let node = MetalLinkGlyphNode(
             link,
             key: key,

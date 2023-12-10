@@ -25,7 +25,6 @@ public class MetalLink {
     // They all use MetalLink._library to fetch, and could be fields instead
     public lazy var meshLibrary = MeshLibrary(self)
     public lazy var shaderLibrary = MetalLinkShaderCache(link: self)
-    public lazy var vertexDescriptorLibrary = VertexDescriptorLibrary(link: self)
     public lazy var renderPipelineDescriptorLibrary = RenderPipelineDescriptorLibrary(link: self)
     public lazy var pipelineStateLibrary = RenderPipelineStateLibrary(link: self)
     public lazy var depthStencilStateLibrary = DepthStencilStateLibrary(link: self)

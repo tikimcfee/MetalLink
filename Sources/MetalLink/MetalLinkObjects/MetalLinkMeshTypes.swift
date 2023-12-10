@@ -134,31 +134,29 @@ public extension MetalLinkQuadMesh {
     
     func setSize(_ size: LFloat2) {
         guard !initialSizeSet else { return }
-        concurrenctVertices.directWriteAccess { outVertices in
-            guard !initialSizeSet else { return }
-            
-            initialSizeSet = true
-            setWidth(size.x)
-            setHeight(size.y)
-            
-            func setWidth(_ width: Float) {
-                let halfWidth = width / 2.0
-                outVertices[1].position.x = -halfWidth
-                outVertices[2].position.x = -halfWidth
-                outVertices[4].position.x = -halfWidth
-                outVertices[0].position.x = halfWidth
-                outVertices[3].position.x = halfWidth
-                outVertices[5].position.x = halfWidth
-            }
-            func setHeight(_ height: Float) {
-                let halfHeight = height / 2.0
-                outVertices[0].position.y = halfHeight
-                outVertices[1].position.y = halfHeight
-                outVertices[3].position.y = halfHeight
-                outVertices[2].position.y = -halfHeight
-                outVertices[4].position.y = -halfHeight
-                outVertices[5].position.y = -halfHeight
-            }
+        initialSizeSet = true
+
+        setWidth(size.x)
+        setHeight(size.y)
+        
+        func setWidth(_ width: Float) {
+            let halfWidth = width / 2.0
+            vertices[1].position.x = -halfWidth
+            vertices[2].position.x = -halfWidth
+            vertices[4].position.x = -halfWidth
+            vertices[0].position.x = halfWidth
+            vertices[3].position.x = halfWidth
+            vertices[5].position.x = halfWidth
+        }
+        
+        func setHeight(_ height: Float) {
+            let halfHeight = height / 2.0
+            vertices[0].position.y = halfHeight
+            vertices[1].position.y = halfHeight
+            vertices[3].position.y = halfHeight
+            vertices[2].position.y = -halfHeight
+            vertices[4].position.y = -halfHeight
+            vertices[5].position.y = -halfHeight
         }
     }
 }

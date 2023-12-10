@@ -114,15 +114,3 @@ public extension Vertex {
         "(\(position.x), \(position.y), \(position.z))"
     }
 }
-
-public extension MetalLinkInstancedObject {
-    class State {
-        var time: Float = 0
-    }
-}
-
-public extension MetalLinkObject {
-    class State {
-        var time: Float = 0
-    }
-}

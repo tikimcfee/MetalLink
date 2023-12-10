@@ -45,7 +45,7 @@ public extension RenderPipelineDescriptorLibrary {
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.BasicVertex]
-            let vertexDescriptor = link.vertexDescriptorLibrary[.Basic]
+            let vertexDescriptor = MetalLinkVertexType.Basic.descriptor
             let fragmentFunction = link.shaderLibrary[.BasicFragment]
             
             self.renderPipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -68,7 +68,7 @@ extension RenderPipelineDescriptorLibrary {
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.InstancedVertex]
-            let vertexDescriptor = link.vertexDescriptorLibrary[.Instanced]
+            let vertexDescriptor = MetalLinkVertexType.Instanced.descriptor
             let fragmentFunction = link.shaderLibrary[.InstancedFragment]
             
             self.renderPipelineDescriptor = MTLRenderPipelineDescriptor()

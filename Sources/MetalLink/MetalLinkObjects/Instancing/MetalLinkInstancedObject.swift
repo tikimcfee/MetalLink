@@ -33,7 +33,6 @@ open class MetalLinkInstancedObject<
     
     public var rebuildSelf: Bool = true
     public var rebuildInstances: Bool = false
-    public var rootState = State()
     public let instanceState: InstanceState<InstanceKey, InstancedNodeType>
 
     public init(
@@ -70,7 +69,6 @@ open class MetalLinkInstancedObject<
     }
     
     open override func update(deltaTime: Float) {
-        rootState.time += deltaTime
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
@@ -120,7 +118,9 @@ extension MetalLinkInstancedObject {
     func updateModelConstants() {
         // TODO: Warning! We need to set the rootConstants matrix so the instances get a fresh update...
         // override rebuild and set there instead? How expensive is it to keep setting the same value?
-        rootConstants.modelMatrix = modelMatrix
+        if currentModel.willUpdate {
+            rootConstants.modelMatrix = modelMatrix
+        }
     }
 }
 

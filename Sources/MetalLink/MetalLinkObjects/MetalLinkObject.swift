@@ -19,7 +19,6 @@ public class MetalLinkObject: MetalLinkNode {
     private lazy var stencilState: MTLDepthStencilState
         = link.depthStencilStateLibrary[.Less]
     
-    public var state = State()
     public var constants = BasicModelConstants()
     private var material = MetalLinkMaterial()
     
@@ -73,6 +72,8 @@ extension MetalLinkObject {
 extension MetalLinkObject {
     public func updateModelConstants() {
         // Pull matrix from node position
-        constants.modelMatrix = modelMatrix
+        if currentModel.willUpdate {
+            constants.modelMatrix = modelMatrix
+        }
     }
 }
