@@ -41,7 +41,6 @@ public class GestureShim {
 
     @objc func magnify(_ receiver: ModifiersMagnificationGestureRecognizer) {
         onMagnify(receiver.makeMagnificationEvent)
-        receiver.scale = 1 // Reset the scale to `1` to lineary zoom in and out
     }
 }
 

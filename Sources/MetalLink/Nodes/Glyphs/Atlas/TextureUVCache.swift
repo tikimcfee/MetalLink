@@ -5,6 +5,7 @@
 
 import Foundation
 import BitHandling
+import Parsing
 
 public extension TextureUVCache {
     private static let lock = LockWrapper()
@@ -71,6 +72,50 @@ public extension TextureUVCache {
             case u = 1
             case v = 2
             case size = 3
+        }
+        
+        func makeParser() {
+            let parseLFloat2 = Parse(
+                LFloat2.init(x: y:)
+            ) {
+                ":"
+                Float.parser()
+                ","
+                Float.parser()
+                "|"
+            }
+            
+            let parseLFloat4 = Parse(
+                LFloat4.init(x: y: z: w:)
+            ) {
+                ":"
+                Float.parser()
+                ","
+                Float.parser()
+                ","
+                Float.parser()
+                ","
+                Float.parser()
+                "|"
+            }
+            
+//            let parsePair = ParsePrint(
+//                .memberwise(TextureUVCache.Pair.init(u: v: size:))
+//            ) {
+//                "u"
+//                parseLFloat4
+//                "v"
+//                parseLFloat4
+//                "xy"
+//                parseLFloat2
+//            }
+//            
+//            let parsePairSerialized = Many {
+//                parsePair
+//            } separator: {
+//                "\n"
+//            }
+            
         }
     }
 }

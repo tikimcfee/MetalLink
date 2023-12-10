@@ -1,19 +1,12 @@
-//
-//  GlyphLayer+iOS.swift
-//  LookAtThat_AppKit
-//
-//  Created by Ivan Lugo on 5/5/22.
-//
-
 #if os(iOS)
 import Foundation
-import CoreServices
 import UIKit
+import UniformTypeIdentifiers
 
 public typealias BitmapImages = (
-    requested: NSUIImage,
+    requested: UIImage,
     requestedCG: CGImage,
-    template: NSUIImage,
+    template: UIImage,
     templateCG: CGImage
 )
 
@@ -23,25 +16,37 @@ public extension CALayer {
     ) -> BitmapImages? {
         defer { UIGraphicsEndImageContext() }
         UIGraphicsBeginImageContextWithOptions(frame.size, isOpaque, 0)
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return nil
+        }
         
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
         context.setFillColor(key.background.asColor.cgColor)
         context.fill(frame)
         render(in: context)
         
-        let options = NSDictionary(dictionary: [
-            :
-//            kCGImageDestinationLossyCompressionQuality: 0.0
-        ])
-        
-        let outputImage = UIGraphicsGetImageFromCurrentImageContext()!.cgImage!
         let mutableData = CFDataCreateMutable(nil, 0)!
-        let destination = CGImageDestinationCreateWithData(mutableData, kUTTypeJPEG, 1, nil)!
-        CGImageDestinationSetProperties(destination, options)
+        guard let outputImage = UIGraphicsGetImageFromCurrentImageContext()?.cgImage,
+              let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            return nil
+        }
+
+        // Set any desired properties for the destination
+        // For example, to set the compression quality:
+        // let options: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality as CFString: 1.0]
+        // CGImageDestinationSetProperties(destination, options as CFDictionary)
+
         CGImageDestinationAddImage(destination, outputImage, nil)
         CGImageDestinationFinalize(destination)
-        let source = CGImageSourceCreateWithData(mutableData, nil)!
-        let finalImage = CGImageSourceCreateImageAtIndex(source, 0, nil)!
+
+        guard let source = CGImageSourceCreateWithData(mutableData, nil),
+              let finalImage = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+            return nil
+        }
         
         return (
             UIImage(cgImage: finalImage),

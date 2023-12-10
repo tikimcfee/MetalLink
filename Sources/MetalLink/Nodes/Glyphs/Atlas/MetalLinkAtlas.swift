@@ -46,8 +46,57 @@ public class MetalLinkAtlas {
     public func load() {
         builder.load()
     }
+    
+    public func preload() {
+        do {
+            try prepareWithGiantRawString()
+        } catch {
+            print("--- preload failed ---\n", error)
+        }
+    }
 }
 
+extension MetalLinkAtlas {
+    
+    private func prepareWithGiantRawString() throws {
+        print("< ~ > Starting atlas save...")
+        
+        let sourceString = BIG_CHARACTER_WALL
+        var uniqueCharacters = Set<Character>()
+        for character in sourceString {
+            uniqueCharacters.insert(character)
+        }
+        let uniqueString = String(Array(uniqueCharacters))
+        let uniqueData = uniqueString.data(using: .utf8)!
+        
+        print("< ~ > Preloading \(uniqueString.count) characters (from \(sourceString.count)), \(uniqueData.count) bytes.")
+        
+        let compute = builder.compute
+        let output = try compute.execute(inputData: uniqueData)
+        let (pointer, count) = compute.cast(output)
+        
+        print("< ~ > Compute complete, starting da loop")
+        
+        for index in (0..<count) {
+            let pointee = pointer[index]
+            let hash = pointee.unicodeHash
+            guard hash > 0 else { continue; }
+            
+            // We should always get back 1 character.. that's.. kinda the whole point.
+            let unicodeCharacter = pointee.expressedAsString.first!
+            
+            let key = GlyphCacheKey.fromCache(source: unicodeCharacter, .white)
+            addGlyphToAtlasIfMissing(key)
+        }
+        
+        print("< ~ > looped da loop, da save")
+        
+        save()
+        
+        print("< ~ > Saved. Cool.")
+    }
+}
+    
 public extension MetalLinkAtlas {
     func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
         rwLock.readLock()

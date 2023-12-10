@@ -166,7 +166,6 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
             .scan(MagnificationEvent.newEmptyPair) { ($0.1, $1) }
             .filter { $0.0.magnification != $0.1.magnification }
             .sink { [interceptor] pair in
-                let last: MagnificationEvent = pair.0
                 let next: MagnificationEvent = pair.1
                 guard next.state == .changed else { return }
                 let delta = (1 - next.magnification) * 100_000

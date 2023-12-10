@@ -25,7 +25,7 @@ public class AtlasBuilder {
     private let link: MetalLink
     
     private let glyphBuilder = GlyphBuilder()
-    private let compute: ConvertCompute
+    let compute: ConvertCompute
     
     var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
