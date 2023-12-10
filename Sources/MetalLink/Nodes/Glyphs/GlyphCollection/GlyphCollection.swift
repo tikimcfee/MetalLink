@@ -20,43 +20,46 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     public lazy var renderer = Renderer(collection: self)
     
     
-    // TODO: IT'S SO MUCH FASTER!!
-    /*
-     So intrinsic size is only directly computed in a few cases, and importantly,
-     it's mostly during `computeSize` and `computeBoundingBox`. 
+    /* TODO: Mobile vs. Desktop splt: JUST MAKE LAYOUT BETTER
+     So I still haven't done GPU layout because bad brains, but
+     I'm figuring out more memory stuff. I can save a bunch of memory
+     on mobile without making nodes, and layout will still work.
+     Desktop can keep the nodes and be more powerful for now. This
+     can stay or go as desired - it's a temporary optimization.
      */
+    #if os(iOS)
     public override var hasIntrinsicSize: Bool {
-        !instanceState.nodes.isEmpty
+        return pointerHasIntrinsicSize()
     }
     
     public override var contentBounds: Bounds {
-        var totalBounds = Bounds.forBaseComputing
-        for node in instanceState.nodes.values {
-            totalBounds.union(with: node.sizeBounds)
-        }
-        return totalBounds * scale
-        
-        // TODO: So this works, but it's a bit slower, likely from offset creation...
-//        return pointerBounds() * scale
+        return pointerBounds()
     }
     
-    private func pointerBounds() -> Bounds {
-        var totalBounds = Bounds.forBaseComputing
-        let pointer = instanceState.constants.pointer
-        for index in instanceState.instanceBufferRange {
-            let constants = pointer[index]
-            let size = constants.textureSize
-            var sizeBounds = Bounds(
-                LFloat3(-size.x / 2.0, -size.y / 2.0, 0),
-                LFloat3( size.x / 2.0,  size.y / 2.0, 1)
-            )
-            sizeBounds = sizeBounds + LFloat3(constants.positionOffset.x,
-                                              constants.positionOffset.y,
-                                              constants.positionOffset.z)
-            totalBounds.union(with: sizeBounds)
-        }
-        return totalBounds
+    public func setRootMesh() {
+        setRootMeshPointer()
     }
+    
+    public func resetCollectionState() {
+        rebuildInstanceAfterCompute()
+    }
+    #else
+    public override var hasIntrinsicSize: Bool {
+        return nodesHaveIntrinsicSize()
+    }
+    
+    public override var contentBounds: Bounds {
+        return nodeBounds()
+    }
+    
+    public func setRootMesh() {
+        setRootMeshNodes()
+    }
+    
+    public func resetCollectionState() {
+        rebuildInstanceNodesFromState()
+    }
+    #endif
         
     public init(
         link: MetalLink,
@@ -109,9 +112,30 @@ public extension GlyphCollection {
     }
 }
 
-// MARK: --- Compute Helpers
+// MARK: ---- Render Computation Styles ----
 
-public extension GlyphCollection {
+/*
+ I can compute bounds from pointer which is slower but saves lots of memory.
+ I can compute from *nodes* which uses lots more memory and is a bit faster.
+ I guess test more and leave both options on the table.
+ */
+
+// MARK: - Node bounds
+private extension GlyphCollection {
+    func nodesHaveIntrinsicSize() -> Bool {
+        !instanceState.nodes.isEmpty
+    }
+    
+    func nodeBounds() -> Bounds {
+        var totalBounds = Bounds.forBaseComputing
+        
+        for node in instanceState.nodes.values {
+            totalBounds.union(with: node.sizeBounds)
+        }
+        
+        return totalBounds * scale
+    }
+    
     func rebuildInstanceNodesFromState() {
         // TODO: This part sucks... I need to get rid of the `GlyphNode` abstraction I think.
         // It's nice that I can interact with it like regular Nodes, but it means I have to
@@ -165,30 +189,7 @@ public extension GlyphCollection {
         setRootMesh()
     }
     
-    func setRootMeshPointer() {
-        guard instanceState.constants.endIndex != 0,
-              !instanceState.didSetRoot
-        else {
-            return
-        }
-        
-        // TODO: Use safe
-        let pointer = instanceState.constants.pointer
-        guard let firstIndex = instanceState.instanceBufferRange.first(where: { index in
-            pointer[index].textureSize.x > 0.1
-        }) else {
-            return
-        }
-        let firstSize = pointer[firstIndex].textureSize
-        
-        instanceState.didSetRoot = true
-        let newMesh = MetalLinkQuadMesh(link)
-        newMesh.setSize(firstSize)
-        
-        mesh = newMesh
-    }
-    
-    func setRootMesh() {
+    func setRootMeshNodes() {
         // ***********************************************************************************
         // TODO: mesh instance hack
         // THIS IS A DIRTY FILTHY HACK
@@ -216,5 +217,63 @@ public extension GlyphCollection {
         
         instanceState.didSetRoot = true
         mesh = safeMesh.mesh
+    }
+}
+
+// MARK: - Pointer bounds
+
+/*
+ So this works, but it's a bit slower (from more compute?)
+ */
+
+private extension GlyphCollection {
+    func pointerHasIntrinsicSize() -> Bool {
+        instanceState.constants.endIndex > 0
+    }
+    
+    func pointerBounds() -> Bounds {
+        var totalBounds = Bounds.forBaseComputing
+        let pointer = instanceState.constants.pointer
+        
+        for index in instanceState.instanceBufferRange {
+            let constants = pointer[index]
+            let size = constants.textureSize
+            var sizeBounds = Bounds(
+                LFloat3(-size.x / 2.0, -size.y / 2.0, 0),
+                LFloat3( size.x / 2.0,  size.y / 2.0, 1)
+            )
+            sizeBounds = sizeBounds + LFloat3(constants.positionOffset.x,
+                                              constants.positionOffset.y,
+                                              constants.positionOffset.z)
+            totalBounds.union(with: sizeBounds)
+        }
+        
+        return totalBounds * scale
+    }
+    
+    func rebuildInstanceAfterCompute() {
+        // Pointer doesn't need rebuilding, we use the pointer data directly
+        instanceState.constants.remakePointer()
+        setRootMeshPointer()
+    }
+    
+    func setRootMeshPointer() {
+        guard instanceState.constants.endIndex != 0,
+              !instanceState.didSetRoot
+        else {
+            return
+        }
+        
+        // TODO: Use safe
+        let pointer = instanceState.constants.pointer
+        guard let firstIndex = instanceState.instanceBufferRange.first(where: { index in
+            pointer[index].textureSize.x > 0.1
+        }) else {
+            return
+        }
+        let firstSize = pointer[firstIndex].textureSize
+        
+        instanceState.didSetRoot = true
+        (mesh as? MetalLinkQuadMesh)?.setSize(firstSize)
     }
 }

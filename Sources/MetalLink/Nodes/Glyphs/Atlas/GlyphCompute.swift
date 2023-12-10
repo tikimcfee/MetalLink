@@ -595,7 +595,7 @@ public extension ConvertCompute {
                             linkAtlas: atlas,
                             instanceState: state
                         )
-                        collection.rebuildInstanceNodesFromState()
+                        collection.resetCollectionState()
                         result.collection = .built(collection)
                         
                         onEvent(.collectionReady(result.sourceURL.lastPathComponent))
