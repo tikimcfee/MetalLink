@@ -262,6 +262,7 @@ extension ConvertCompute {
             options: []
         )
         else { throw ComputeError.bufferCreationFailed }
+        outputBuffer.label = "Output :: \(inputBuffer.label ?? "<no input name>")"
         return outputBuffer
     }
     
@@ -291,10 +292,12 @@ extension ConvertCompute {
     public func makeGraphemeAtlasBuffer(
         size: Int
     ) throws -> MTLBuffer {
+        let length = size * MemoryLayout<GlyphMapKernelAtlasIn>.stride
         guard let metalBuffer = device.makeBuffer(
-            length: size * MemoryLayout<GlyphMapKernelAtlasIn>.stride,
+            length: length,
             options: [ /*.cpuCacheModeWriteCombined*/ ] // TODO: is this a safe performance trick?
         ) else { throw ComputeError.bufferCreationFailed }
+        metalBuffer.label = "Grapheme Atlas Buffer, l=\(length)"
         return metalBuffer
     }
     
@@ -463,6 +466,7 @@ public extension ConvertCompute {
                         data = String("<empty-file>").data(using: .utf8)!
                     }
                     let buffer = try makeInputBuffer(data)
+                    buffer.label = "Input grapheme \(source.lastPathComponent)"
                     loadedData.append((source, buffer))
                     
                     onEvent(.bufferMapped(source.lastPathComponent))

@@ -17,15 +17,16 @@ public enum LinkAtlasError: Error {
 
 public class MetalLinkAtlas {
     private let link: MetalLink
-    public let builder: AtlasBuilder
-    public let nodeCache: MetalLinkGlyphNodeCache
+    private let rwLock = LockWrapper()
+    
+    public private(set) var builder: AtlasBuilder
+    public private(set) var nodeCache: MetalLinkGlyphNodeCache
+    
     public var currentAtlas: MTLTexture { builder.atlasTexture }
     public var currentBuffer: MTLBuffer {
         get { builder.currentGraphemeHashBuffer }
         set { builder.currentGraphemeHashBuffer = newValue }
     }
-    
-    private var rwLock = LockWrapper()
     
     public init(
         _ link: MetalLink,
@@ -37,6 +38,21 @@ public class MetalLinkAtlas {
             link,
             compute: compute
         )
+    }
+    
+    public func reset(_ compute: ConvertCompute) {
+        do {
+            print("Reset atlas...")
+            self.builder.clear()
+            self.builder = try AtlasBuilder(
+                link,
+                compute: compute
+            )
+            self.nodeCache = MetalLinkGlyphNodeCache(link: link)
+            print("Reset atlas done. Go check your buffers and such.")
+        } catch {
+            print("Reset failed: \(error)")
+        }
     }
     
     public func save() {

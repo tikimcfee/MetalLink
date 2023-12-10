@@ -89,6 +89,7 @@ private extension MetalLinkPickingTexture {
               let pickBuffer = link.device.makeBuffer(length: InstanceIDType.memStride) else {
             return
         }
+        pickBuffer.label = "Temp picking buffer: \(sourceOrigin.x), \(sourceOrigin.y)"
         
         defer {
             blitEncoder.endEncoding()

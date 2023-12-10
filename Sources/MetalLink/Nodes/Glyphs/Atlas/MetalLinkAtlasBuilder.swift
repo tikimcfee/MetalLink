@@ -25,16 +25,13 @@ public class AtlasBuilder {
     private let link: MetalLink
     
     private let glyphBuilder = GlyphBuilder()
-    let compute: ConvertCompute
+    internal let compute: ConvertCompute
     
-    var atlasTexture: MTLTexture
+    internal var atlasTexture: MTLTexture
     private lazy var atlasSize: LFloat2 = atlasTexture.simdSize
     
     private lazy var uvPacking = AtlasContainerUV(canvasWidth: 1.0, canvasHeight: 1.0)
     private lazy var vertexPacking = AtlasContainerVertex(canvasWidth: atlasTexture.width, canvasHeight: atlasTexture.height)
-    
-//    private lazy var uvPacking = AtlasPacking<UVRect>(width: 1.0, height: 1.0)
-//    private lazy var vertexPacking = AtlasPacking<VertexRect>(width: atlasTexture.width, height: atlasTexture.height)
     
     public let cacheRef: TextureUVCache = TextureUVCache()
     private let sourceOrigin = MTLOrigin()
@@ -49,13 +46,12 @@ public class AtlasBuilder {
     ) throws {
         guard let atlasTexture = link.device.makeTexture(descriptor: Self.canvasDescriptor)
         else { throw LinkAtlasError.noTargetAtlasTexture }
+        atlasTexture.label = "MetalLinkAtlas - Init"
         
         self.compute = compute
         self.currentGraphemeHashBuffer = try compute.makeGraphemeAtlasBuffer(size: GRAPHEME_BUFFER_DEFAULT_SIZE)
         self.link = link
         self.atlasTexture = atlasTexture
-        
-        atlasTexture.label = "MetalLinkAtlas"
     }
     
     public func save() {
@@ -64,6 +60,10 @@ public class AtlasBuilder {
     
     public func load() {
         deserialize()
+    }
+    
+    public func clear() {
+        clearSerialization()
     }
 }
 
@@ -83,6 +83,11 @@ public extension AtlasBuilder {
         
         let graphemeHashData: Data
         let graphemeHashCount: Int
+    }
+    
+    private func clearSerialization() {
+        AppFiles.delete(fileUrl: AppFiles.atlasSerializationURL)
+        AppFiles.delete(fileUrl: AppFiles.atlasTextureURL)
     }
     
     private func deserialize() {
@@ -105,11 +110,13 @@ public extension AtlasBuilder {
             ) else {
                 throw LinkAtlasError.noTargetAtlasTexture
             }
+            atlasTexture.label = "Deserialized Atlas Texture"
             
             let graphemeData = serialization.graphemeHashData
             guard let graphemeBuffer = link.device.loadToMTLBuffer(data: graphemeData) else {
                 throw LinkAtlasError.deserializationErrorBuffer
             }
+            graphemeBuffer.label = "Deserialized Grapheme Buffer"
 
             try reloadFrom(
                 serialization: serialization,
