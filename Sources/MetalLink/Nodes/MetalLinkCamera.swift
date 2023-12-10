@@ -145,6 +145,37 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
             
             self.interceptor.positions.travelOffset = delta
         }.store(in: &cancellables)
+        #elseif os(iOS)
+        let panSubject = PassthroughSubject<PanEvent, Never>()
+        let magnificationSubject = PassthroughSubject<MagnificationEvent, Never>()
+        panSubject
+            .scan(PanEvent.newEmptyPair) { ($0.1, $1) }
+            .filter { $0.0.currentLocation != $0.1.currentLocation }
+            .sink { [interceptor] pair in
+                guard pair.1.state == .changed else { return }
+                
+                let delta = pair.1.currentLocation - pair.0.currentLocation
+                interceptor.positions.travelOffset = LFloat3(
+                    -delta.x * 250,
+                     delta.y * 250,
+                     0
+                )
+            }.store(in: &cancellables)
+        
+        magnificationSubject
+            .scan(MagnificationEvent.newEmptyPair) { ($0.1, $1) }
+            .filter { $0.0.magnification != $0.1.magnification }
+            .sink { [interceptor] pair in
+                let last: MagnificationEvent = pair.0
+                let next: MagnificationEvent = pair.1
+                guard next.state == .changed else { return }
+                let delta = (1 - next.magnification) * 100_000
+                interceptor.positions.travelOffset = LFloat3(0, 0, delta)
+            }.store(in: &cancellables)
+        
+        // Yes, the closure will retain the subject <3
+        link.input.gestureShim.onPan = panSubject.send
+        link.input.gestureShim.onMagnify = magnificationSubject.send
         #endif
         
         link.input.sharedMouse.sink { event in

@@ -7,6 +7,10 @@
 
 import Combine
 
+#if os(iOS)
+import UIKit
+#endif
+
 public extension DefaultInputReceiver {
     static var shared = DefaultInputReceiver()
 }
@@ -23,6 +27,14 @@ public class DefaultInputReceiver: ObservableObject, MousePositionReceiver, KeyD
     public lazy var sharedMouseDown = mouseDownSubject.share().eraseToAnyPublisher()
     public lazy var sharedMouseUp = mouseUpSubject.share().eraseToAnyPublisher()
     public lazy var sharedKeyEvent = keyEventSubject.share().eraseToAnyPublisher()
+    
+    #if os(iOS)
+    private let touchMoveSubject = PassthroughSubject<UITouch, Never>()
+    public lazy var sharedTouchMovements = touchMoveSubject.share().eraseToAnyPublisher()
+    public var touchMovementEvents: UITouch = UITouch() {
+        didSet { touchMoveSubject.send(touchMovementEvents) }
+    }
+    #endif
     
     public var mousePosition: OSEvent = OSEvent() {
         didSet { mouseSubject.send(mousePosition) }
@@ -45,6 +57,7 @@ public class DefaultInputReceiver: ObservableObject, MousePositionReceiver, KeyD
     }
     
     public lazy var touchState: TouchState = TouchState()
+    
     public lazy var gestureShim: GestureShim = GestureShim(
         { print(#line, "DefaultInput received: \($0)") },
         { print(#line, "DefaultInput received: \($0)") },

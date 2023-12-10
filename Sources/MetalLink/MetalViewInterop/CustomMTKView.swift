@@ -18,14 +18,43 @@ public class CustomMTKView: MTKView {
     #if os(iOS)
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
+//        print("START-------------")
 //        touches.forEach { touch in
-//
+//            print("at: \(touch.location(in: self))")
 //        }
+//        print("xxx-------------xxx")
+    }
+    
+    
+    public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesMoved(touches, with: event)
+//        print("-----MOVE--------")
+//        touches.prefix(1).forEach { touch in
+//            
+//        }
+//        print("xxx-------------xxx")
     }
     
     public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
+//        print("-------------END")
+//        touches.forEach { touch in
+//            print("at: \(touch.location(in: self))")
+//        }
+//        print("xxx-------------xxx")
     }
+    
+    public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+//        print("-------------~~~ Cancelled")
+//        touches.forEach { touch in
+//            
+//        }
+//        print("xxx-------------xxx")
+    }
+    
+    //    - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event;
+    
     #endif
     
     #if os(macOS)

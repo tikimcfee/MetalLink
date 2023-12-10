@@ -2,9 +2,9 @@ import Foundation
 import SwiftUI
 import SceneKit
 
-typealias PanReceiver = (PanEvent) -> Void
-typealias MagnificationReceiver = (MagnificationEvent) -> Void
-typealias TapReceiver = (GestureEvent) -> Void
+public typealias PanReceiver = (PanEvent) -> Void
+public typealias MagnificationReceiver = (MagnificationEvent) -> Void
+public typealias TapReceiver = (GestureEvent) -> Void
 
 #if os(OSX)
 
@@ -41,24 +41,32 @@ public class GestureShim {
 
     @objc func magnify(_ receiver: ModifiersMagnificationGestureRecognizer) {
         onMagnify(receiver.makeMagnificationEvent)
+        receiver.scale = 1 // Reset the scale to `1` to lineary zoom in and out
     }
 }
 
 #elseif os(iOS)
 
 public class GestureShim {
-    lazy var panRecognizer =
-        PanGestureRecognizer(target: self, action: #selector(pan))
-    var onPan: PanReceiver
-
-    lazy var magnificationRecognizer =
-        MagnificationGestureRecognizer(target: self, action: #selector(magnify))
-    var onMagnify: MagnificationReceiver
+    public private(set) lazy var panRecognizer = PanGestureRecognizer(
+        target: self,
+        action: #selector(pan)
+    )
     
-    lazy var tapGestureRecognizer =
-        TapGestureRecognizer(target: self, action: #selector(tap))
-    var onTap: TapReceiver
-
+    public private(set) lazy var magnificationRecognizer = MagnificationGestureRecognizer(
+        target: self,
+        action: #selector(magnify)
+    )
+    
+    public private(set) lazy var tapGestureRecognizer = TapGestureRecognizer(
+        target: self,
+        action: #selector(tap)
+    )
+    
+    public var onPan: PanReceiver
+    public var onMagnify: MagnificationReceiver
+    public var onTap: TapReceiver
+    
     init(_ onPan: @escaping PanReceiver,
          _ onMagnify: @escaping MagnificationReceiver,
          _ onTap: @escaping TapReceiver) {
@@ -70,13 +78,14 @@ public class GestureShim {
     @objc func tap(_ receiver: TapGestureRecognizer) {
         onTap(receiver.makeGestureEvent)
     }
-
+    
     @objc func pan(_ receiver: PanGestureRecognizer) {
         onPan(receiver.makePanEvent)
     }
-
+    
     @objc func magnify(_ receiver: MagnificationGestureRecognizer) {
         onMagnify(receiver.makeMagnificationEvent)
+        receiver.scale = 1
     }
 }
 

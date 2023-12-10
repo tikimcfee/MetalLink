@@ -29,7 +29,7 @@ extension UIPanGestureRecognizer {
         )
     }
 }
-extension UIPinchGestureRecognizer {
+extension MagnificationGestureRecognizer {
     var makeMagnificationEvent: MagnificationEvent {
         return MagnificationEvent(
             state: state.translated,

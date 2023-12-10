@@ -14,6 +14,7 @@ protocol MousePositionReceiver: AnyObject {
     var mousePosition: OSEvent { get set }
     var scrollEvent: OSEvent { get set }
     var mouseDownEvent: OSEvent { get set }
+    var touchMovementEvents: UITouch { get set }
 }
 
 #elseif os(OSX)

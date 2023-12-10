@@ -162,7 +162,7 @@ public extension GlyphCollection {
         }
         pausedInvalidate = false
         
-        setRootMeshPointer()
+        setRootMesh()
     }
     
     func setRootMeshPointer() {
