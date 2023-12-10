@@ -86,8 +86,7 @@ public extension AtlasBuilder {
     }
     
     private func deserialize() {
-//        let decoder = JSONDecoder()
-        let decoder = PropertyListDecoder()
+        let decoder = JSONDecoder()
         do {
             let serializationData = try Data(contentsOf: AppFiles.atlasSerializationURL)
             guard serializationData.count > 0 else {
@@ -123,9 +122,7 @@ public extension AtlasBuilder {
     }
     
     private func serialize() {
-//        let encoder = JSONEncoder()
-        let encoder = PropertyListEncoder()
-        encoder.outputFormat = .binary
+        let encoder = JSONEncoder()
         do {
             let graphemePointer = currentGraphemeHashBuffer.boundPointer(
                 as: GlyphMapKernelAtlasIn.self, count: GRAPHEME_BUFFER_DEFAULT_SIZE
@@ -354,22 +351,28 @@ private extension AtlasBuilder {
     }
 }
 
+
+#if os(macOS)
+public let ATLAS_PIXEL_FORMAT = MTLPixelFormat.rgba8Unorm
+#else
+public let ATLAS_PIXEL_FORMAT = MTLPixelFormat.bgra8Unorm_srgb
+#endif
+
 public extension AtlasBuilder {
+    
     // atlas texture size canvas buffer space length
-    static var canvasSize = LInt2(4096 * 4 - 1, 4096 * 4 - 1)
+    static var canvasSize = LInt2(1024 * 3, 1024 * 3)
     static var canvasDescriptor: MTLTextureDescriptor = {
         let glyphDescriptor = MTLTextureDescriptor()
         glyphDescriptor.storageMode = .private
         glyphDescriptor.textureType = .type2D
-        glyphDescriptor.pixelFormat = .rgba8Unorm
         
-        // TODO: Optimized behavior clears 'empty' backgrounds
-        // We don't want this: spaces count, and they're colored.
-        // Not sure what we lose with this.. but we'll see.
-        glyphDescriptor.allowGPUOptimizedContents = false
-        
+        glyphDescriptor.pixelFormat = ATLAS_PIXEL_FORMAT
         glyphDescriptor.width = canvasSize.x
         glyphDescriptor.height = canvasSize.y
+        
+        glyphDescriptor.allowGPUOptimizedContents = false
+
         return glyphDescriptor
     }()
 }

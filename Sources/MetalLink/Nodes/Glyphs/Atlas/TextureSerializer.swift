@@ -16,7 +16,7 @@ class TextureSerializer {
     }
     
     func serialize(texture: MTLTexture) -> Data? {
-        let stagingTexture = createStagingTexture(from: texture, device: device)
+        let stagingTexture = createStagingTexture(device: device)
         copyTextureToStagingTexture(texture: texture, stagingTexture: stagingTexture, commandBuffer: commandQueue.makeCommandBuffer()!)
         return textureToData(texture: stagingTexture)
     }
@@ -25,13 +25,9 @@ class TextureSerializer {
         return dataToTexture(data: data, device: device, width: width, height: height)
     }
     
-    private func createStagingTexture(from texture: MTLTexture, device: MTLDevice) -> MTLTexture {
-        let descriptor = MTLTextureDescriptor()
-        descriptor.textureType = texture.textureType
-        descriptor.pixelFormat = texture.pixelFormat
-        descriptor.width = texture.width
-        descriptor.height = texture.height
-        descriptor.storageMode = .shared
+    private func createStagingTexture(device: MTLDevice) -> MTLTexture {
+        let descriptor = AtlasBuilder.canvasDescriptor
+        descriptor.storageMode = .shared // We're writing to the text manually, need to update mode
         return device.makeTexture(descriptor: descriptor)!
     }
     
@@ -49,7 +45,7 @@ class TextureSerializer {
     }
     
     private func textureToData(texture: MTLTexture) -> Data {
-        let rowBytes = texture.width * 4 // Assuming BGRA8Unorm format
+        let rowBytes = texture.width * 4 // assumes ATLAS_PIXEL_FORMAT size is always * 4
         let length = rowBytes * texture.height
         let pointer = malloc(length)
         texture.getBytes(pointer!, bytesPerRow: rowBytes, from: MTLRegionMake2D(0, 0, texture.width, texture.height), mipmapLevel: 0)
@@ -57,12 +53,9 @@ class TextureSerializer {
     }
     
     private func dataToTexture(data: Data, device: MTLDevice, width: Int, height: Int) -> MTLTexture {
-        let descriptor = MTLTextureDescriptor()
-        descriptor.textureType = .type2D
-        descriptor.pixelFormat = .rgba8Unorm
-        descriptor.width = width
-        descriptor.height = height
-        descriptor.storageMode = .shared
+        let descriptor = AtlasBuilder.canvasDescriptor
+        descriptor.storageMode = .shared // We're writing to the text manually, need to update mode
+        
         let texture = device.makeTexture(descriptor: descriptor)!
         data.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
             let region = MTLRegionMake2D(0, 0, texture.width, texture.height)

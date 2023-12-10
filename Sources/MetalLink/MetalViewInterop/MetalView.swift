@@ -6,6 +6,12 @@ import Foundation
 import MetalKit
 import SwiftUI
 
+#if os(macOS)
+public let METAL_VIEW_MTK_PIXEL_FORMAT = MTLPixelFormat.rgba8Unorm // macOS
+#else
+public let METAL_VIEW_MTK_PIXEL_FORMAT = MTLPixelFormat.bgra8Unorm // iOS
+#endif
+
 public struct MetalView: NSUIViewRepresentable {
     public var mtkView: CustomMTKView
     public var link: MetalLink
@@ -27,7 +33,7 @@ public struct MetalView: NSUIViewRepresentable {
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
-        mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.colorPixelFormat = METAL_VIEW_MTK_PIXEL_FORMAT
         mtkView.depthStencilPixelFormat = .depth32Float
         #endif
         return mtkView
@@ -41,7 +47,7 @@ public struct MetalView: NSUIViewRepresentable {
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
-        mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.colorPixelFormat = METAL_VIEW_MTK_PIXEL_FORMAT
         mtkView.depthStencilPixelFormat = .depth32Float
         return mtkView
     }

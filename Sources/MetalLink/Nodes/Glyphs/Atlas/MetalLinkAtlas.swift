@@ -62,11 +62,7 @@ extension MetalLinkAtlas {
         print("< ~ > Starting atlas save...")
         
         let sourceString = BIG_CHARACTER_WALL
-        var uniqueCharacters = Set<Character>()
-        for character in sourceString {
-            uniqueCharacters.insert(character)
-        }
-        let uniqueString = String(Array(uniqueCharacters))
+        let uniqueString = sourceString.joined()
         let uniqueData = uniqueString.data(using: .utf8)!
         
         print("< ~ > Preloading \(uniqueString.count) characters (from \(sourceString.count)), \(uniqueData.count) bytes.")
