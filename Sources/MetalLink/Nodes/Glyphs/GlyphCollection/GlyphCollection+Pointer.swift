@@ -83,7 +83,7 @@ public extension GlyphCollection {
             
             var nodes = [GlyphNode]()
             for newCharacter in line {
-                let glyphKey = GlyphCacheKey(source: newCharacter, .white)
+                let glyphKey = GlyphCacheKey(source: newCharacter)
                 guard let glyph = writer.writeGlyphToState(glyphKey) else {
                     print("nooooooooooooooooooooo!")
                     continue

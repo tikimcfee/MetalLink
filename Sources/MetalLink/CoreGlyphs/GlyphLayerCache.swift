@@ -26,13 +26,24 @@ public struct GlyphCacheKey: Codable, Hashable, Equatable {
     
     public init(
         source: Character,
-        _ foreground: NSUIColor,
+        _ foreground: NSUIColor = NSUIColor.white,
         _ background: NSUIColor = NSUIColor.black
     ) {
         self.glyph = String(source)
         self.foreground = foreground.serializable
         self.background = background.serializable
     }
+    
+    public init(
+        _ foreground: SerialColor,
+        _ background: SerialColor,
+        source: Substring
+    ) {
+        self.glyph = String(source)
+        self.foreground = foreground
+        self.background = background
+    }
+    
     
     enum CodingKeys: Int, CodingKey {
         case glyph = 1

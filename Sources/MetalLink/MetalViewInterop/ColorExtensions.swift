@@ -18,19 +18,19 @@ import UIKit
 #endif
 
 public struct SerialColor: Codable, Hashable, Equatable {
-    public let red: CGFloat
-    public let green: CGFloat
-    public let blue: CGFloat
-    public let alpha: CGFloat
+    public let red: Float
+    public let green: Float
+    public let blue: Float
+    public let alpha: Float
     
     public static let white = SerialColor(red: 1, green: 1, blue: 1, alpha: 1)
     public static let black = SerialColor(red: 0, green: 0, blue: 0, alpha: 1)
     
     public var asColor: NSUIColor {
 #if os(OSX)
-        NSUIColor(red: red, green: green, blue: blue, alpha: alpha)
+        NSUIColor(red: red.cg, green: green.cg, blue: blue.cg, alpha: alpha.cg)
 #elseif os(iOS)
-        NSUIColor(red: red, green: green, blue: blue, alpha: alpha)
+        NSUIColor(red: red.cg, green: green.cg, blue: blue.cg, alpha: alpha.cg)
 #endif
     }
 }
@@ -38,7 +38,12 @@ public struct SerialColor: Codable, Hashable, Equatable {
 public extension NSUIColor {
     var serializable: SerialColor {
         guard let data = rgba else { return .white }
-        return SerialColor(red: data.red, green: data.green, blue: data.blue, alpha: data.alpha)
+        return SerialColor(
+            red: data.red.float,
+            green: data.green.float,
+            blue: data.blue.float,
+            alpha: data.alpha.float
+        )
     }
     
 #if os(OSX)
