@@ -1,5 +1,5 @@
 //
-//  SwiftGlyphsInstancingShader.metal
+//  SwiftGlyphInstancingShader.metal
 //  MetalSimpleInstancing
 //
 //  Created by Ivan Lugo on 8/6/22.
