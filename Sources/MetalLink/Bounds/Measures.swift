@@ -73,26 +73,26 @@ public extension Measures {
         return currentBounds.length
     }
     
-    var boundsCenterWidth: VectorFloat {
+    var boundsCenterX: VectorFloat {
         let currentBounds = bounds
         return currentBounds.min.x + currentBounds.width / 2.0
     }
     
-    var boundsCenterHeight: VectorFloat {
+    var boundsCenterY: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.y - currentBounds.height / 2.0
+        return currentBounds.min.y + currentBounds.height / 2.0
     }
     
-    var boundsCenterLength: VectorFloat {
+    var boundsCenterZ: VectorFloat {
         let currentBounds = bounds
         return currentBounds.min.z + currentBounds.length / 2.0
     }
     
     var boundsCenterPosition: LFloat3 {
         let vector = LFloat3(
-            x: boundsCenterWidth,
-            y: boundsCenterHeight,
-            z: boundsCenterLength
+            x: boundsCenterX,
+            y: boundsCenterY,
+            z: boundsCenterZ
         )
         return vector
     }
