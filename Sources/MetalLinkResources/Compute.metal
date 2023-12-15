@@ -1,7 +1,8 @@
 #define METAL_SHADER
 #include <metal_stdlib>
 
-#include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
+#include "include/MetalLinkResources.h"
+#include "../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
 // MARK: - Simple helpers

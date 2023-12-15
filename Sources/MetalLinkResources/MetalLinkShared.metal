@@ -8,6 +8,7 @@
 #ifndef MetalLinkShared_h
 #define MetalLinkShared_h
 #include <metal_stdlib>
+#include "include/MetalLinkResources.h"
 using namespace metal;
 
 // MARK: - GPU Constants

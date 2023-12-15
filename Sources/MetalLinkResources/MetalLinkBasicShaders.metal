@@ -8,7 +8,8 @@
 #include <metal_stdlib>
 //using namespace metal;
 
-#include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
+#include "include/MetalLinkResources.h"
+#include "../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
 // recall buffer(x) is the Swift-defined buffer position for these vertices

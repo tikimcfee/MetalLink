@@ -9,7 +9,6 @@ import Foundation
 import Metal
 import BitHandling
 import MetalLinkHeaders
-import MetalLinkResources
 import MetalLinkHeaders
 
 public class InstanceState<

@@ -40,7 +40,10 @@ public class MetalLink {
         self.view = view
         guard let device = view.device else { throw CoreError.noMetalDevice }
         guard let queue = device.makeCommandQueue() else { throw CoreError.noCommandQueue }
-        guard let library = MetalLinkResources.getDefaultLibrary(from: device) else { throw CoreError.noDefaultLibrary }
+        
+//        guard let library = MetalLinkResources.getDefaultLibrary(from: device) else { throw CoreError.noDefaultLibrary }
+        guard let library = MetalLinkResources.getShaderLibrary(from: device) else { throw CoreError.noDefaultLibrary }
+        
         self.device = device
         self.commandQueue = queue
         self.defaultLibrary = library
