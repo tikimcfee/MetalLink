@@ -10,7 +10,6 @@
 #define MetalLinkBridgingType_h
 
 #include <simd/simd.h>
-// TODO: Make `uint` type a bridged name.
 
 struct BasicModelConstants {
     simd_float4x4 modelMatrix;
@@ -126,6 +125,7 @@ struct SceneConstants {
     simd_float4x4 projectionMatrix;
     simd_float4x4 pointerMatrix;
 };
+
 
 #endif /* MetalLinkBridgingType_h */
 

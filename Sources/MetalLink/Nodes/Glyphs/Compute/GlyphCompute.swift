@@ -15,8 +15,11 @@ public enum ComputeRenderError: Error {
 public enum ComputeError: Error {
     case missingFunction(String)
     case bufferCreationFailed
+    case commandBufferCreationFailed
     case startupFailure
     case compressionFailure
+    
+    case encodeError(URL)
 }
 
 public class ConvertCompute: MetalLinkReader {
@@ -215,7 +218,7 @@ private class ConvertComputeFunctions: MetalLinkReader {
 
 extension ConvertCompute {
     // Create a Metal buffer from the Data object
-    private func makeInputBuffer(_ data: Data) throws -> MTLBuffer {
+    func makeInputBuffer(_ data: Data) throws -> MTLBuffer {
         #if os(iOS)
         let mode = MTLResourceOptions.storageModeShared
         #else
@@ -242,7 +245,7 @@ extension ConvertCompute {
     }
     
     // Teeny buffer to write total character count
-    private func makeCharacterCountBuffer(
+    func makeCharacterCountBuffer(
         starting: UInt32
     ) throws -> MTLBuffer {
         let data = withUnsafeBytes(of: starting) { Data($0) }
@@ -253,8 +256,19 @@ extension ConvertCompute {
         return buffer
     }
     
+    func makeBoundsBuffer(
+        starting: Float
+    ) throws -> MTLBuffer {
+        let data = withUnsafeBytes(of: starting) { Data($0) }
+        
+        guard let buffer = device.loadToMTLBuffer(data: data)
+        else { throw ComputeError.bufferCreationFailed }
+        
+        return buffer
+    }
+    
     // Create an output buffer matching the GlyphMapKernelOut structure
-    private func makeRawOutputBuffer(from inputBuffer: MTLBuffer) throws -> MTLBuffer {
+    func makeRawOutputBuffer(from inputBuffer: MTLBuffer) throws -> MTLBuffer {
         let safeSize = max(1, inputBuffer.length)
         let safeOutputBufferSize = safeSize * MemoryLayout<GlyphMapKernelOut>.stride
         guard let outputBuffer = device.makeBuffer(
@@ -268,7 +282,7 @@ extension ConvertCompute {
     
     // Create an output with an expected output size
     // TODO: This can make directly to instanced constants hnnnggh
-    private func makeCleanedOutputBuffer(length: UInt32) throws -> MTLBuffer {
+    func makeCleanedOutputBuffer(length: UInt32) throws -> MTLBuffer {
         let safeSize = max(1, length)
         let outputBuffer = try link.makeBuffer(
             of: GlyphMapKernelOut.self,
@@ -277,7 +291,7 @@ extension ConvertCompute {
         return outputBuffer
     }
     
-    func roundUp(
+    private func roundUp(
         number: UInt32,
         toMultipleOf multiple: UInt32
     ) -> UInt32 {
@@ -301,7 +315,7 @@ extension ConvertCompute {
         return metalBuffer
     }
     
-    func makeGlyphMapKernelOutThreadgroups(
+    private func makeGlyphMapKernelOutThreadgroups(
         for buffer: MTLBuffer,
         state: MTLComputePipelineState
     ) -> MTLSize {
@@ -405,6 +419,13 @@ public extension ConvertCompute {
         onEvent: @escaping (Event) -> Void = { _ in }
     ) throws -> [EncodeResult] {
         let errors = ConcurrentArray<Error>()
+        
+        let captureManager = MTLCaptureManager.shared()
+        
+        let captureDescriptor = MTLCaptureDescriptor()
+        captureDescriptor.captureObject = commandQueue
+        captureDescriptor.destination = .developerTools
+        try captureManager.startCapture(with: captureDescriptor)
 
         // MARK: ------ [Many Buffer build]
         // Setup buffers from CPU side...
@@ -443,10 +464,12 @@ public extension ConvertCompute {
             onEvent: onEvent
         )
         
+        captureManager.stopCapture()
+        
         return results.values
     }
     
-    private func dispatchMapToBuffers(
+    func dispatchMapToBuffers(
         sources: [URL],
         errors: ErrorList,
         onEvent: @escaping (Event) -> Void = { _ in }
@@ -480,7 +503,7 @@ public extension ConvertCompute {
         return loadedData
     }
     
-    private func encodeLayout(
+    func encodeLayout(
         for loadedData: InputBufferList,
         in queue: MTLCommandQueue,
         atlas: MetalLinkAtlas,
@@ -491,8 +514,9 @@ public extension ConvertCompute {
         guard let commandBuffer = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
         
-        let results = ResultList()
         
+        let results = ResultList()
+        commandBuffer.pushDebugGroup("[SG] Root Layout Encode Buffer")
         for (source, buffer) in loadedData.values {
             do {
                 // Setup the first atlas + layout encoder
@@ -505,6 +529,8 @@ public extension ConvertCompute {
                     in: commandBuffer,
                     atlasBuffer: atlas.currentBuffer
                 )
+                
+                computeCommandEncoder.insertDebugSignpost("[SG] Created Atlas Layout Encoder - \(source.lastPathComponent)")
                 
                 // Setup the result (this is weird but it made sense at the time)
                 let mappedLayout = EncodeResult(
@@ -522,14 +548,16 @@ public extension ConvertCompute {
                 errors.append(error)
             }
         }
+        commandBuffer.popDebugGroup()
+        
         
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
-        
+
         return results
     }
     
-    private func encodeConstantsBlit(
+    func encodeConstantsBlit(
         into results: ResultList,
         in queue: MTLCommandQueue,
         atlas: MetalLinkAtlas,
@@ -572,13 +600,14 @@ public extension ConvertCompute {
             case .set(_, _):
                 fatalError("this.. how!?")
             }
+
         }
         
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
     }
     
-    private func dispatchCollectionRebuilds(
+    func dispatchCollectionRebuilds(
         for results: ResultList,
         atlas: MetalLinkAtlas,
         onEvent: @escaping (Event) -> Void = { _ in }
@@ -613,7 +642,7 @@ public extension ConvertCompute {
         dispatchGroup.wait()
     }
 
-    private func setupCopyBlitCommandEncoder(
+    func setupCopyBlitCommandEncoder(
         for unprocessedBuffer: MTLBuffer,
         targeting targetConstants: InstanceState<GlyphCacheKey, MetalLinkGlyphNode>,
         expectedCharacterCount: UInt32,
@@ -623,7 +652,7 @@ public extension ConvertCompute {
         let constantsBlitPipelineState = try functions.makeConstantsBlitPipelineState()
         guard let computeCommandEncoder
         else { throw ComputeError.startupFailure }
-    
+
         // MARK: -- Fire up Compressenator.
         
         // Source / target buffers
@@ -642,6 +671,23 @@ public extension ConvertCompute {
         let instanceCountBuffer = try makeCharacterCountBuffer(starting: starting)
         computeCommandEncoder.setBuffer(instanceCountBuffer, offset: 0, index: 4)
         
+        // We're gonna try computing bounds 'cause.. why not. Sure.
+        let minXBuffer = try makeBoundsBuffer(starting: .infinity)
+        let minYBuffer = try makeBoundsBuffer(starting: .infinity)
+        let minZBuffer = try makeBoundsBuffer(starting: .infinity)
+        
+        let maxXBuffer = try makeBoundsBuffer(starting: -.infinity)
+        let maxYBuffer = try makeBoundsBuffer(starting: -.infinity)
+        let maxZBuffer = try makeBoundsBuffer(starting: -.infinity)
+        
+        computeCommandEncoder.setBuffer(minXBuffer, offset: 0, index: 5)
+        computeCommandEncoder.setBuffer(minYBuffer, offset: 0, index: 6)
+        computeCommandEncoder.setBuffer(minZBuffer, offset: 0, index: 7)
+        
+        computeCommandEncoder.setBuffer(maxXBuffer, offset: 0, index: 8)
+        computeCommandEncoder.setBuffer(maxYBuffer, offset: 0, index: 9)
+        computeCommandEncoder.setBuffer(maxZBuffer, offset: 0, index: 10)
+        
         // -- Set pipeline state --
         computeCommandEncoder.setComputePipelineState(constantsBlitPipelineState)
         
@@ -657,10 +703,12 @@ public extension ConvertCompute {
         )
         
         // Dispatch the compute kernel and end encoding
+        computeCommandEncoder.pushDebugGroup("[SG] Dispatch Blit")
         computeCommandEncoder.dispatchThreadgroups(
             threadgroups,
             threadsPerThreadgroup: threadsPerThreadgroup
         )
+        computeCommandEncoder.popDebugGroup()
         
         // Finalize encoding
         computeCommandEncoder.endEncoding()
@@ -669,7 +717,7 @@ public extension ConvertCompute {
     }
     
     // Give me .utf8 text data and an atlas buffer and I'll do even weirder things
-    private func setupAtlasLayoutCommandEncoder(
+    func setupAtlasLayoutCommandEncoder(
         for inputUTF8TextDataBuffer: MTLBuffer,
         in commandBuffer: MTLCommandBuffer,
         atlasBuffer: MTLBuffer
@@ -681,6 +729,8 @@ public extension ConvertCompute {
         let computeCommandEncoder = commandBuffer.makeComputeCommandEncoder()
         guard let computeCommandEncoder
         else { throw ComputeError.startupFailure }
+        // Setup group for both encoding
+        computeCommandEncoder.pushDebugGroup("[SG] Root Atlas Dispatch")
         
         // MARK: -- Fire up atlas
         let outputUTF32ConversionBuffer = try makeRawOutputBuffer(from: inputUTF8TextDataBuffer)
@@ -713,22 +763,27 @@ public extension ConvertCompute {
         let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // Dispatch the compute kernel
+        computeCommandEncoder.pushDebugGroup("[SG] - Dipsatch initial atlas map")
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,
             threadsPerThreadgroup: threadGroupSize
         )
+        computeCommandEncoder.popDebugGroup()
         
         // MARK: -- Fire up layout. Oh boy.
         let layoutPipelineState = try functions.makeLayoutRenderPipelineState()
         computeCommandEncoder.setComputePipelineState(layoutPipelineState)
         
         // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
+        computeCommandEncoder.pushDebugGroup("[SG] - Dispating layout")
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,
             threadsPerThreadgroup: threadGroupSize
         )
+        computeCommandEncoder.popDebugGroup()
         
         // Finalize encoding
+        computeCommandEncoder.popDebugGroup()
         computeCommandEncoder.endEncoding()
         
         return (
