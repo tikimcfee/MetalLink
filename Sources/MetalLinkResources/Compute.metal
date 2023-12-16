@@ -462,9 +462,10 @@ kernel void utf32GlyphMapLayout(
     device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
                  uint id                            [[thread_position_in_grid]],
     constant     uint* utf8BufferSize               [[buffer(3)]],
-    constant     uint* atlasBufferSize              [[buffer(4)]]
+    constant     uint* atlasBufferSize              [[buffer(4)]],
+    constant     uint* utf32BufferSize              [[buffer(5)]]
 ) {
-    if (id < 0 || id > *utf8BufferSize) {
+    if (id < 0 || id >= *utf32BufferSize - 16) {
         return;
     }
     
@@ -712,13 +713,16 @@ kernel void blitGlyphsIntoConstants(
     targetConstants[targetBufferIndex].textureSize = glyphCopy.textureSize;
     targetConstants[targetBufferIndex].positionOffset = glyphCopy.positionOffset;
     
-    updateAtomicMin(minX, glyphCopy.positionOffset.x);
-    updateAtomicMin(minY, glyphCopy.positionOffset.y);
-    updateAtomicMin(minZ, glyphCopy.positionOffset.z);
-    
-    updateAtomicMax(maxX, glyphCopy.positionOffset.x);
-    updateAtomicMax(maxY, glyphCopy.positionOffset.y);
-    updateAtomicMax(maxZ, glyphCopy.positionOffset.z);
+    updateAtomicMin(minX, 10);
+    updateAtomicMin(minY, 13);
+    updateAtomicMin(minZ, 31);
+//    updateAtomicMin(minX, glyphCopy.positionOffset.x);
+//    updateAtomicMin(minY, glyphCopy.positionOffset.y);
+//    updateAtomicMin(minZ, glyphCopy.positionOffset.z);
+//    
+//    updateAtomicMax(maxX, glyphCopy.positionOffset.x);
+//    updateAtomicMax(maxY, glyphCopy.positionOffset.y);
+//    updateAtomicMax(maxZ, glyphCopy.positionOffset.z);
 }
 
 

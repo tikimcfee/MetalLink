@@ -29,7 +29,7 @@ public struct MetalView: NSUIViewRepresentable {
     
     #if os(iOS)
     public func makeUIView(context: Context) -> some UIView {
-        #if !os(xrOS)
+        #if !os(visionOS)
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
@@ -89,7 +89,7 @@ public extension MetalView {
             print("-------------------------------")
             #endif
             
-            #if !os(xrOS)
+            #if !os(visionOS)
             mtkView.delegate = renderer
             mtkView.framebufferOnly = false
             mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)

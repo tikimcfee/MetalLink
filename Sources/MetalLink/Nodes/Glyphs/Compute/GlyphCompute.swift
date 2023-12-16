@@ -419,13 +419,6 @@ public extension ConvertCompute {
         onEvent: @escaping (Event) -> Void = { _ in }
     ) throws -> [EncodeResult] {
         let errors = ConcurrentArray<Error>()
-        
-        let captureManager = MTLCaptureManager.shared()
-        
-        let captureDescriptor = MTLCaptureDescriptor()
-        captureDescriptor.captureObject = commandQueue
-        captureDescriptor.destination = .developerTools
-        try captureManager.startCapture(with: captureDescriptor)
 
         // MARK: ------ [Many Buffer build]
         // Setup buffers from CPU side...
@@ -463,8 +456,6 @@ public extension ConvertCompute {
             atlas: atlas,
             onEvent: onEvent
         )
-        
-        captureManager.stopCapture()
         
         return results.values
     }
@@ -747,6 +738,9 @@ public extension ConvertCompute {
         
         var atlasBufferSize = atlasBuffer.length
         computeCommandEncoder.setBytes(&atlasBufferSize, length: MemoryLayout<Int>.size, index: 4)
+        
+        var utf32BufferSize = outputUTF32ConversionBuffer.length
+        computeCommandEncoder.setBytes(&utf32BufferSize, length: MemoryLayout<Int>.size, index: 5)
         
         // And also pass a mutable count to tally up the total hashed up characters. This will be used to setup
         // a final output buffer.

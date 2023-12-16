@@ -9,7 +9,7 @@ import Foundation
 import MetalKit
 import SwiftUI
 
-#if os(xrOS)
+#if os(visionOS)
 public class CustomMTKView: UIView {
     public var device: MTLDevice?
     public var drawableSize: MTLSize = .init(width: 0, height: 0, depth: 0)

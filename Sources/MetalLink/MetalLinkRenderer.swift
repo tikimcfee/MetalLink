@@ -6,7 +6,7 @@ public protocol MetalLinkRendererDelegate {
     func performDelegatedEncode(with pass: inout SafeDrawPass)
 }
 
-#if os(xrOS)
+#if os(visionOS)
 public class MetalLinkRenderer : NSObject, MetalLinkReader {
     public var link: MetalLink
     public var paused = false
@@ -17,7 +17,7 @@ public class MetalLinkRenderer : NSObject, MetalLinkReader {
 }
 #endif
 
-#if !os(xrOS)
+#if !os(visionOS)
 public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     public let link: MetalLink
     public var renderDelegate: MetalLinkRendererDelegate?

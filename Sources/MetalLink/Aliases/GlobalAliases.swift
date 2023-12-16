@@ -36,7 +36,7 @@ public typealias VectorFloat = Float
 public typealias NSUIImage = UIImage
 public typealias NSUIViewRepresentable = UIViewRepresentable
 
-#if !os(xrOS)
+#if !os(visionOS)
 public typealias OSScreen = UIScreen
 #endif
 

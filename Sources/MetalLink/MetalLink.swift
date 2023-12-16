@@ -51,7 +51,7 @@ public class MetalLink {
     }
 }
 
-#if !os(xrOS)
+#if !os(visionOS)
 extension MetalLink {
     func onSizeChange(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         sizeSubject.send(size)

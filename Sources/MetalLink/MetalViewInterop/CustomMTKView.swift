@@ -9,7 +9,7 @@ import Foundation
 import MetalKit
 import SwiftUI
 
-#if !os(xrOS)
+#if !os(visionOS)
 
 public class CustomMTKView: MTKView {
     weak var positionReceiver: MousePositionReceiver?
