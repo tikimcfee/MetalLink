@@ -555,16 +555,38 @@ public extension ConvertCompute {
         errors: ErrorList,
         onEvent: @escaping (Event) -> Void = { _ in }
     ) throws {
-        guard let commandBuffer = commandQueue.makeCommandBuffer()
+        guard var commandBuffer = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
         
-        for result in results.values {
+        var unprocessedBuffers = 0
+        for (index, result) in results.values.enumerated() {
+            if unprocessedBuffers >= link.DefaultQueueMaxUnprocessedBuffers {
+                commandBuffer.commit()
+                commandBuffer.waitUntilCompleted()
+                
+                guard let newBuffer = commandQueue.makeCommandBuffer()
+                else { throw ComputeError.startupFailure }
+                
+                commandBuffer = newBuffer
+                unprocessedBuffers = 0
+            }
+            
+            onNext(index, result)
+            unprocessedBuffers += 1
+        }
+        
+        if unprocessedBuffers > 0 {
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+        }
+        
+        func onNext(_ index: Int, _ result: EncodeResult) {
             switch result.blitEncoder {
             case .notSet:
                 // Create a new instance state to blit our glyph data into
                 guard result.finalCount > 0 else {
                     print("-- (Couldn't map; empty final count for: \(result.sourceURL.lastPathComponent)")
-                    continue
+                    return
                 }
                 
                 do {
@@ -591,11 +613,7 @@ public extension ConvertCompute {
             case .set(_, _):
                 fatalError("this.. how!?")
             }
-
         }
-        
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
     }
     
     func dispatchCollectionRebuilds(

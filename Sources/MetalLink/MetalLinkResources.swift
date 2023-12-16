@@ -11,21 +11,17 @@ import Metal
 public class MetalLinkResources {
     private init() { }
     
-//    public static func moduleBundle() -> Bundle {
-//        Bundle.module
-//    }
-    
-    public static func shaderBundle() -> Bundle {
+    public static func shaderBundle() -> Bundle? {
         let myBundle = Bundle(for: MetalLinkResources.self)
-//        let myBundle = Bundle.main
         guard let resourceURL = myBundle.resourceURL else {
             print("Missing resource bundle url")
-            return .main
+            return nil
         }
+        
         let shaderBundleURL = resourceURL.appending(path: "MetalLink_MetalLinkResources.bundle", directoryHint: .checkFileSystem)
         guard let shaderBundle = Bundle(url: shaderBundleURL) else {
             print("Missing shader bundle")
-            return .main
+            return nil
         }
         
         return shaderBundle
@@ -33,22 +29,17 @@ public class MetalLinkResources {
     
     public static func getShaderLibrary(from device: MTLDevice) -> MTLLibrary? {
         let shaderBundle = shaderBundle()
-        guard let libraryURL = shaderBundle.url(forResource: "debug", withExtension: "metallib") else {
+        let libraryURL = shaderBundle?.url(forResource: "debug", withExtension: "metallib")
+        guard let libraryURL else {
             print("Missing library URL")
             return nil
         }
-        let library = try? device.makeLibrary(URL: libraryURL)
+        guard let library = try? device.makeLibrary(URL: libraryURL) else {
+            print("Cannot find debug metallib, reverting to 'makeDefaultLibrary")
+            return device.makeDefaultLibrary()
+        }
         return library
     }
-    
-//    public static func getDefaultLibrary_OLD(from device: MTLDevice) -> MTLLibrary? {
-//        do {
-//            return try device.makeDefaultLibrary(bundle: moduleBundle())
-//        } catch {
-//            print("[\(#fileID):\(#function)] - Library Error - \(error)")
-//            return nil
-//        }
-//    }
 }
 
 

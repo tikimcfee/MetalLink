@@ -13,6 +13,8 @@ import MetalLinkHeaders
 import Combine
 
 public class MetalLink {
+    public let DefaultQueueMaxUnprocessedBuffers = 64
+    
     public let view: CustomMTKView
     public let device: MTLDevice
     public let commandQueue: MTLCommandQueue
@@ -38,11 +40,18 @@ public class MetalLink {
     
     public init(view: CustomMTKView) throws {
         self.view = view
-        guard let device = view.device else { throw CoreError.noMetalDevice }
-        guard let queue = device.makeCommandQueue() else { throw CoreError.noCommandQueue }
+        guard let device = view.device else {
+            throw CoreError.noMetalDevice
+        }
         
-//        guard let library = MetalLinkResources.getDefaultLibrary(from: device) else { throw CoreError.noDefaultLibrary }
-        guard let library = MetalLinkResources.getShaderLibrary(from: device) else { throw CoreError.noDefaultLibrary }
+        guard let queue = device.makeCommandQueue(maxCommandBufferCount: DefaultQueueMaxUnprocessedBuffers) else {
+            throw CoreError.noCommandQueue
+        }
+        
+        guard let library = MetalLinkResources.getShaderLibrary(from: device)
+        else {
+            throw CoreError.noDefaultLibrary
+        }
         
         self.device = device
         self.commandQueue = queue
