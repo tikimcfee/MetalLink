@@ -98,7 +98,7 @@ private extension FileWatchRenderer {
         case .notSet:
             // Create a new instance state to blit our glyph data into
             guard result.finalCount > 0 else {
-                print("-- (Couldn't map; empty final count for: \(result.sourceURL.lastPathComponent)")
+                print("-- (Couldn't map; empty final count for: \(result.sourceURL)")
                 return
             }
             

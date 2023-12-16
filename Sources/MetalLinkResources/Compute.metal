@@ -465,7 +465,9 @@ kernel void utf32GlyphMapLayout(
     constant     uint* atlasBufferSize              [[buffer(4)]],
     constant     uint* utf32BufferSize              [[buffer(5)]]
 ) {
-    if (id < 0 || id >= *utf32BufferSize - 16) {
+    uint localSize = *utf32BufferSize;
+    uint offsetMax = localSize - 1;
+    if (id < 0 || id >= offsetMax) {
         return;
     }
     

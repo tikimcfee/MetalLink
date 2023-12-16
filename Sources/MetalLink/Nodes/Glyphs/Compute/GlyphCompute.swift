@@ -273,7 +273,7 @@ extension ConvertCompute {
         let safeOutputBufferSize = safeSize * MemoryLayout<GlyphMapKernelOut>.stride
         guard let outputBuffer = device.makeBuffer(
             length: safeOutputBufferSize,
-            options: []
+            options: [.storageModeShared]
         )
         else { throw ComputeError.bufferCreationFailed }
         outputBuffer.label = "Output :: \(inputBuffer.label ?? "<no input name>")"
@@ -479,6 +479,11 @@ public extension ConvertCompute {
                     if data.count == 0 {
                         data = String("<empty-file>").data(using: .utf8)!
                     }
+                    if data.count > 10_000_000 {
+                        print("Skipping source URL: \(source), data is: \(data.count)")
+                        return
+                    }
+                    
                     let buffer = try makeInputBuffer(data)
                     buffer.label = "Input grapheme \(source.lastPathComponent)"
                     loadedData.append((source, buffer))
@@ -502,13 +507,40 @@ public extension ConvertCompute {
         onEvent: @escaping (Event) -> Void = { _ in }
     ) throws -> ResultList {
         // All atlas encoders are ready; commit the command buffer and wait for it to complete
-        guard let commandBuffer = commandQueue.makeCommandBuffer()
+        guard var commandBuffer = commandQueue.makeCommandBuffer()
         else { throw ComputeError.startupFailure }
-        
         
         let results = ResultList()
         commandBuffer.pushDebugGroup("[SG] Root Layout Encode Buffer")
+        var unprocessedBuffers = 0
         for (source, buffer) in loadedData.values {
+            if unprocessedBuffers >= link.DefaultQueueMaxUnprocessedBuffers {
+                commandBuffer.commit()
+                commandBuffer.waitUntilCompleted()
+                
+                guard let newBuffer = commandQueue.makeCommandBuffer()
+                else { throw ComputeError.startupFailure }
+                
+                commandBuffer = newBuffer
+                unprocessedBuffers = 0
+            }
+            
+            onNext(source, buffer)
+            unprocessedBuffers += 1
+        }
+        commandBuffer.popDebugGroup()
+        
+        
+        if unprocessedBuffers > 0 {
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+        }
+        
+        
+        func onNext(
+            _ source: URL,
+            _ buffer: MTLBuffer
+        ) {
             do {
                 // Setup the first atlas + layout encoder
                 let (
@@ -539,11 +571,6 @@ public extension ConvertCompute {
                 errors.append(error)
             }
         }
-        commandBuffer.popDebugGroup()
-        
-        
-        commandBuffer.commit()
-        commandBuffer.waitUntilCompleted()
 
         return results
     }
@@ -559,7 +586,7 @@ public extension ConvertCompute {
         else { throw ComputeError.startupFailure }
         
         var unprocessedBuffers = 0
-        for (index, result) in results.values.enumerated() {
+        for result in results.values {
             if unprocessedBuffers >= link.DefaultQueueMaxUnprocessedBuffers {
                 commandBuffer.commit()
                 commandBuffer.waitUntilCompleted()
@@ -571,7 +598,7 @@ public extension ConvertCompute {
                 unprocessedBuffers = 0
             }
             
-            onNext(index, result)
+            onNext(result)
             unprocessedBuffers += 1
         }
         
@@ -580,7 +607,7 @@ public extension ConvertCompute {
             commandBuffer.waitUntilCompleted()
         }
         
-        func onNext(_ index: Int, _ result: EncodeResult) {
+        func onNext(_ result: EncodeResult) {
             switch result.blitEncoder {
             case .notSet:
                 // Create a new instance state to blit our glyph data into
