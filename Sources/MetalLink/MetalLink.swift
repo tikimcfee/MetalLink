@@ -40,11 +40,14 @@ public class MetalLink {
     
     public init(view: CustomMTKView) throws {
         self.view = view
-        guard let device = view.device else {
+        
+        guard let device = view.device
+        else {
             throw CoreError.noMetalDevice
         }
         
-        guard let queue = device.makeCommandQueue(maxCommandBufferCount: DefaultQueueMaxUnprocessedBuffers) else {
+        guard let queue = device.makeCommandQueue(maxCommandBufferCount: DefaultQueueMaxUnprocessedBuffers)
+        else {
             throw CoreError.noCommandQueue
         }
         

@@ -19,7 +19,6 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     public var linkAtlas: MetalLinkAtlas
     public lazy var renderer = Renderer(collection: self)
     
-    
     /* TODO: Mobile vs. Desktop splt: JUST MAKE LAYOUT BETTER
      So I still haven't done GPU layout because bad brains, but
      I'm figuring out more memory stuff. I can save a bunch of memory
@@ -28,37 +27,15 @@ final public class GlyphCollection: MetalLinkInstancedObject<
      can stay or go as desired - it's a temporary optimization.
      */
     #if os(iOS)
-    public override var hasIntrinsicSize: Bool {
-        return pointerHasIntrinsicSize()
-    }
-    
-    public override var contentBounds: Bounds {
-        return pointerBounds()
-    }
-    
-    public func setRootMesh() {
-        setRootMeshPointer()
-    }
-    
-    public func resetCollectionState() {
-        rebuildInstanceAfterCompute()
-    }
+    public override var hasIntrinsicSize: Bool { pointerHasIntrinsicSize() }
+    public override var contentBounds: Bounds  { pointerBounds() }
+    public func setRootMesh()                  { setRootMeshPointer() }
+    public func resetCollectionState()         { rebuildInstanceAfterCompute() }
     #else
-    public override var hasIntrinsicSize: Bool {
-        return nodesHaveIntrinsicSize()
-    }
-    
-    public override var contentBounds: Bounds {
-        return nodeBounds()
-    }
-    
-    public func setRootMesh() {
-        setRootMeshNodes()
-    }
-    
-    public func resetCollectionState() {
-        rebuildInstanceNodesFromState()
-    }
+    public override var hasIntrinsicSize: Bool { nodesHaveIntrinsicSize() }
+    public override var contentBounds: Bounds  { nodeBounds() }
+    public func setRootMesh()                  { setRootMeshNodes() }
+    public func resetCollectionState()         { rebuildInstanceNodesFromState() }
     #endif
         
     public init(
