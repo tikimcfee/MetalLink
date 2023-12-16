@@ -466,11 +466,11 @@ public extension ConvertCompute {
         onEvent: @escaping (Event) -> Void = { _ in }
     ) -> InputBufferList {
         let loadedData = InputBufferList()
-        let dispatchGroup = DispatchGroup()
+//        let dispatchGroup = DispatchGroup()
         
         for source in sources {
-            dispatchGroup.enter()
-            WorkerPool.shared.nextWorker().async { [makeInputBuffer] in
+//            dispatchGroup.enter()
+//            WorkerPool.shared.nextWorker().async { [makeInputBuffer] in
                 do {
                     var data = try Data(
                         contentsOf: source,
@@ -478,10 +478,6 @@ public extension ConvertCompute {
                     )
                     if data.count == 0 {
                         data = String("<empty-file>").data(using: .utf8)!
-                    }
-                    if data.count > 10_000_000 {
-                        print("Skipping source URL: \(source), data is: \(data.count)")
-                        return
                     }
                     
                     let buffer = try makeInputBuffer(data)
@@ -492,10 +488,10 @@ public extension ConvertCompute {
                 } catch {
                     errors.append(error)
                 }
-                dispatchGroup.leave()
-            }
+//                dispatchGroup.leave()
+//            }
         }
-        dispatchGroup.wait()
+//        dispatchGroup.wait()
         return loadedData
     }
     
@@ -648,15 +644,15 @@ public extension ConvertCompute {
         atlas: MetalLinkAtlas,
         onEvent: @escaping (Event) -> Void = { _ in }
     ) {
-        let dispatchGroup = DispatchGroup()
+//        let dispatchGroup = DispatchGroup()
         for result in results.values {
             switch result.blitEncoder {
             case .notSet:
                 break
 
             case .set(_, let state):
-                dispatchGroup.enter()
-                WorkerPool.shared.nextWorker().async { [link] in
+//                dispatchGroup.enter()
+//                WorkerPool.shared.nextWorker().async { [link] in
                     do {
                         state.constants.currentEndIndex = Int(result.finalCount)
                         let collection = try GlyphCollection(
@@ -671,11 +667,11 @@ public extension ConvertCompute {
                     } catch {
                         fatalError("-- What happen? Someone set us up a bomb?\n\(error)")
                     }
-                    dispatchGroup.leave()
-                }
+//                    dispatchGroup.leave()
+//                }
             }
         }
-        dispatchGroup.wait()
+//        dispatchGroup.wait()
     }
 
     func setupCopyBlitCommandEncoder(
