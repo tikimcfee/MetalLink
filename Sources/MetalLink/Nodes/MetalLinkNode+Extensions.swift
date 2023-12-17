@@ -1,5 +1,4 @@
 import Foundation
-import SceneKit
 
 public extension MetalLinkNode {
 

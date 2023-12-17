@@ -1,5 +1,4 @@
 import Foundation
-import SceneKit
 import SwiftUI
 
 extension GestureRecognizer {

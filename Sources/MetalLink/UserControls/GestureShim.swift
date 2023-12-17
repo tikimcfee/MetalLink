@@ -1,6 +1,5 @@
 import Foundation
 import SwiftUI
-import SceneKit
 
 public typealias PanReceiver = (PanEvent) -> Void
 public typealias MagnificationReceiver = (MagnificationEvent) -> Void

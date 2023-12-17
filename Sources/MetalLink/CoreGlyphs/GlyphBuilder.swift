@@ -6,10 +6,7 @@
 //
 
 import Foundation
-import SceneKit
 import MetalKit
-
-public typealias SizedText = (SCNGeometry, SCNGeometry, CGSize)
 
 public class GlyphBuilder {
 //    public static let device: MTLDevice = MTLCreateSystemDefaultDevice()!

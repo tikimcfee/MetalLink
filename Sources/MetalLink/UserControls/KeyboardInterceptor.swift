@@ -5,12 +5,8 @@
 //  Created by Ivan Lugo on 11/4/21.
 //
 
-import SceneKit
+import BitHandling
 import Combine
-
-public let default_MovementSpeed: VectorFloat = 50
-public let default_ModifiedMovementSpeed: VectorFloat = 1000
-private let default_UpdateDeltaMillis = 16
 
 public typealias FileOperationReceiver = (FileOperation) -> Void
 public enum FileOperation {
@@ -85,8 +81,8 @@ public class KeyboardInterceptor {
         }
         
         let finalDelta = state.currentModifiers.contains(.shift)
-            ? default_ModifiedMovementSpeed
-            : default_MovementSpeed
+            ? GlobalLiveConfig.Default.modifiedMovementSpeed
+            : GlobalLiveConfig.Default.movementSpeed
         
         state.directions.forEach { direction in
             doDirectionDelta(direction, finalDelta)
@@ -146,6 +142,7 @@ private extension KeyboardInterceptor {
 }
 
 #if os(iOS)
+import UIKit
 public extension OSEvent {
     class ModifierFlags: Equatable {
         public static let none = ModifierFlags(-1)
