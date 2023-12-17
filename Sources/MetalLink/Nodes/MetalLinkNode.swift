@@ -154,11 +154,11 @@ open class MetalLinkNode: Measures {
         
     }
     
-//    open func update(deltaTime: Float) {
-//        children.forEach {
-//            $0.update(deltaTime: deltaTime)
-//        }
-//    }
+    open func update(deltaTime: Float) {
+        children.forEach {
+            $0.update(deltaTime: deltaTime)
+        }
+    }
     
     // MARK: Children
     
