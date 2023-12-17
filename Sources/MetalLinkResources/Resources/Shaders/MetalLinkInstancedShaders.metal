@@ -9,8 +9,8 @@
 #include <metal_stdlib>
 using namespace metal;
 
-#include "include/MetalLinkResources.h"
-#include "../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
+//#include "include/MetalLinkResources.h"
+#include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
 constant float4x4 identityMatrix = float4x4(1.0);

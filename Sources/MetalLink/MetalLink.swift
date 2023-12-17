@@ -51,7 +51,7 @@ public class MetalLink {
             throw CoreError.noCommandQueue
         }
         
-        guard let library = MetalLinkResources.getShaderLibrary(from: device)
+        guard let library = MetalLinkResources.getDefaultLibrary(from: device)
         else {
             throw CoreError.noDefaultLibrary
         }

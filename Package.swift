@@ -20,11 +20,19 @@ let package = Package(
         .package(url: "https://github.com/schwa/MetalCompilerPlugin", branch: "main")
     ],
     targets: [
+//        .target(
+//            name: "MetalLinkResources",
+//            plugins: [
+//                .plugin(name: "MetalCompilerPlugin", package: "MetalCompilerPlugin")
+//            ]
+//        ),
         .target(
             name: "MetalLinkResources",
-            plugins: [
-                .plugin(name: "MetalCompilerPlugin", package: "MetalCompilerPlugin")
-            ]
+            dependencies: ["MetalLinkHeaders"],
+            resources: [
+                .process("Resources/Shaders"),
+            ],
+            publicHeadersPath: "."
         ),
         .target(
             name: "MetalLinkHeaders",

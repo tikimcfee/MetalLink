@@ -7,12 +7,13 @@
 
 import Foundation
 import Metal
+import MetalLinkResources
 
-public class MetalLinkResources {
+public class MetalLinkLocalResources {
     private init() { }
     
-    public static func shaderBundle() -> Bundle? {
-        let myBundle = Bundle(for: MetalLinkResources.self)
+    private static func shaderBundle() -> Bundle? {
+        let myBundle = Bundle(for: MetalLinkLocalResources.self)
         guard let resourceURL = myBundle.resourceURL else {
             print("Missing resource bundle url")
             return nil
@@ -27,7 +28,11 @@ public class MetalLinkResources {
         return shaderBundle
     }
     
-    public static func getShaderLibrary(from device: MTLDevice) -> MTLLibrary? {
+    public static func getDefaultLibrary(from device: MTLDevice) -> MTLLibrary? {
+        return MetalLinkResources.getDefaultLibrary(from: device)
+    }
+    
+    public static func getDebugShaderLibrary(from device: MTLDevice) -> MTLLibrary? {
         let shaderBundle = shaderBundle()
         let libraryURL = shaderBundle?.url(forResource: "debug", withExtension: "metallib")
         guard let libraryURL else {
