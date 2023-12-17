@@ -14,7 +14,7 @@ public protocol Measures: AnyObject {
     var nodeId: String { get }
     
     var position: LFloat3 { get set }
-    var worldPosition: LFloat3 { get set }
+    var worldPosition: LFloat3 { get }
     
     var sizeBounds: Bounds { get }
     var bounds: Bounds { get }
@@ -174,31 +174,54 @@ extension MetalLinkNode {
     }
 }
 
-extension MetalLinkNode {
-    
-    
-    public var worldPosition: LFloat3 {
-        get {
-            var finalPosition: LFloat3 = position
-            var nodeParent = parent
-            while let parent = nodeParent {
-                finalPosition += parent.position
-                nodeParent = parent.parent
-            }
-            return finalPosition
+//extension MetalLinkNode {
+//    
+//    
+//    public var worldPosition: LFloat3 {
+//        get {
+//            var finalPosition: LFloat3 = position
+//            var nodeParent = parent
+//            while let parent = nodeParent {
+//                finalPosition += parent.position
+//                nodeParent = parent.parent
+//            }
+//            return finalPosition
+//        }
+//        set {
+//            var finalPosition: LFloat3 = newValue
+//            var nodeParent = parent
+//            while let parent = nodeParent {
+//                finalPosition += parent.position
+//                nodeParent = parent.parent
+//            }
+//            position = finalPosition
+//        }
+//    }
+//    
+//    public var worldBounds: Bounds {
+//        var finalBounds = sizeBounds
+//        var nextParent = parent
+//        while let parent = nextParent {
+//            finalBounds.min += parent.position
+//            finalBounds.max += parent.position
+//            nextParent = parent.parent
+//        }
+//        return finalBounds
+//    }
+//}
+
+public extension Measures {
+    func computeWorldPosition() -> LFloat3 {
+        var finalPosition: LFloat3 = position
+        var nodeParent = parent
+        while let parent = nodeParent {
+            finalPosition += parent.position
+            nodeParent = parent.parent
         }
-        set {
-            var finalPosition: LFloat3 = newValue
-            var nodeParent = parent
-            while let parent = nodeParent {
-                finalPosition += parent.position
-                nodeParent = parent.parent
-            }
-            position = finalPosition
-        }
+        return finalPosition
     }
     
-    public var worldBounds: Bounds {
+    func computeWorldBounds() -> Bounds {
         var finalBounds = sizeBounds
         var nextParent = parent
         while let parent = nextParent {
@@ -208,10 +231,7 @@ extension MetalLinkNode {
         }
         return finalBounds
     }
-}
-
-
-public extension Measures {
+    
     func computeLocalSize() -> Bounds {
         var totalBounds = Bounds.forBaseComputing
 

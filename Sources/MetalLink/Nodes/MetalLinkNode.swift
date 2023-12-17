@@ -21,6 +21,8 @@ open class MetalLinkNode: Measures {
     public lazy var cachedSize = CachedValue(update: computeLocalSize)
     public lazy var cachedBounds = CachedValue(update: computeLocalBounds)
     public lazy var currentModel = CachedValue(update: buildModelMatrix)
+    public lazy var cachedWorldPosition = CachedValue(update: computeWorldPosition)
+    public lazy var cachedWorldBounds = CachedValue(update: computeWorldBounds)
     
     // Whatever just instance everything lolol
     public var instanceID: InstanceIDType? { instanceConstants?.instanceID }
@@ -37,33 +39,41 @@ open class MetalLinkNode: Measures {
     }
     
     open var asNode: MetalLinkNode { self }
-
+    
     open var parent: MetalLinkNode?
-        { didSet {
-            rebuildTreeState()
-        } }
+    { didSet {
+        rebuildTreeState()
+    } }
     
     open var children: [MetalLinkNode] = []
-        { didSet {
-            rebuildTreeState()
-        } }
+    { didSet {
+        rebuildTreeState()
+    } }
+    
+    open var worldPosition: LFloat3 {
+        cachedWorldPosition.get()
+    }
+    
+    public var worldBounds: Bounds {
+        cachedWorldBounds.get()
+    }
     
     // MARK: - Model params
     
     open var position: LFloat3 = .zero
-        { didSet {
-            rebuildTreeState()
-        } }
+    { didSet {
+        rebuildTreeState()
+    } }
     
     open var scale: LFloat3 = LFloat3(1.0, 1.0, 1.0)
-        { didSet {
-            rebuildTreeState()
-        } }
+    { didSet {
+        rebuildTreeState()
+    } }
     
     open var rotation: LFloat3 = .zero
-        { didSet {
-            rebuildTreeState()
-        } }
+    { didSet {
+        rebuildTreeState()
+    } }
     
     // MARK: - Overridable Measures
     
@@ -73,11 +83,11 @@ open class MetalLinkNode: Measures {
     // MARK: Bounds / Position
     
     public var bounds: Bounds {
-        cachedBounds.get()
+        return cachedBounds.get()
     }
-
+    
     public var sizeBounds: Bounds {
-        cachedSize.get()
+        return cachedSize.get()
     }
     
     public var planeAreaXY: VectorFloat {
@@ -85,15 +95,15 @@ open class MetalLinkNode: Measures {
     }
     
     public var lengthX: VectorFloat {
-        bounds.width
+        return bounds.width
     }
     
     public var lengthY: VectorFloat {
-        bounds.height
+        return bounds.height
     }
     
     public var lengthZ: VectorFloat {
-        bounds.length
+        return bounds.length
     }
     
     public var centerX: VectorFloat {
@@ -115,9 +125,11 @@ open class MetalLinkNode: Measures {
     // MARK: Rendering
     
     private var willUpdate: Bool {
-        currentModel.willUpdate
+        return currentModel.willUpdate
         || cachedSize.willUpdate
         || cachedBounds.willUpdate
+        || cachedWorldBounds.willUpdate
+        || cachedWorldPosition.willUpdate
     }
     
     open func rebuildTreeState() {
@@ -126,6 +138,8 @@ open class MetalLinkNode: Measures {
         currentModel.dirty()
         cachedBounds.dirty()
         cachedSize.dirty()
+        cachedWorldBounds.dirty()
+        cachedWorldPosition.dirty()
         
         for child in children {
             if child.willUpdate { continue }
@@ -155,8 +169,8 @@ open class MetalLinkNode: Measures {
     }
     
     open func update(deltaTime: Float) {
-        children.forEach {
-            $0.update(deltaTime: deltaTime)
+        for child in children {
+            child.update(deltaTime: deltaTime)
         }
     }
     

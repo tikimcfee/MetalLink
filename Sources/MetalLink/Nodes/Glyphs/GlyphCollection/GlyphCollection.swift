@@ -26,17 +26,18 @@ final public class GlyphCollection: MetalLinkInstancedObject<
      Desktop can keep the nodes and be more powerful for now. This
      can stay or go as desired - it's a temporary optimization.
      */
-    #if os(iOS)
+//    #if os(iOS)
+    public lazy var cachedPointerBounds = CachedValue(update: pointerBounds)
     public override var hasIntrinsicSize: Bool { pointerHasIntrinsicSize() }
-    public override var contentBounds: Bounds  { pointerBounds() }
+    public override var contentBounds: Bounds  { cachedPointerBounds.get() }
     public func setRootMesh()                  { setRootMeshPointer() }
     public func resetCollectionState()         { rebuildInstanceAfterCompute() }
-    #else
-    public override var hasIntrinsicSize: Bool { nodesHaveIntrinsicSize() }
-    public override var contentBounds: Bounds  { nodeBounds() }
-    public func setRootMesh()                  { setRootMeshNodes() }
-    public func resetCollectionState()         { rebuildInstanceNodesFromState() }
-    #endif
+//    #else
+//    public override var hasIntrinsicSize: Bool { nodesHaveIntrinsicSize() }
+//    public override var contentBounds: Bounds  { nodeBounds() }
+//    public func setRootMesh()                  { setRootMeshNodes() }
+//    public func resetCollectionState()         { rebuildInstanceNodesFromState() }
+//    #endif
         
     public init(
         link: MetalLink,
@@ -230,6 +231,7 @@ private extension GlyphCollection {
     
     func rebuildInstanceAfterCompute() {
         // Pointer doesn't need rebuilding, we use the pointer data directly
+        cachedPointerBounds.dirty()
         instanceState.constants.remakePointer()
         setRootMeshPointer()
     }
