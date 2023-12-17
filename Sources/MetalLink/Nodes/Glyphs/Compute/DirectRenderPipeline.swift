@@ -88,7 +88,6 @@ public class DataStreamRenderer: MetalLinkReader {
                     return nil
                 }
             }
-            .receive(on: DispatchQueue.main)
             .share()
             .eraseToAnyPublisher()
     }

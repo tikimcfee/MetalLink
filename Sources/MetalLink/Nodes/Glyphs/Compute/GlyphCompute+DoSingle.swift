@@ -158,7 +158,8 @@ public extension ConvertCompute {
         
         func doSet() throws {
             // Create a new instance state to blit our glyph data into
-            guard result.finalCount > 0 else {
+            let finalCount = result.finalCount
+            guard finalCount > 0 else {
                 print("-- (Couldn't map; empty final count for: \(result.sourceURL)")
                 return
             }
@@ -178,7 +179,7 @@ public extension ConvertCompute {
             let blitEncoder = try setupCopyBlitCommandEncoder(
                 for: result.outputBuffer,
                 targeting: newState,
-                expectedCharacterCount: result.finalCount,
+                expectedCharacterCount: finalCount,
                 in: commandBuffer
             )
             result.blitEncoder = .set(blitEncoder, newState)

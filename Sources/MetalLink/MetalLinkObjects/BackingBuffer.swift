@@ -43,9 +43,10 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     ) throws {
         self.link = link
         self.currentBufferSize = initialSize
-        let buffer = try link.makeBuffer(of: Stored.self, count: currentBufferSize)
+        
+        let buffer = try link.makeBuffer(of: Stored.self, count: initialSize)
         self.buffer = buffer
-        self.pointer = buffer.boundPointer(as: Stored.self, count: currentBufferSize)
+        self.pointer = buffer.boundPointer(as: Stored.self, count: initialSize)
     }
     
     public func remakePointer() {
