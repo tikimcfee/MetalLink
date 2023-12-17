@@ -50,8 +50,12 @@ public class MetalLinkLine: MetalLinkObject {
     }
     
     // Render mesh as triangle strip
-    public override func drawPrimitives(_ sdp: inout SafeDrawPass) {
-        sdp.renderCommandEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: mesh.vertexCount)
+    public override func drawPrimitives(_ sdp: SafeDrawPass) {
+        sdp.renderCommandEncoder.drawPrimitives(
+            type: .triangleStrip,
+            vertexStart: 0,
+            vertexCount: mesh.vertexCount
+        )
     }
     
     public func appendSegment(about point: LFloat3) {

@@ -33,7 +33,7 @@ public class MetalLinkObject: MetalLinkNode {
         super.update(deltaTime: deltaTime)
     }
     
-    override public func doRender(in sdp: inout SafeDrawPass) {
+    override public func doRender(in sdp: SafeDrawPass) {
         guard let meshVertexBuffer = mesh.getVertexBuffer() else { return }
         updateModelConstants()
         
@@ -47,18 +47,18 @@ public class MetalLinkObject: MetalLinkNode {
         
         // Update fragment shader
         sdp.currentBasicMaterial = material
-        applyTextures(&sdp)
+        applyTextures(sdp)
         
         // Do the draw
-        drawPrimitives(&sdp)
+        drawPrimitives(sdp)
     }
     
-    func applyTextures(_ sdp: inout SafeDrawPass) {
+    func applyTextures(_ sdp: SafeDrawPass) {
         
     }
     
     // Explicitly overridable
-    func drawPrimitives(_ sdp: inout SafeDrawPass) {
+    func drawPrimitives(_ sdp: SafeDrawPass) {
         sdp.renderCommandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: mesh.vertexCount)
     }
 }

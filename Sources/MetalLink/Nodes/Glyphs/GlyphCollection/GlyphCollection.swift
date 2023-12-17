@@ -68,7 +68,7 @@ final public class GlyphCollection: MetalLinkInstancedObject<
         )
     }
 
-    public override func render(in sdp: inout SafeDrawPass) {
+    public override func render(in sdp: SafeDrawPass) {
         sdp.oncePerPass("glyph-collection-atlas") {
             $0.renderCommandEncoder.setFragmentTexture(
                 // MARK: Atlas texture setter
@@ -79,7 +79,7 @@ final public class GlyphCollection: MetalLinkInstancedObject<
             )
         }
         
-        super.render(in: &sdp)
+        super.render(in: sdp)
     }
     
 }

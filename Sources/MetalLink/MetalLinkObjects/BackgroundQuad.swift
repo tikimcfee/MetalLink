@@ -31,7 +31,7 @@ public class BackgroundQuad: MetalLinkObject, QuadSizable {
         super.init(link, mesh: quad)
     }
     
-    public override func doRender(in sdp: inout SafeDrawPass) {
-        super.doRender(in: &sdp)
+    public override func doRender(in sdp: SafeDrawPass) {
+        super.doRender(in: sdp)
     }
 }

@@ -3,7 +3,7 @@ import Foundation
 import MetalKit
 
 public protocol MetalLinkRendererDelegate {
-    func performDelegatedEncode(with pass: inout SafeDrawPass)
+    func performDelegatedEncode(with pass: SafeDrawPass)
 }
 
 #if os(visionOS)
@@ -36,13 +36,13 @@ public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
     public func draw(in view: MTKView) {
         if paused { return }
         
-        guard var sdp = SafeDrawPass.wrap(link)
+        guard let sdp = SafeDrawPass.wrap(link)
         else {
             print("Cannot create SafeDrawPass")
             return
         }
         
-        renderDelegate?.performDelegatedEncode(with: &sdp)
+        renderDelegate?.performDelegatedEncode(with: sdp)
         
         // Produce drawable from current render state post-encoding
         sdp.renderCommandEncoder.endEncoding()

@@ -73,7 +73,7 @@ open class MetalLinkInstancedObject<
         super.update(deltaTime: deltaTime)
     }
     
-    override public func doRender(in sdp: inout SafeDrawPass) {
+    override public func doRender(in sdp: SafeDrawPass) {
         guard instanceState.instanceBufferCount > 0,
               let meshVertexBuffer = mesh.getVertexBuffer()
         else { return }

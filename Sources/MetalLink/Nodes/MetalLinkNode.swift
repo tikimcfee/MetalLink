@@ -157,14 +157,14 @@ open class MetalLinkNode: Measures {
         }
     }
     
-    open func render(in sdp: inout SafeDrawPass) {
+    open func render(in sdp: SafeDrawPass) {
         for child in children {
-            child.render(in: &sdp)
+            child.render(in: sdp)
         }
-        doRender(in: &sdp)
+        doRender(in: sdp)
     }
     
-    open func doRender(in sdp: inout SafeDrawPass) {
+    open func doRender(in sdp: SafeDrawPass) {
         
     }
     
@@ -175,6 +175,26 @@ open class MetalLinkNode: Measures {
     }
     
     // MARK: Children
+    public func collectChildren() -> [[MetalLinkNode]] {
+        // No children, skip out
+        if children.isEmpty {
+            return []
+        }
+        
+        var myChildren = [children]
+        for child in children {
+            for childCollection in child.collectChildren() {
+                // Skip empty sets
+                if childCollection.isEmpty {
+                    continue
+                }
+                myChildren.append(childCollection)
+            }
+        }
+        
+        // Return full collection
+        return myChildren
+    }
     
     public func add(child: MetalLinkNode) {
         children.append(child)
