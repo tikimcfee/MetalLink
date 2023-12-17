@@ -123,8 +123,8 @@ extension DebugCamera {
                 
                 let delta = pair.1.currentLocation - pair.0.currentLocation
                 interceptor.positions.travelOffset = LFloat3(
-                    -delta.x * 250,
-                     delta.y * 250,
+                    -delta.x * GlobalLiveConfig.Default.mobilePanXComputed,
+                     delta.y * GlobalLiveConfig.Default.mobilePanYComputed,
                      0
                 )
             }.store(in: &cancellables)
@@ -135,14 +135,13 @@ extension DebugCamera {
             .sink { [interceptor] pair in
                 let next: MagnificationEvent = pair.1
                 guard next.state == .changed else { return }
-                let delta = (1 - next.magnification) * 100_000
+                let delta = (1 - next.magnification) * GlobalLiveConfig.Default.magnificationRawMultiplier
                 interceptor.positions.travelOffset = LFloat3(0, 0, delta)
             }.store(in: &cancellables)
         
         // Yes, the closure will retain the subject <3
         link.input.gestureShim.onPan = panSubject.send
         link.input.gestureShim.onMagnify = magnificationSubject.send
-        
     }
 }
 #endif

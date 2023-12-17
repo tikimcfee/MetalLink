@@ -28,13 +28,14 @@ public class MetalLinkObject: MetalLinkNode {
         super.init()
     }
     
-    public override func update(deltaTime: Float) {
-        updateModelConstants()
-        super.update(deltaTime: deltaTime)
-    }
+//    public override func update(deltaTime: Float) {
+//        updateModelConstants()
+//        super.update(deltaTime: deltaTime)
+//    }
     
     override public func doRender(in sdp: inout SafeDrawPass) {
         guard let meshVertexBuffer = mesh.getVertexBuffer() else { return }
+        updateModelConstants()
         
         // Setup rendering states for next draw pass
         sdp.currentPipeline = pipelineState

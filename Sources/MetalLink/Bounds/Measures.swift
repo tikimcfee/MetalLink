@@ -13,8 +13,6 @@ import simd
 public protocol Measures: AnyObject {
     var nodeId: String { get }
     
-    
-    
     var position: LFloat3 { get set }
     var worldPosition: LFloat3 { get set }
     

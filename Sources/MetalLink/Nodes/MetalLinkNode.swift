@@ -10,6 +10,7 @@ import Combine
 import MetalLinkHeaders
 
 open class MetalLinkNode: Measures {
+    public lazy var nodeId = UUID().uuidString
     
     public init() {
         
@@ -20,8 +21,6 @@ open class MetalLinkNode: Measures {
     public lazy var cachedSize = CachedValue(update: computeLocalSize)
     public lazy var cachedBounds = CachedValue(update: computeLocalBounds)
     public lazy var currentModel = CachedValue(update: buildModelMatrix)
-    
-    public lazy var nodeId = UUID().uuidString
     
     // Whatever just instance everything lolol
     public var instanceID: InstanceIDType? { instanceConstants?.instanceID }
@@ -155,11 +154,11 @@ open class MetalLinkNode: Measures {
         
     }
     
-    open func update(deltaTime: Float) {
-        children.forEach {
-            $0.update(deltaTime: deltaTime)
-        }
-    }
+//    open func update(deltaTime: Float) {
+//        children.forEach {
+//            $0.update(deltaTime: deltaTime)
+//        }
+//    }
     
     // MARK: Children
     

@@ -17,6 +17,10 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     
     // MARK: -- Matrix
     
+    public var worldUp: LFloat3 { LFloat3(0, 1, 0) }
+    public var worldRight: LFloat3 { LFloat3(1, 0, 0) }
+    public var worldFront: LFloat3 { LFloat3(0, 0, -1) }
+    
     private lazy var currentProjection = CachedValue { self.buildProjectionMatrix() }
     private lazy var currentView = CachedValue { self.buildViewMatrix() }
     
@@ -30,11 +34,9 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
         currentView.dirty()
     } }
     
-    public var worldUp: LFloat3 { LFloat3(0, 1, 0) }
-    public var worldRight: LFloat3 { LFloat3(1, 0, 0) }
-    public var worldFront: LFloat3 { LFloat3(0, 0, -1) }
     
     // MARK: -- Controls
+    
     public let interceptor = KeyboardInterceptor()
     public var holdingOption: Bool = false
     public var startRotate: Bool = false
@@ -59,7 +61,6 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
 
 public extension DebugCamera {
     func moveCameraLocation(_ dX: Float, _ dY: Float, _ dZ: Float) {
-        var initialDirection = LFloat3(dX, dY, dZ)
         var rotationTransform = simd_mul(
             simd_quatf(angle: rotation.x, axis: X_AXIS),
             simd_quatf(angle: rotation.y, axis: Y_AXIS)
@@ -68,10 +69,11 @@ public extension DebugCamera {
             rotationTransform,
             simd_quatf(angle: rotation.z, axis: Z_AXIS)
         )
+        
+        var initialDirection = LFloat3(dX, dY, dZ)
         initialDirection = simd_act(rotationTransform.inverse, initialDirection)
         position += initialDirection
         
-        // This is not the way to do bounds, and I think it's because `worldPosition` and `worldBounds` are broken. Again <3
         if let bounds = scrollBounds {
             position.clamped(min: bounds.min, max: bounds.max)
         }

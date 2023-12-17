@@ -258,7 +258,7 @@ private extension KeyboardInterceptor {
         
         /// This is to try and fix the stuck key thing.  So there's some kind of 'unknown' flag
         /// with value 256 that occurs after repeated characters and combination keys. We interpret this as:
-        /// "the keyboard has stopped doing weird stuff magic stuff, clear state and assume things will work"
+        /// "the keyboard has stopped doing weird magic stuff, clear state and assume things will work"
         if flags.__unsafe__isUnknown {
             state.directions.removeAll(keepingCapacity: true)
         }

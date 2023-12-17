@@ -169,3 +169,81 @@ public extension Bounds {
     }
 }
 
+/// Checks if the current bounds are entirely inside another set of bounds.
+/// - Parameter otherBounds: The bounds to compare with for containment.
+/// - Returns: A boolean indicating whether the current bounds are entirely inside the other bounds.
+public extension Bounds {
+    func isEntirelyInside(other otherBounds: Bounds) -> Bool {
+        let isInsideX = (min.x >= otherBounds.min.x && max.x <= otherBounds.max.x)
+        let isInsideY = (min.y >= otherBounds.min.y && max.y <= otherBounds.max.y)
+        let isInsideZ = (min.z >= otherBounds.min.z && max.z <= otherBounds.max.z)
+        
+        return isInsideX && isInsideY && isInsideZ
+    }
+}
+
+/// Checks if a ray intersects with the bounds.
+/// This function calculates the intersection DISTANCES at which the ray
+/// intersects each plane of the bounding box along the X, Y and Z axes.
+///
+/// For each axis, it computes two intersection distances:
+/// 1) The near plane intersection distance
+/// 2) The far plane intersection distance
+///
+/// The near plane intersection distance represents the shortest distance
+/// along the ray at which it intersects the bounding box.
+/// The far plane intersection distance is the longest distance.
+///
+/// To check if the ray intersects the box, we compare:
+/// 1) The longest near plane intersection distance overall
+///    (the earliest the ray can enter the box)
+///
+/// 2) The shortest far plane intersection distance overall
+///    (the last point at which the ray exits the box)
+///
+/// If the longest near plane distance is less than or equal to the
+/// shortest far plane distance, it means the line entered and exited the box
+/// volume and hence intersects the bounding box.
+/// - Parameters:
+///   - rayOrigin: The origin point of the ray.
+///   - rayDirection: The directional vector of the ray.
+/// - Returns: A boolean indicating whether the ray intersects the bounds.
+public extension Bounds {
+    func intersectsRay(
+        rayOrigin origin: LFloat3,
+        rayDirection direction: LFloat3
+    ) -> Bool {
+        let inverseDirectionX = 1.0 / direction.x
+        let inverseDirectionY = 1.0 / direction.y
+        let inverseDirectionZ = 1.0 / direction.z
+
+        let intersectionMinX = (min.x - origin.x) * inverseDirectionX
+        let intersectionMaxX = (max.x - origin.x) * inverseDirectionX
+        let intersectionMinY = (min.y - origin.y) * inverseDirectionY
+        let intersectionMaxY = (max.y - origin.y) * inverseDirectionY
+        let intersectionMinZ = (min.z - origin.z) * inverseDirectionZ
+        let intersectionMaxZ = (max.z - origin.z) * inverseDirectionZ
+
+        // Calculating min and max intersection times for each axis.
+        let minXIntersection = Swift.min(intersectionMinX, intersectionMaxX)
+        let maxXIntersection = Swift.max(intersectionMinX, intersectionMaxX)
+        
+        let minYIntersection = Swift.min(intersectionMinY, intersectionMaxY)
+        let maxYIntersection = Swift.max(intersectionMinY, intersectionMaxY)
+        
+        let minZIntersection = Swift.min(intersectionMinZ, intersectionMaxZ)
+        let maxZIntersection = Swift.max(intersectionMinZ, intersectionMaxZ)
+
+        // Finding overall min and max intersections.
+        let overallMinIntersection = Swift.max(
+            Swift.max(minXIntersection, minYIntersection),
+            minZIntersection
+        )
+        let overallMaxIntersection = Swift.min(
+            Swift.min(maxXIntersection, maxYIntersection),
+            maxZIntersection
+        )
+
+        return overallMaxIntersection >= Swift.max(overallMinIntersection, 0.0)
+    }
+}

@@ -68,19 +68,11 @@ open class MetalLinkInstancedObject<
         instanceState.makeNewInstance(key)
     }
     
-    open override func update(deltaTime: Float) {
-        updateModelConstants()
-        super.update(deltaTime: deltaTime)
-    }
-
-    open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
-        // override to do stuff right before instance buffer updates
-    }
-    
     override public func doRender(in sdp: inout SafeDrawPass) {
         guard instanceState.instanceBufferCount > 0,
               let meshVertexBuffer = mesh.getVertexBuffer()
         else { return }
+        updateModelConstants()
         
         let constantsBuffer = instanceState.instanceBuffer
         
