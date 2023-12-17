@@ -17,6 +17,7 @@ open class MetalLinkNode: Measures {
     }
     
     public var pausedInvalidate: Bool = false
+    public var pausedRender: Bool = false
     
     public lazy var cachedSize = CachedValue(update: computeLocalSize)
     public lazy var cachedBounds = CachedValue(update: computeLocalBounds)
@@ -158,6 +159,10 @@ open class MetalLinkNode: Measures {
     }
     
     open func render(in sdp: SafeDrawPass) {
+        if pausedRender {
+            return
+        }
+        
         for child in children {
             child.render(in: sdp)
         }

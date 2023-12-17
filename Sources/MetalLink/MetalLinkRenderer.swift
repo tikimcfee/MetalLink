@@ -18,7 +18,7 @@ public class MetalLinkRenderer : NSObject, MetalLinkReader {
 #endif
 
 #if !os(visionOS)
-public class MetalLinkRenderer : NSObject, MTKViewDelegate, MetalLinkReader {
+public class MetalLinkRenderer: NSObject, MTKViewDelegate, MetalLinkReader {
     public let link: MetalLink
     public var renderDelegate: MetalLinkRendererDelegate?
     public var paused = false
