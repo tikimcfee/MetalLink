@@ -21,17 +21,16 @@ public class RootNode: MetalLinkNode, MetalLinkReader {
         super.init()
     }
     
-//    public override func update(deltaTime: Float) {
-//    
-//        super.update(deltaTime: deltaTime)
-//    }
-    
-    public override func render(in sdp: inout SafeDrawPass) {
+    public override func update(deltaTime: Float) {
         constants.viewMatrix = camera.viewMatrix
         constants.projectionMatrix = camera.projectionMatrix
-//        constants.totalGameTime += deltaTime
+        constants.totalGameTime += deltaTime
         camera.interceptor.runCurrentInterceptedState()
-        
+        super.update(deltaTime: deltaTime)
+    }
+    
+    public override func render(in sdp: inout SafeDrawPass) {
+        // TODO: This sets global constants, would be nice to get all these things vended or something to avoid settping on buffer indices
         sdp.setCurrentVertexBytes(&constants, SceneConstants.memStride, 1)
         
         super.render(in: &sdp)
