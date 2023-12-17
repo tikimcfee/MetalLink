@@ -7,6 +7,7 @@
 
 import BitHandling
 import Combine
+import Foundation
 
 public typealias FileOperationReceiver = (FileOperation) -> Void
 public enum FileOperation {
@@ -81,7 +82,7 @@ public class KeyboardInterceptor {
         }
         
         let finalDelta = state.currentModifiers.contains(.shift)
-            ? GlobalLiveConfig.Default.modifiedMovementSpeed
+            ? GlobalLiveConfig.Default.movementSpeedModified
             : GlobalLiveConfig.Default.movementSpeed
         
         state.directions.forEach { direction in
@@ -129,9 +130,9 @@ private extension KeyboardInterceptor {
             positionOffset = source.worldUp * -Float(finalDelta)
             
         case .yawLeft:
-            rotationOffset = LFloat3(0, -5, 0)
+            rotationOffset = LFloat3(0, -GlobalLiveConfig.Default.movementYawMagnitude, 0)
         case .yawRight:
-            rotationOffset = LFloat3(0, 5, 0)
+            rotationOffset = LFloat3(0, GlobalLiveConfig.Default.movementYawMagnitude, 0)
         }
         
         positions.totalOffset += positionOffset
@@ -266,131 +267,6 @@ private extension KeyboardInterceptor {
     private func changeFocus(_ focusDirection: SelfRelativeDirection) {
         state.focusPath.append(focusDirection)
         onNewFocusChange?(focusDirection)
-    }
-}
-
-extension NSEvent.ModifierFlags: CustomStringConvertible {
-    public var description: String {
-        var modifiers = ""
-        
-        func add(_ name: String) {
-            modifiers = modifiers.isEmpty ? name : "\(modifiers) + \(name)"
-        }
-
-        if self.contains(NSEvent.ModifierFlags.capsLock) {
-            add("capsLock")
-        }
-        if self.contains(NSEvent.ModifierFlags.shift) {
-            add("shift")
-        }
-        if self.contains(NSEvent.ModifierFlags.control) {
-            add("control")
-        }
-        if self.contains(NSEvent.ModifierFlags.option) {
-            add("option")
-        }
-        if self.contains(NSEvent.ModifierFlags.command) {
-            add("command")
-        }
-        if self.contains(NSEvent.ModifierFlags.numericPad) {
-            add("numericPad")
-        }
-        if self.contains(NSEvent.ModifierFlags.help) {
-            add("help")
-        }
-        if self.contains(NSEvent.ModifierFlags.function) {
-            add("function")
-        }
-        if self.contains(NSEvent.ModifierFlags.deviceIndependentFlagsMask) {
-            add("mask")
-        }
-
-        if modifiers.isEmpty {
-            add("unknown-modifier-\(rawValue)")
-        }
-
-        return modifiers
-    }
-    
-    var __unsafe__isUnknown: Bool {
-        rawValue == 256
-    }
-}
-
-extension NSEvent.EventType: CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case .leftMouseDown:
-            return "leftMouseDown"
-        case .leftMouseUp:
-            return "leftMouseUp"
-        case .rightMouseDown:
-            return "rightMouseDown"
-        case .rightMouseUp:
-            return "rightMouseUp"
-        case .mouseMoved:
-            return "mouseMoved"
-        case .leftMouseDragged:
-            return "leftMouseDragged"
-        case .rightMouseDragged:
-            return "rightMouseDragged"
-        case .mouseEntered:
-            return "mouseEntered"
-        case .mouseExited:
-            return "mouseExited"
-        case .keyDown:
-            return "keyDown"
-        case .keyUp:
-            return "keyUp"
-        case .flagsChanged:
-            return "flagsChanged"
-        case .appKitDefined:
-            return "appKitDefined"
-        case .systemDefined:
-            return "systemDefined"
-        case .applicationDefined:
-            return "applicationDefined"
-        case .periodic:
-            return "periodic"
-        case .cursorUpdate:
-            return "cursorUpdate"
-        case .scrollWheel:
-            return "scrollWheel"
-        case .tabletPoint:
-            return "tabletPoint"
-        case .tabletProximity:
-            return "tabletProximity"
-        case .otherMouseDown:
-            return "otherMouseDown"
-        case .otherMouseUp:
-            return "otherMouseUp"
-        case .otherMouseDragged:
-            return "otherMouseDragged"
-        case .gesture:
-            return "gesture"
-        case .magnify:
-            return "magnify"
-        case .swipe:
-            return "swipe"
-        case .rotate:
-            return "rotate"
-        case .beginGesture:
-            return "beginGesture"
-        case .endGesture:
-            return "endGesture"
-        case .smartMagnify:
-            return "smartMagnify"
-        case .quickLook:
-            return "quickLook"
-        case .pressure:
-            return "pressure"
-        case .directTouch:
-            return "directTouch"
-        case .changeMode:
-            return "changeMode"
-        @unknown default:
-            return "unknown-key-\(rawValue)"
-        }
     }
 }
 

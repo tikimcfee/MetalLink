@@ -9,8 +9,6 @@ import Foundation
 import MetalKit
 
 public class GlyphBuilder {
-//    public static let device: MTLDevice = MTLCreateSystemDefaultDevice()!
-//    public static let loader: MTKTextureLoader = MTKTextureLoader(device: device)
     
     public init() { }
     
