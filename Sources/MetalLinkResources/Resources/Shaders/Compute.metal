@@ -475,12 +475,13 @@ kernel void utf32GlyphMapLayout(
         return;
     }
 
+    float currentRowStart = 0;
     float currentXOffset = 0;
     float currentYOffset = 0;
     float currentZOffset = 0;
     float currentCharacterOffset = 0;
-    const float MAX_X_OFFSET = 300;  // because some rectangles are just whacky.
-    const float MIN_Y_OFFSET = -500; // because some rectangles are just whacky.
+    float MAX_X_OFFSET = 256;  // because some rectangles are just whacky.
+    float MIN_Y_OFFSET = -256; // because some rectangles are just whacky.
     
     bool foundLineStart = false;
     bool shouldContinueBacktrack = true;
@@ -512,7 +513,7 @@ kernel void utf32GlyphMapLayout(
         
         // .. If we're running off max-x, the go back to the leading, drop a line, and move back.
         if (currentXOffset >= MAX_X_OFFSET) {
-            currentXOffset = 0;
+            currentXOffset = currentRowStart;
             currentZOffset -= 2.0; // Make it a little more visually distinct than a regular /n
         }
         
@@ -520,7 +521,10 @@ kernel void utf32GlyphMapLayout(
         // If we're off the bottom, jump back to top and move backward.
         if (currentYOffset <= MIN_Y_OFFSET) {
             currentYOffset = 0;
-            currentZOffset -= 16.0;
+            currentZOffset -= 24.0;
+            
+            currentXOffset += 60;
+            MAX_X_OFFSET += 50;
         }
         
         currentCharacterOffset += 1;

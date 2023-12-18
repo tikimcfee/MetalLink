@@ -182,11 +182,12 @@ public extension ConvertCompute {
                 expectedCharacterCount: finalCount,
                 in: commandBuffer
             )
-            result.blitEncoder = .set(blitEncoder, newState)
             commandBuffer.commit()
             commandBuffer.waitUntilCompleted()
             
             commandBuffer.popDebugGroup()
+            
+            result.blitEncoder = .set(blitEncoder, newState)
             
             onEvent(.copyEncoded(result.sourceURL.lastPathComponent))
         }
