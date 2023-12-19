@@ -17,6 +17,7 @@ public enum ComputeError: Error {
     case bufferCreationFailed
     case commandBufferCreationFailed
     case startupFailure
+    case commandEncoderFailure
     case compressionFailure
     
     case encodeError(URL)
@@ -90,5 +91,23 @@ public extension ConvertCompute {
                 }
         let manualGraphemeString = String(allUnicodeScalarsInView)
         return manualGraphemeString
+    }
+}
+
+// MARK: - Da Buffers
+
+public extension MetalLinkReader {
+    func createOffsetBuffer(index: UInt32) throws -> MTLBuffer {
+        return try index.storedInMTLBuffer(link)
+    }
+}
+
+public extension UInt32 {
+    // Teeny buffer to write total character count
+    func storedInMTLBuffer(_ link: MetalLink) throws -> MTLBuffer {
+        let data = withUnsafeBytes(of: self) { Data($0) }
+        guard let buffer = link.device.loadToMTLBuffer(data: data)
+        else { throw ComputeError.bufferCreationFailed }
+        return buffer
     }
 }

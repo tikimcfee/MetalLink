@@ -158,23 +158,6 @@ public extension ConvertCompute {
         let instanceCountBuffer = try makeCharacterCountBuffer(starting: starting)
         computeCommandEncoder.setBuffer(instanceCountBuffer, offset: 0, index: 4)
         
-        // We're gonna try computing bounds 'cause.. why not. Sure.
-        let minXBuffer = try makeBoundsBuffer(starting: .infinity)
-        let minYBuffer = try makeBoundsBuffer(starting: .infinity)
-        let minZBuffer = try makeBoundsBuffer(starting: .infinity)
-        
-        let maxXBuffer = try makeBoundsBuffer(starting: -.infinity)
-        let maxYBuffer = try makeBoundsBuffer(starting: -.infinity)
-        let maxZBuffer = try makeBoundsBuffer(starting: -.infinity)
-        
-        computeCommandEncoder.setBuffer(minXBuffer, offset: 0, index: 5)
-        computeCommandEncoder.setBuffer(minYBuffer, offset: 0, index: 6)
-        computeCommandEncoder.setBuffer(minZBuffer, offset: 0, index: 7)
-        
-        computeCommandEncoder.setBuffer(maxXBuffer, offset: 0, index: 8)
-        computeCommandEncoder.setBuffer(maxYBuffer, offset: 0, index: 9)
-        computeCommandEncoder.setBuffer(maxZBuffer, offset: 0, index: 10)
-        
         // -- Set pipeline state --
         computeCommandEncoder.setComputePipelineState(constantsBlitPipelineState)
         

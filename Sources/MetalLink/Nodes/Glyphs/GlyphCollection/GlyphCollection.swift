@@ -84,6 +84,23 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     
 }
 
+extension GlyphCollection: MetalLinkReader {
+    public var instancePointerPair: (Int, UnsafeMutablePointer<InstancedConstants>) {
+        return (instanceCount, instanceState.rawPointer)
+    }
+    
+    public var instanceCount: Int {
+        return instanceState.constants.endIndex
+    }
+    
+    public func createInstanceStateCountBuffer() throws -> MTLBuffer {
+        let count = instanceCount
+        let countBuffer = try createOffsetBuffer(index: UInt32(count))
+        countBuffer.label = nodeId
+        return countBuffer
+    }
+}
+
 public extension GlyphCollection {
     subscript(glyphID: InstanceIDType) -> MetalLinkGlyphNode? {
         instanceState.instanceIdNodeLookup[glyphID]

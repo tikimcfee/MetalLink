@@ -8,6 +8,8 @@
 
 import simd
 import MetalLinkHeaders
+import MetalKit
+import Foundation
 
 public protocol MemoryLayoutSizable {
     static func memSize(of count: Int) -> Int
