@@ -28,7 +28,11 @@ public class ConvertCompute: MetalLinkReader {
     public typealias ResultList = ConcurrentArray<EncodeResult>
     
     public let link: MetalLink
-    public init(link: MetalLink) { self.link = link }
+    public let commandQueue: MTLCommandQueue
+    public init(link: MetalLink) {
+        self.link = link
+        self.commandQueue = link.device.makeCommandQueue()!
+    }
     
     internal lazy var functions = ConvertComputeFunctions(link: link)
 }

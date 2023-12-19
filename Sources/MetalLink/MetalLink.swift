@@ -17,7 +17,7 @@ public class MetalLink {
     
     public let view: CustomMTKView
     public let device: MTLDevice
-    public let commandQueue: MTLCommandQueue
+    public let defaultCommandQueue: MTLCommandQueue
     public let defaultLibrary: MTLLibrary
     public let input: DefaultInputReceiver
     
@@ -57,7 +57,7 @@ public class MetalLink {
         }
         
         self.device = device
-        self.commandQueue = queue
+        self.defaultCommandQueue = queue
         self.defaultLibrary = library
         self.input = DefaultInputReceiver.shared
     }

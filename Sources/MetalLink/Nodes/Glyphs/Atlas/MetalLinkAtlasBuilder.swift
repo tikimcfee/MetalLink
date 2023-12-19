@@ -195,7 +195,8 @@ public extension AtlasBuilder {
             with link: MetalLink,
             targeting atlasTexture: MTLTexture
         ) throws -> BuildBlock {
-            guard let commandBuffer = link.commandQueue.makeCommandBuffer(),
+            guard let commandQueue = link.device.makeCommandQueue(),
+                  let commandBuffer = commandQueue.makeCommandBuffer(),
                   let blitEncoder = commandBuffer.makeBlitCommandEncoder()
             else { throw LinkAtlasError.noStateBuilder }
             
@@ -221,7 +222,10 @@ public extension AtlasBuilder {
     
 public extension AtlasBuilder {    
     func startAtlasUpdate() throws -> BuildBlock {
-        try BuildBlock.start(with: link, targeting: atlasTexture)
+        try BuildBlock.start(
+            with: link,
+            targeting: atlasTexture
+        )
     }
     
     func finishAtlasUpdate(from block: BuildBlock) {

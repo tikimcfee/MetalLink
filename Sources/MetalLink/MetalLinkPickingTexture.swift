@@ -25,6 +25,7 @@ extension MetalLinkPickingTexture {
 
 public class MetalLinkPickingTexture: MetalLinkReader {
     public let link: MetalLink
+    public let commandQueue: MTLCommandQueue
     public var pickingTexture: MTLTexture?
     public var generateNewTexture: Bool = false
     public var pickingPaused: Bool = false
@@ -40,6 +41,7 @@ public class MetalLinkPickingTexture: MetalLinkReader {
 
     public init(link: MetalLink, colorIndex: Int) {
         self.link = link
+        self.commandQueue = link.device.makeCommandQueue()!
         self.pickingTexture = MetalLinkPickingTexture.generatePickingTexture(for: link)
         self.colorIndex = colorIndex
         
@@ -84,7 +86,7 @@ private extension MetalLinkPickingTexture {
         guard sourceOrigin.x >= 0 && sourceOrigin.y >= 0 else { return }
         
         guard let pickingTexture = pickingTexture,
-              let commandBuffer = link.commandQueue.makeCommandBuffer(),
+              let commandBuffer = commandQueue.makeCommandBuffer(),
               let blitEncoder = commandBuffer.makeBlitCommandEncoder(),
               let pickBuffer = link.device.makeBuffer(length: InstanceIDType.memStride) else {
             return

@@ -36,6 +36,16 @@ public struct SerialColor: Codable, Hashable, Equatable {
 }
 
 public extension NSUIColor {
+    var vector: LFloat4 {
+        guard let data = rgba else { return .one }
+        return LFloat4(
+            data.red.float,
+            data.green.float,
+            data.blue.float,
+            data.alpha.float
+        )
+    }
+    
     var serializable: SerialColor {
         guard let data = rgba else { return .white }
         return SerialColor(

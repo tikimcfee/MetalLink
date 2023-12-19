@@ -16,7 +16,7 @@ public extension BackingIndexed {
     var arrayIndex: Int { Int(bufferIndex) }
 }
 
-public let BackingBufferDefaultSize = 31_415
+public let BackingBufferDefaultSize = 256
 
 public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     public let link: MetalLink
@@ -42,7 +42,8 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         initialSize: Int = BackingBufferDefaultSize
     ) throws {
         self.link = link
-        self.currentBufferSize = initialSize
+        // Take the max to make enough for room for long names of small files
+        self.currentBufferSize = Swift.max(initialSize, BackingBufferDefaultSize)
         
         let buffer = try link.makeBuffer(of: Stored.self, count: initialSize)
         self.buffer = buffer

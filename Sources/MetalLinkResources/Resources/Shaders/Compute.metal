@@ -523,8 +523,8 @@ kernel void utf32GlyphMapLayout(
             currentYOffset = 0;
             currentZOffset -= 24.0;
             
-            currentXOffset += 60;
-            MAX_X_OFFSET += 50;
+            currentXOffset += 88;
+            MAX_X_OFFSET += 100;
         }
         
         currentCharacterOffset += 1;
@@ -629,69 +629,13 @@ kernel void processNewUtf32AtlasMapping(
     cleanGlyphBuffer[targetBufferIndex] = glyphCopy;
 }
 
-void updateAtomicMin(
-     device     atomic_float* atomicValue,
-     float      newValue
-) {
-    bool updated = false;
-    while (!updated) {
-        float oldValue = atomic_load_explicit(atomicValue, memory_order_relaxed);
-        
-        // Update only if newValue is less than the currently stored value
-        if (newValue < oldValue) {
-            // Attempt to swap the old value with newValue
-            updated = atomic_compare_exchange_weak_explicit(atomicValue, 
-                                                            &oldValue,
-                                                            newValue,
-                                                            memory_order_relaxed,
-                                                            memory_order_relaxed);
-        } else {
-            // The current value is less than or equal to newValue, no update needed
-            break;
-        }
-    }
-}
-
-void updateAtomicMax(
-     device     atomic_float* atomicValue,
-     float      newValue
-) {
-    bool updated = false;
-    while (!updated) {
-        float oldValue = atomic_load_explicit(atomicValue, memory_order_relaxed);
-        
-        // Update only if newValue is greater than than the currently stored value
-        if (newValue > oldValue) {
-            // Attempt to swap the old value with newValue
-            updated = atomic_compare_exchange_weak_explicit(atomicValue,
-                                                            &oldValue,
-                                                            newValue,
-                                                            memory_order_relaxed,
-                                                            memory_order_relaxed);
-        } else {
-            // The current value is greater than or equal to newValue, no update needed
-            break;
-        }
-    }
-}
-
 kernel void blitGlyphsIntoConstants(
     device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
                  uint id                                  [[thread_position_in_grid]],
     device       InstancedConstants* targetConstants      [[buffer(1)]],
     constant     uint* unprocessedSize                    [[buffer(2)]],
     constant     uint* expectedCharacterCount             [[buffer(3)]],
-    device       atomic_uint* instanceCounter             [[buffer(4)]],
-    
-    // Bounds... I am not a gpu person...
-    // .. I miss being good algorithmically too...
-    device       atomic_float* minX                       [[buffer(5)]],
-    device       atomic_float* minY                       [[buffer(6)]],
-    device       atomic_float* minZ                       [[buffer(7)]],
-                                    
-    device       atomic_float* maxX                       [[buffer(8)]],
-    device       atomic_float* maxY                       [[buffer(9)]],
-    device       atomic_float* maxZ                       [[buffer(10)]]
+    device       atomic_uint* instanceCounter             [[buffer(4)]]
 ) {
     if (id < 0 || id >= *unprocessedSize) {
         return;
@@ -718,19 +662,19 @@ kernel void blitGlyphsIntoConstants(
     targetConstants[targetBufferIndex].textureDescriptorV = glyphCopy.textureDescriptorV;
     targetConstants[targetBufferIndex].textureSize = glyphCopy.textureSize;
     targetConstants[targetBufferIndex].positionOffset = glyphCopy.positionOffset;
-    
-    updateAtomicMin(minX, 10);
-    updateAtomicMin(minY, 13);
-    updateAtomicMin(minZ, 31);
-//    updateAtomicMin(minX, glyphCopy.positionOffset.x);
-//    updateAtomicMin(minY, glyphCopy.positionOffset.y);
-//    updateAtomicMin(minZ, glyphCopy.positionOffset.z);
-//    
-//    updateAtomicMax(maxX, glyphCopy.positionOffset.x);
-//    updateAtomicMax(maxY, glyphCopy.positionOffset.y);
-//    updateAtomicMax(maxZ, glyphCopy.positionOffset.z);
 }
 
+kernel void blitColorsIntoConstants(
+    uint         id                                       [[thread_position_in_grid]],
+    device       simd_float4* colors                      [[buffer(0)]],
+    device       InstancedConstants* targetConstants      [[buffer(1)]],
+    constant     uint* colorsSize                         [[buffer(2)]]
+) {
+    if (id < 0 || id >= *colorsSize) {
+        return;
+    }
+    targetConstants[id].addedColor = colors[id];
+}
 
 kernel void utf8ToUtf32KernelAtlasMapped(
     const device uint8_t* utf8Buffer                [[buffer(0)]],

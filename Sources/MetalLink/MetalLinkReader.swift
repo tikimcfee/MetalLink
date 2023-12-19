@@ -17,7 +17,7 @@ public extension MetalLinkReader {
     var view: CustomMTKView { link.view }
     var device: MTLDevice { link.device }
     var library: MTLLibrary { link.defaultLibrary }
-    var commandQueue: MTLCommandQueue { link.commandQueue }
+    var defaultCommandQueue: MTLCommandQueue { link.defaultCommandQueue }
     var currentDrawable: CAMetalDrawable? { view.currentDrawable }
     
     var input: DefaultInputReceiver { link.input }

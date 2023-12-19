@@ -133,7 +133,7 @@ extension SafeDrawPass {
         link.glyphPickingTexture.updateDescriptor(renderPassDescriptor)
         link.gridPickingTexture.updateDescriptor(renderPassDescriptor)
         
-        guard let commandBuffer = link.commandQueue.makeCommandBuffer(),
+        guard let commandBuffer = link.defaultCommandQueue.makeCommandBuffer(),
               let renderCommandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
         else {
             return nil
