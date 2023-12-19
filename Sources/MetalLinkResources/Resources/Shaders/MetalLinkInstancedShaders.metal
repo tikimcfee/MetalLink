@@ -66,12 +66,12 @@ float4 colorBlend_Screen(float4 a, float4 b) {
 }
 
 float4 colorBlend_Multiply(float4 bottom, float4 top) {
-//    if (top.r > 0) { bottom.r = bottom.r * top.r; }
-//    if (top.g > 0) { bottom.g = bottom.g * top.g; }
-//    if (top.b > 0) { bottom.b = bottom.b * top.b; }
-    bottom.r = bottom.r * top.r;
-    bottom.g = bottom.g * top.g;
-    bottom.b = bottom.b * top.b;
+    if (top.r > 0) { bottom.r = bottom.r * top.r; }
+    if (top.g > 0) { bottom.g = bottom.g * top.g; }
+    if (top.b > 0) { bottom.b = bottom.b * top.b; }
+//    bottom.r = bottom.r * top.r;
+//    bottom.g = bottom.g * top.g;
+//    bottom.b = bottom.b * top.b;
     return bottom;
 }
 
@@ -131,9 +131,9 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
                               filter::bicubic);
     
     float4 color = atlas.sample(sampler, rasterizerData.textureCoordinate);
-    color = colorBlend_Add(color, rasterizerData.addedColor);
+//    color = colorBlend_Add(color, rasterizerData.addedColor);
 //    color = colorBlend_Overlay(color, rasterizerData.addedColor);
-//    color = colorBlend_Multiply(color, rasterizerData.addedColor);
+    color = colorBlend_Multiply(color, rasterizerData.addedColor);
         
     PickingTextureFragmentOut out;
     out.mainColor = float4(color.r, color.g, color.b, color.a);
