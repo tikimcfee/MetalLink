@@ -77,13 +77,17 @@ extension MetalLink: MetalLinkReader {
 }
 
 #if os(iOS)
-extension OSEvent {
+public extension OSEvent {
     var locationInWindow: LFloat2 { LFloat2.zero }
     var deltaY: Float { 0.0 }
     var deltaX: Float { 0.0 }
 }
 
-extension Float {
+public extension LFloat2 {
+    var asSimd: Self { self }
+}
+
+public extension Float {
     var float: Float { self }
 }
 #endif
