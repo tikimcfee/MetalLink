@@ -17,6 +17,10 @@ public typealias SortedNodeSet = [GlyphNode]
 // Point model matrix / size / bounds / etc into a buffer pointer at an index.
 // That should mean instant updates into the GPU without computes... I guess..?
 // Parenting could work that way too...
+// TODO: Use a delegate thing 2
+// - So I jumped the shark and now I just iterate over the whole buffer,
+//   match the instance id, and create a whole new node around it. I could make a
+//   convenience init for that. 
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
     public var meta: Meta

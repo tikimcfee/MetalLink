@@ -154,7 +154,8 @@ public extension ConvertCompute {
         computeCommandEncoder.setBytes(&expectedCharacterCount, length: Int.memSize, index: 3)
         
         // Borrow the instance counter, lolz. // TODO: I didn't use this yet for the global id, oopselies
-        let starting = UInt32(targetConstants.instanceBufferCount)
+        
+        let starting = UInt32(10)
         let instanceCountBuffer = try makeCharacterCountBuffer(starting: starting)
         computeCommandEncoder.setBuffer(instanceCountBuffer, offset: 0, index: 4)
         

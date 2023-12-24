@@ -13,7 +13,9 @@ public protocol BackingIndexed {
 }
 
 public extension BackingIndexed {
-    var arrayIndex: Int { Int(bufferIndex) }
+    var arrayIndex: Int {
+        Int(bufferIndex)
+    }
 }
 
 public let BackingBufferDefaultSize = 256

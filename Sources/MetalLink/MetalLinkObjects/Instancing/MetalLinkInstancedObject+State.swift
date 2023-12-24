@@ -27,7 +27,8 @@ public class InstanceState<
     public var didSetRoot = false
     
     public let constants: BackingBuffer<InstancedConstants>
-    public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
+    
+//    public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
     
     public var instanceBufferRange: Range<Int> { (0..<constants.currentEndIndex) }
     public var instanceBufferCount: Int { constants.currentEndIndex }
@@ -68,7 +69,7 @@ public class InstanceState<
         instanceTarget.instanceConstants = newInstanceConstants
         instanceTarget.instanceUpdate = updateBufferOnChange
         
-        instanceIdNodeLookup[newInstanceConstants.instanceID] = instanceTarget
+//        instanceIdNodeLookup[newInstanceConstants.instanceID] = instanceTarget
         nodes.append(instanceTarget)
         
         return instanceTarget

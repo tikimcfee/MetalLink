@@ -27,6 +27,7 @@ struct RasterizerData {
     
     uint modelInstanceID [[ flat ]];
     float4 addedColor;
+    float4 multipliedColor;
 };
 
 struct Material {

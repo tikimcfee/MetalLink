@@ -103,7 +103,27 @@ extension GlyphCollection: MetalLinkReader {
 
 public extension GlyphCollection {
     subscript(glyphID: InstanceIDType) -> MetalLinkGlyphNode? {
-        instanceState.instanceIdNodeLookup[glyphID]
+        let (count, pointer) = instancePointerPair
+        for index in (0..<count) {
+            let instance = pointer[index]
+            guard instance.instanceID == glyphID else { continue }
+            
+            let key = linkAtlas.builder.cacheRef.safeReadUnicodeHash(hash: instance.unicodeHash)
+            guard let key else { return nil }
+            
+            let node = GlyphNode(link, key: key, quad: .init(link))
+            node.position = LFloat3(
+                instance.positionOffset.x,
+                instance.positionOffset.y,
+                instance.positionOffset.z
+            )
+            node.quadSize = instance.textureSize
+            node.instanceConstants = instance
+            node.instanceUpdate = instanceState.updateBufferOnChange
+            
+            return node
+        }
+        return nil
     }
 }
 
@@ -172,7 +192,7 @@ private extension GlyphCollection {
                                            constants.positionOffset.z)
                 newNode.instanceUpdate = state.updateBufferOnChange
                 newNode.setQuadUnitSize(size: constants.textureSize)
-                state.instanceIdNodeLookup[constants.instanceID] = newNode
+//                state.instanceIdNodeLookup[constants.instanceID] = newNode
                 state.nodes.append(newNode)
                 newNode.parent = self
                 
@@ -230,6 +250,7 @@ private extension GlyphCollection {
         var totalBounds = Bounds.forBaseComputing
         let pointer = instanceState.constants.pointer
         
+        // Use our bounds calculation to update our index... why not..
         for index in instanceState.instanceBufferRange {
             let constants = pointer[index]
             let size = constants.textureSize

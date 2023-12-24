@@ -650,10 +650,11 @@ kernel void blitGlyphsIntoConstants(
         return;
     }
     
-    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
-    targetConstants[targetBufferIndex].instanceID = myID;
+//    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
+    targetConstants[targetBufferIndex].instanceID = id + 10;
     targetConstants[targetBufferIndex].bufferIndex = targetBufferIndex;
     targetConstants[targetBufferIndex].addedColor = float4(0.0);
+    targetConstants[targetBufferIndex].multipliedColor = float4(1.0);
     targetConstants[targetBufferIndex].useParentMatrix = 1;
     
     targetConstants[targetBufferIndex].unicodeHash = glyphCopy.unicodeHash;
@@ -673,6 +674,7 @@ kernel void blitColorsIntoConstants(
     if (id < 0 || id >= *colorsSize) {
         return;
     }
+    // TODO: Multiple color values
     targetConstants[id].addedColor = colors[id];
 }
 

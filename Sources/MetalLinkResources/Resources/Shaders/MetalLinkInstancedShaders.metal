@@ -117,6 +117,7 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     rasterizerData.vertexPosition = vertexIn.position;
     rasterizerData.modelInstanceID = constants.instanceID;
     rasterizerData.addedColor = constants.addedColor;
+    rasterizerData.multipliedColor = constants.multipliedColor;
     
     return rasterizerData;
 }
@@ -131,9 +132,11 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
                               filter::bicubic);
     
     float4 color = atlas.sample(sampler, rasterizerData.textureCoordinate);
-//    color = colorBlend_Add(color, rasterizerData.addedColor);
+    
 //    color = colorBlend_Overlay(color, rasterizerData.addedColor);
-    color = colorBlend_Multiply(color, rasterizerData.addedColor);
+    // TODO: Configure ordering
+    color = colorBlend_Add(color, rasterizerData.addedColor);
+    color = colorBlend_Multiply(color, rasterizerData.multipliedColor);
         
     PickingTextureFragmentOut out;
     out.mainColor = float4(color.r, color.g, color.b, color.a);
