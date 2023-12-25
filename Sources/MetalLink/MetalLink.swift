@@ -78,7 +78,14 @@ extension MetalLink: MetalLinkReader {
 
 #if os(iOS)
 public extension OSEvent {
-    var locationInWindow: LFloat2 { LFloat2.zero }
+    var locationInWindow: LFloat2 {
+        // TODO: Test if this works across device
+        guard let elements = accessibilityElements,
+              !elements.isEmpty,
+              let location = elements[0] as? LFloat2
+        else { return .zero }
+        return location
+    }
     var deltaY: Float { 0.0 }
     var deltaX: Float { 0.0 }
 }
