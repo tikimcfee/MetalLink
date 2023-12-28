@@ -11,6 +11,12 @@ public let Y_AXIS = LFloat3(0, 1, 0)
 public let Z_AXIS = LFloat3(0, 0, 1)
 
 public extension LFloat3 {
+    init(xyzSource: LFloat4) {
+        self = LFloat3(x: xyzSource.x,
+                       y: xyzSource.y, 
+                       z: xyzSource.z)
+    }
+    
     func matrix4x4Identity() -> LFloat4 {
         LFloat4(x, y, z, 1)
     }
@@ -18,6 +24,14 @@ public extension LFloat3 {
     func translated(dX: Float = 0, dY: Float = 0, dZ: Float = 0) -> LFloat3 {
         LFloat3(x + dX, y + dY, z + dZ)
     }
+    
+    func rotated(by rotation: LFloat3) -> LFloat3 {
+         let pitch = simd_quaternion(rotation.x, X_AXIS)
+         let yaw = simd_quaternion(rotation.y, Y_AXIS)
+         let roll = simd_quaternion(rotation.z, Z_AXIS)
+         let combinedRotation = simd_mul(simd_mul(pitch, yaw), roll)
+         return simd_act(combinedRotation, self)
+     }
     
     @discardableResult
     mutating func translateBy(dX: Float = 0, dY: Float = 0, dZ: Float = 0) -> LFloat3 {
@@ -53,6 +67,19 @@ public extension LFloat3 {
 }
 
 public extension LFloat3 {
+    static func * (_ l: LFloat3, _ m: Float) -> LFloat3 {
+        LFloat3(l.x * m, l.y * m, l.z * m)
+    }
+}
+
+public extension LFloat3 {
+    func xyzQuaternian() -> simd_quatf {
+        let pitch = simd_quaternion(x, X_AXIS)
+        let yaw = simd_quaternion(y, Y_AXIS)
+        let roll = simd_quaternion(z, Z_AXIS)
+        return simd_mul(simd_mul(pitch, yaw), roll)
+    }
+    
     func dot(_ vector: LFloat3) -> Float {
         return simd_dot(self, vector)
     }

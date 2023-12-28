@@ -34,6 +34,9 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
         currentView.dirty()
     } }
     
+    public var nearClipPlane: Float {
+        return GlobalLiveConfig.Default.cameraNearZ
+    }
     
     // MARK: -- Controls
     
@@ -111,6 +114,15 @@ public extension DebugCamera {
         return LFloat3(worldCoordsNormalized.x, 
                        worldCoordsNormalized.y,
                        worldCoordsNormalized.z)
+    }
+}
+
+public extension DebugCamera {
+    func castRay(from screenPoint: LFloat2) -> (origin: LFloat3, direction: LFloat3) {
+        let nearPoint = unprojectPoint(screenPoint, depth: 0)
+        let farPoint = unprojectPoint(screenPoint, depth: 1)
+        let direction = (farPoint - nearPoint).normalized
+        return (origin: position, direction: direction)
     }
 }
 
