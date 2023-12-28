@@ -40,6 +40,14 @@ public struct PanEvent {
     
     public static var newEmpty: PanEvent { PanEvent(currentLocation: .zero) }
     public static var newEmptyPair: (PanEvent, PanEvent) { (.newEmpty, .newEmpty) }
+    
+    public init(
+        state: EventState? = nil,
+        currentLocation: LFloat2
+    ) {
+        self.state = state
+        self.currentLocation = currentLocation
+    }
 }
 
 public struct GestureEvent {

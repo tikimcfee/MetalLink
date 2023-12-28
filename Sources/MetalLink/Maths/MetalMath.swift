@@ -11,6 +11,10 @@ public let Y_AXIS = LFloat3(0, 1, 0)
 public let Z_AXIS = LFloat3(0, 0, 1)
 
 public extension LFloat3 {
+    func matrix4x4Identity() -> LFloat4 {
+        LFloat4(x, y, z, 1)
+    }
+    
     func translated(dX: Float = 0, dY: Float = 0, dZ: Float = 0) -> LFloat3 {
         LFloat3(x + dX, y + dY, z + dZ)
     }
@@ -44,6 +48,42 @@ public extension LFloat3 {
         self.x = x > max.x ? max.x : x < min.x ? min.x : x
         self.y = y > max.y ? max.y : y < min.y ? min.y : y
         self.z = z > max.z ? max.z : z < min.z ? min.z : z
+        return self
+    }
+}
+
+public extension LFloat3 {
+    func dot(_ vector: LFloat3) -> Float {
+        return simd_dot(self, vector)
+    }
+    
+    func distance(to point: LFloat3) -> Float {
+        return sqrt(
+            pow(point.x - x, 2) +
+            pow(point.y - y, 2) +
+            pow(point.z - z, 2)
+        )
+    }
+}
+
+public extension LFloat3 {
+    var magnitude: Float {
+        sqrt(x * x + y * y + z * z)
+    }
+    
+    var magnitudeSquared: Float {
+        x * x + y * y + z * z
+    }
+
+    var normalized: LFloat3 {
+        let magnitude = magnitude
+        return magnitude == 0
+            ? .zero
+            : self / magnitude
+    }
+    
+    mutating func normalize() -> LFloat3 {
+        self = self / magnitude
         return self
     }
 }

@@ -56,8 +56,6 @@ public class DefaultInputReceiver: ObservableObject, MousePositionReceiver, KeyD
         didSet { keyEventSubject.send(lastKeyEvent) }
     }
     
-    public lazy var touchState: TouchState = TouchState()
-    
     public lazy var gestureShim: GestureShim = GestureShim(
         shimPan: { print(#line, "Pan DefaultInput received: \($0)") },
         shimMagnify: { print(#line, "Mag DefaultInput received: \($0)") },

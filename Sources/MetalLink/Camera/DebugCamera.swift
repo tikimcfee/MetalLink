@@ -79,23 +79,38 @@ public extension DebugCamera {
         }
     }
     
-    func unprojectPoint(_ screenPoint: LFloat2) -> LFloat3 {
+    func projectPoint(_ point: LFloat3) -> LFloat3 {
+        let viewMatrix = viewMatrix
+        let projectionMatrix = projectionMatrix
+        let point4 = LFloat4(point.x, point.y, point.z, 1)
+        
+        // Transform the point by the view matrix, then by the projection matrix
+        let viewTransformed = viewMatrix * point4
+        let projectionTransformed = projectionMatrix * viewTransformed
+        
+        // Perform perspective division to get normalized device coordinates
+        let clipSpacePosition = projectionTransformed / projectionTransformed.w
+        
+        // Map from [-1, 1] (clip space) to [0, 1] (normalized device coordinates)
+        let ndc = (clipSpacePosition + 1) / 2
+        
+        // The depth is in the z component of the normalized device coordinates
+        return LFloat3(ndc.x, ndc.y, ndc.z)
+    }
+    
+    func unprojectPoint(_ screenPoint: LFloat2, depth: Float) -> LFloat3 {
         let x = screenPoint.x / viewBounds.x * 2 - 1
         let y = screenPoint.y / viewBounds.y * 2 - 1
+        let z = (depth * 2) - 1  // Convert from [0, 1] NDC depth to [-1, 1] clip space [??]
+
+        // Unproject from clip space to world space
+        let clipCoords = LFloat4(x, y, z, 1.0)
+        let worldCoords = projectionMatrix.inverse * clipCoords
+        let worldCoordsNormalized = worldCoords / worldCoords.w
         
-        let clipCoords = LFloat3(x, -y, -1)
-        
-        let viewProjected = viewMatrix.inverse * LFloat4(clipCoords, 1)
-        let viewCoords = LFloat3(viewProjected.x,
-                                 viewProjected.y,
-                                 viewProjected.z)
-        
-        let worldProjected = projectionMatrix.inverse * LFloat4(viewCoords, 1)
-        let worldCoords = LFloat3(worldProjected.x,
-                                  worldProjected.y,
-                                  worldProjected.z)
-        
-        return worldCoords
+        return LFloat3(worldCoordsNormalized.x, 
+                       worldCoordsNormalized.y,
+                       worldCoordsNormalized.z)
     }
 }
 

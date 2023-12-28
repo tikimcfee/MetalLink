@@ -8,6 +8,7 @@
 import MetalKit
 import Combine
 import MetalLinkHeaders
+import simd
 
 open class MetalLinkNode: Measures {
     public lazy var nodeId = UUID().uuidString
@@ -76,6 +77,7 @@ open class MetalLinkNode: Measures {
         rebuildTreeState()
     } }
     
+
     // MARK: - Overridable Measures
     
     open var hasIntrinsicSize: Bool { false }
@@ -215,8 +217,8 @@ open class MetalLinkNode: Measures {
     }
 }
 
-extension MetalLinkNode {
-    public func localFacingTranslate(_ dX: Float, _ dY: Float, _ dZ: Float) {
+public extension MetalLinkNode {
+    func localFacingTranslate(_ dX: Float, _ dY: Float, _ dZ: Float) {
         var initialDirection = LFloat3(dX, dY, dZ)
         var rotationTransform = simd_mul(
             simd_quatf(angle: rotation.x, axis: X_AXIS),

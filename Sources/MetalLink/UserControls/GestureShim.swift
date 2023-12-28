@@ -100,25 +100,3 @@ public extension CGPoint {
     
     var asSimd: LFloat2 { LFloat2(x.float, y.float) }
 }
-
-public class TouchState {
-    public var magnify: MagnifyStart
-    public var mouse: Mouse
-    
-    init(
-        magnify: MagnifyStart = MagnifyStart(),
-        mouse: Mouse = Mouse()
-    ) {
-        self.magnify = magnify
-        self.mouse = mouse
-    }
-}
-
-public class Mouse {
-    public var currentPosition = CGPoint()
-}
-
-public class MagnifyStart {
-    public var lastScaleZ = CGFloat(1.0)
-}
-
