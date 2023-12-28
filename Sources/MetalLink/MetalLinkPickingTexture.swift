@@ -78,6 +78,8 @@ private extension MetalLinkPickingTexture {
         let (x, y) = (mouseMove.locationInWindow.x.float,
                       mouseMove.locationInWindow.y.float)
         let position = convertToDrawablePosition(windowX: x, windowY: y)
+        guard !(position.x.isNaN || position.y.isNaN) else { return }
+        
         let origin = MTLOrigin(x: Int(position.x), y: Int(position.y), z: 0)
         doPickingTextureBlitRead(at: origin)
     }

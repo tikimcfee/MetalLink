@@ -20,9 +20,9 @@ public class GestureShim {
         TapGestureRecognizer(target: self, action: #selector(tap))
     var onTap: TapReceiver
 
-    init(_ onPan: @escaping PanReceiver,
-         _ onMagnify: @escaping MagnificationReceiver,
-         _ onTap: @escaping TapReceiver) {
+    init(shimPan onPan: @escaping PanReceiver,
+         shimMagnify onMagnify: @escaping MagnificationReceiver,
+         shimTap onTap: @escaping TapReceiver) {
         self.onPan = onPan
         self.onMagnify = onMagnify
         self.onTap = onTap
@@ -65,9 +65,9 @@ public class GestureShim {
     public var onMagnify: MagnificationReceiver
     public var onTap: TapReceiver
     
-    init(_ onPan: @escaping PanReceiver,
-         _ onMagnify: @escaping MagnificationReceiver,
-         _ onTap: @escaping TapReceiver) {
+    init(shimPan onPan: @escaping PanReceiver,
+         shimMagnify onMagnify: @escaping MagnificationReceiver,
+         shimTap onTap: @escaping TapReceiver) {
         self.onPan = onPan
         self.onMagnify = onMagnify
         self.onTap = onTap

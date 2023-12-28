@@ -115,6 +115,7 @@ extension DebugCamera {
         
         let panSubject = PassthroughSubject<PanEvent, Never>()
         let magnificationSubject = PassthroughSubject<MagnificationEvent, Never>()
+        
         panSubject
             .scan(PanEvent.newEmptyPair) { ($0.1, $1) }
             .filter { $0.0.currentLocation != $0.1.currentLocation }
@@ -139,7 +140,7 @@ extension DebugCamera {
                 interceptor.positions.travelOffset = LFloat3(0, 0, delta)
             }.store(in: &cancellables)
         
-        // Yes, the closure will retain the subject <3
+        // The closure retains the subject
         link.input.gestureShim.onPan = panSubject.send
         link.input.gestureShim.onMagnify = magnificationSubject.send
     }
