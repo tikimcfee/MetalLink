@@ -274,66 +274,11 @@ private extension KeyboardInterceptor {
 #endif
 
 func directionForKey(_ key: String) -> SelfRelativeDirection? {
-    switch key {
-    case "a", "A": return .left
-    case "d", "D": return .right
-    case "w", "W": return .forward
-    case "s", "S": return .backward
-    case "z", "Z": return .down
-    case "x", "X": return .up
-    case "q", "Q": return .yawLeft
-    case "e", "E": return .yawRight
-    default: return nil
-    }
+    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    return map.movement[key]
 }
 
 func focusDirectionForKey(_ key: String, _ event: OSEvent) -> SelfRelativeDirection? {
-    switch key {
-    case "h", "H": return .left
-    case "l", "L": return .right
-    case "j", "J": return .down
-    case "k", "K": return .up
-    case "n", "N": return .forward
-    case "m", "M": return .backward
-    #if os(macOS)
-    case _ where event.specialKey == .leftArrow: return .left
-    case _ where event.specialKey == .rightArrow: return .right
-    case _ where event.specialKey == .upArrow && event.modifierFlags.contains(.shift): return .forward
-    case _ where event.specialKey == .downArrow && event.modifierFlags.contains(.shift): return .backward
-    case _ where event.specialKey == .upArrow: return .up
-    case _ where event.specialKey == .downArrow: return .down
-    #endif
-    default: return nil
-    }
-}
-
-
-class MLLooper {
-    let loop: () -> Void
-    let queue: DispatchQueue
-    
-    var interval: DispatchTimeInterval
-    var nextDispatch: DispatchTime { .now() + interval }
-    
-    init(interval: DispatchTimeInterval = .seconds(1),
-         loop: @escaping () -> Void,
-         queue: DispatchQueue = .main) {
-        self.interval = interval
-        self.loop = loop
-        self.queue = queue
-    }
-    
-    func runUntil(
-        onStop: (() -> Void)? = nil,
-        _ stopCondition: @escaping () -> Bool
-    ) {
-        guard !stopCondition() else {
-            onStop?()
-            return
-        }
-        loop()
-        queue.asyncAfter(deadline: nextDispatch) {
-            self.runUntil(onStop: onStop, stopCondition)
-        }
-    }
+    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    return map.focus[key]
 }
