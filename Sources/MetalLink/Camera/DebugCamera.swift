@@ -38,6 +38,10 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
         return GlobalLiveConfig.Default.cameraNearZ
     }
     
+    public var farClipPlane: Float {
+        return GlobalLiveConfig.Default.cameraFarZ
+    }
+    
     // MARK: -- Controls
     
     public let interceptor = KeyboardInterceptor()
@@ -100,31 +104,30 @@ public extension DebugCamera {
         // The depth is in the z component of the normalized device coordinates
         return LFloat3(ndc.x, ndc.y, ndc.z)
     }
-    
-    func unprojectPoint(_ screenPoint: LFloat2, depth: Float) -> LFloat3 {
-        let x = screenPoint.x / viewBounds.x * 2 - 1
-        let y = screenPoint.y / viewBounds.y * 2 - 1
-        let z = (depth * 2) - 1  // Convert from [0, 1] NDC depth to [-1, 1] clip space [??]
 
-        // Unproject from clip space to world space
-        let clipCoords = LFloat4(x, y, z, 1.0)
-        let worldCoords = projectionMatrix.inverse * clipCoords
-        let worldCoordsNormalized = worldCoords / worldCoords.w
-        
-        return LFloat3(worldCoordsNormalized.x, 
-                       worldCoordsNormalized.y,
-                       worldCoordsNormalized.z)
+    func unprojectPoint(_ screenPoint: LFloat2, worldDepth: Float) -> LFloat3 {
+        // Convert screen point to normalized device coordinates (NDC)
+        let xNDC = (screenPoint.x / viewBounds.x) * 2 - 1
+        let yNDC = 1 - (screenPoint.y / viewBounds.y) * 2
+
+        // Convert world depth to a depth value in view space using the camera's view matrix
+        let worldPoint = LFloat3(0, 0, -worldDepth) // Assuming worldDepth is along the camera's forward axis
+        let viewSpacePoint = (viewMatrix * LFloat4(worldPoint, 1)).z
+
+        // Use the view space depth for unprojection
+        let zNDC = (viewSpacePoint - nearClipPlane) / (farClipPlane - nearClipPlane) // Map to NDC depth
+
+        // Unproject from NDC to world space
+        let clipCoords = LFloat4(xNDC, yNDC, zNDC, 1.0)
+        let invProjMatrix = projectionMatrix.inverse
+        let invViewMatrix = viewMatrix.inverse
+        let worldCoords = invViewMatrix * invProjMatrix * clipCoords
+        let worldCoordsNormalized = LFloat3(xyzSource: worldCoords) / worldCoords.w
+
+        return worldCoordsNormalized
     }
 }
 
-public extension DebugCamera {
-    func castRay(from screenPoint: LFloat2) -> (origin: LFloat3, direction: LFloat3) {
-        let nearPoint = unprojectPoint(screenPoint, depth: 0)
-        let farPoint = unprojectPoint(screenPoint, depth: 1)
-        let direction = (farPoint - nearPoint).normalized
-        return (origin: position, direction: direction)
-    }
-}
 
 public extension DebugCamera {
     var projectionMatrix: matrix_float4x4 {

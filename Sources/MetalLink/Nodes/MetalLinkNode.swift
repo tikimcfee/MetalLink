@@ -218,8 +218,14 @@ open class MetalLinkNode: Measures {
 }
 
 public extension MetalLinkNode {
-    func localFacingTranslate(_ dX: Float, _ dY: Float, _ dZ: Float) {
-        var initialDirection = LFloat3(dX, dY, dZ)
+    func localFacingTranslate(_ dX: Float = 0, _ dY: Float = 0, _ dZ: Float = 0) {
+        localFacingTranslate(
+            LFloat3(dX, dY, dZ)
+        )
+    }
+    
+    func localFacingTranslate(_ initialDirection: LFloat3) {
+        var initialDirection = initialDirection
         var rotationTransform = simd_mul(
             simd_quatf(angle: rotation.x, axis: X_AXIS),
             simd_quatf(angle: rotation.y, axis: Y_AXIS)

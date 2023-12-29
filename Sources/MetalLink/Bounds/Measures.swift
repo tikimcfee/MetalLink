@@ -174,43 +174,18 @@ extension MetalLinkNode {
     }
 }
 
-//extension MetalLinkNode {
-//    
-//    
-//    public var worldPosition: LFloat3 {
-//        get {
-//            var finalPosition: LFloat3 = position
-//            var nodeParent = parent
-//            while let parent = nodeParent {
-//                finalPosition += parent.position
-//                nodeParent = parent.parent
-//            }
-//            return finalPosition
-//        }
-//        set {
-//            var finalPosition: LFloat3 = newValue
-//            var nodeParent = parent
-//            while let parent = nodeParent {
-//                finalPosition += parent.position
-//                nodeParent = parent.parent
-//            }
-//            position = finalPosition
-//        }
-//    }
-//    
-//    public var worldBounds: Bounds {
-//        var finalBounds = sizeBounds
-//        var nextParent = parent
-//        while let parent = nextParent {
-//            finalBounds.min += parent.position
-//            finalBounds.max += parent.position
-//            nextParent = parent.parent
-//        }
-//        return finalBounds
-//    }
-//}
-
 public extension Measures {
+    func setWorldPosition(_ worldPosition: LFloat3) {
+        // If the node has a parent, convert the world position to the parent's local space
+        if let parent = self.parent {
+            let parentWorldPosition = parent.computeWorldPosition()
+            self.position = worldPosition - parentWorldPosition
+        } else {
+            // If the node has no parent, the world position is the local position
+            self.position = worldPosition
+        }
+    }
+    
     func computeWorldPosition() -> LFloat3 {
         var finalPosition: LFloat3 = position
         var nodeParent = parent
@@ -220,7 +195,9 @@ public extension Measures {
         }
         return finalPosition
     }
-    
+}
+
+public extension Measures {
     func computeWorldBounds() -> Bounds {
         var finalBounds = sizeBounds
         var nextParent = parent
