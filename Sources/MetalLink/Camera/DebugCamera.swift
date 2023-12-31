@@ -24,10 +24,15 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     private lazy var currentProjection = CachedValue { self.buildProjectionMatrix() }
     private lazy var currentView = CachedValue { self.buildViewMatrix() }
     
-    public var position: LFloat3 = .zero { didSet {
-        currentProjection.dirty()
-        currentView.dirty()
-    } }
+    public let positionStream = PassthroughSubject<LFloat3, Never>()
+    
+    public var position: LFloat3 = .zero {
+        didSet {
+            currentProjection.dirty()
+            currentView.dirty()
+            positionStream.send(position)
+        }
+    }
     
     public var rotation: LFloat3 = .zero { didSet {
         currentProjection.dirty()
@@ -40,6 +45,10 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     
     public var farClipPlane: Float {
         return GlobalLiveConfig.Default.cameraFarZ
+    }
+    
+    public var fov: Float {
+        return GlobalLiveConfig.Default.cameraFieldOfView
     }
     
     // MARK: -- Controls
@@ -82,7 +91,7 @@ public extension DebugCamera {
         position += initialDirection
         
         if let bounds = scrollBounds {
-            position.clamped(min: bounds.min, max: bounds.max)
+            position.clampTo(min: bounds.min, max: bounds.max)
         }
     }
     
@@ -140,7 +149,7 @@ public extension DebugCamera {
     
     private func buildProjectionMatrix() -> matrix_float4x4 {
         let matrix = matrix_float4x4.init(
-            perspectiveProjectionFov: Float.pi / 3.0,
+            perspectiveProjectionFov: GlobalLiveConfig.Default.cameraFieldOfView,
             aspectRatio: viewAspectRatio,
             nearZ: GlobalLiveConfig.Default.cameraNearZ,
             farZ: GlobalLiveConfig.Default.cameraFarZ

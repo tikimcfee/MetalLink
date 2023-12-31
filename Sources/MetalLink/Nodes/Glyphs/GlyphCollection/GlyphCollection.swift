@@ -241,7 +241,7 @@ private extension GlyphCollection {
  So this works, but it's a bit slower (from more compute?)
  */
 
-private extension GlyphCollection {
+public extension GlyphCollection {
     func pointerHasIntrinsicSize() -> Bool {
         instanceState.constants.endIndex > 0
     }

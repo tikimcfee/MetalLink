@@ -25,28 +25,35 @@ public struct MagnificationEvent {
 }
 
 public struct PanEvent {
+    public static var newEmpty: PanEvent { PanEvent(currentLocation: .zero) }
+    public static var newEmptyPair: (PanEvent, PanEvent) { (.newEmpty, .newEmpty) }
+    
     public var state: EventState?
-
     public let currentLocation: LFloat2
 
     public var commandStart: LFloat2?
     public var pressingCommand: Bool { commandStart != nil }
-
     public var optionStart: LFloat2?
     public var pressingOption: Bool { optionStart != nil }
-
     public var controlStart: LFloat2?
     public var pressingControl: Bool { controlStart != nil }
-    
-    public static var newEmpty: PanEvent { PanEvent(currentLocation: .zero) }
-    public static var newEmptyPair: (PanEvent, PanEvent) { (.newEmpty, .newEmpty) }
+    public var shiftStart: LFloat2?
+    public var pressingShift: Bool { shiftStart != nil }
     
     public init(
         state: EventState? = nil,
-        currentLocation: LFloat2
+        currentLocation: LFloat2,
+        commandStart: LFloat2? = nil,
+        optionStart: LFloat2? = nil,
+        shiftStart: LFloat2? = nil,
+        controlStart: LFloat2? = nil
     ) {
         self.state = state
         self.currentLocation = currentLocation
+        self.commandStart = commandStart
+        self.optionStart = optionStart
+        self.shiftStart = shiftStart
+        self.controlStart = controlStart
     }
 }
 

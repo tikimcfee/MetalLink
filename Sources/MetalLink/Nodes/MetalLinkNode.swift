@@ -53,7 +53,8 @@ open class MetalLinkNode: Measures {
     } }
     
     open var worldPosition: LFloat3 {
-        cachedWorldPosition.get()
+        get { cachedWorldPosition.get() }
+        set { setWorldPosition(newValue) }
     }
     
     public var worldBounds: Bounds {
@@ -145,7 +146,6 @@ open class MetalLinkNode: Measures {
         cachedWorldPosition.dirty()
         
         for child in children {
-            if child.willUpdate { continue }
             child.rebuildTreeState()
         }
     }

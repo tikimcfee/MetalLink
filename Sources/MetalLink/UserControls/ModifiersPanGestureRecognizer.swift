@@ -76,7 +76,10 @@ class ModifierStore {
     }
 
     var pressingCommand: Bool {
-//        modifierFlags.contains(.command)
+        modifierFlags.contains(.command)
+    }
+    
+    var pressingShift: Bool {
         modifierFlags.contains(.shift)
     }
 
@@ -86,8 +89,8 @@ class ModifierStore {
 
     func computePositions(_ currentLocation: CGPoint) {
         positionsForFlagChanges[.option] = pressingOption ? currentLocation : nil
-//        positionsForFlagChanges[.command] = pressingCommand ? currentLocation : nil
-        positionsForFlagChanges[.shift] = pressingCommand ? currentLocation : nil
+        positionsForFlagChanges[.command] = pressingCommand ? currentLocation : nil
+        positionsForFlagChanges[.shift] = pressingShift ? currentLocation : nil
         positionsForFlagChanges[.control] = pressingControl ? currentLocation : nil
     }
 }
@@ -147,8 +150,9 @@ class ModifiersPanGestureRecognizer: PanGestureRecognizer {
         return PanEvent(
             state: state.translated,
             currentLocation: currentLocation.asSimd,
-            commandStart: self[.shift]?.asSimd,
+            commandStart: self[.command]?.asSimd,
             optionStart: self[.option]?.asSimd,
+            shiftStart: self[.shift]?.asSimd,
             controlStart: self[.control]?.asSimd
         )
     }

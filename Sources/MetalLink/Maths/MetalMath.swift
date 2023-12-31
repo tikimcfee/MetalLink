@@ -41,6 +41,12 @@ public extension LFloat3 {
                        z: xyzSource.z)
     }
     
+    init(xySource: LFloat2) {
+        self = LFloat3(x: xySource.x,
+                       y: xySource.y,
+                       z: 0)
+    }
+    
     func matrix4x4Identity() -> LFloat4 {
         LFloat4(x, y, z, 1)
     }
@@ -82,10 +88,17 @@ public extension LFloat3 {
     }
     
     @discardableResult
-    mutating func clamped(min: LFloat3, max: LFloat3) -> LFloat3 {
-        self.x = x > max.x ? max.x : x < min.x ? min.x : x
-        self.y = y > max.y ? max.y : y < min.y ? min.y : y
-        self.z = z > max.z ? max.z : z < min.z ? min.z : z
+    mutating func clampTo(min: LFloat3, max: LFloat3) -> LFloat3 {
+//        self.clamp(lowerBound: min, upperBound: max) // hah... didn't try this...
+        self.x = x > max.x ? max.x
+               : x < min.x ? min.x
+               : x
+        self.y = y > max.y ? max.y 
+               : y < min.y ? min.y 
+               : y
+        self.z = z > max.z ? max.z
+               : z < min.z ? min.z
+               : z
         return self
     }
 }
