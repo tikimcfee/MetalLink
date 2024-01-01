@@ -62,31 +62,31 @@ public extension Bounds {
             length
         )
     }
-
+    
     var top: VectorFloat {
         max.y
     }
-
+    
     var bottom: VectorFloat {
         min.y
     }
-
+    
     var leading: VectorFloat {
         min.x
     }
-
+    
     var trailing: VectorFloat {
         max.x
     }
-
+    
     var front: VectorFloat {
         max.z
     }
-
+    
     var back: VectorFloat {
         min.z
     }
-
+    
     var center: LFloat3 {
         LFloat3(
             min.x + (width / 2),
@@ -106,6 +106,63 @@ public extension Bounds {
     
     var leadingBottomBack: LFloat3 { LFloat3(leading, bottom, back) }
     var trailingBottomBack: LFloat3 { LFloat3(trailing, bottom, back) }
+}
+
+
+public extension Bounds {
+    var topBounds: Bounds { Bounds(leadingTopFront, trailingTopBack) }
+    var topSize: LFloat2 { LFloat2(topBounds.width, topBounds.length) }
+    func applyTop(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = leadingTopFront
+        background.quad.topRightPos = trailingTopFront
+        background.quad.botLeftPos = leadingTopBack
+        background.quad.botRightPos = trailingTopBack
+    }
+    
+    var bottomBounds: Bounds { Bounds(leadingBottomFront, trailingBottomBack) }
+    var bottomSize: LFloat2 { LFloat2(bottomBounds.width, bottomBounds.length) }
+    func applyBottom(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = leadingBottomFront
+        background.quad.topRightPos = trailingBottomFront
+        background.quad.botLeftPos = leadingBottomBack
+        background.quad.botRightPos = trailingBottomBack
+    }
+    
+    var frontBounds: Bounds { Bounds(leadingTopFront, trailingBottomFront) }
+    var frontSize: LFloat2 { LFloat2(frontBounds.width, frontBounds.height) }
+    func applyFront(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = leadingTopFront
+        background.quad.topRightPos = trailingTopFront
+        background.quad.botLeftPos = leadingBottomFront
+        background.quad.botRightPos = trailingBottomFront
+    }
+    
+    var backBounds: Bounds { Bounds(leadingBottomBack, trailingTopBack) }
+    var backSize: LFloat2 { LFloat2(backBounds.width, backBounds.height) }
+    func applyBack(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = leadingTopBack
+        background.quad.topRightPos = trailingTopBack
+        background.quad.botLeftPos = leadingBottomBack
+        background.quad.botRightPos = trailingBottomBack
+    }
+    
+    var leadingBounds: Bounds { Bounds(leadingTopFront, leadingBottomBack) }
+    var leadingSize: LFloat2 { LFloat2(leadingBounds.length, leadingBounds.height) }
+    func applyLeading(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = leadingTopFront
+        background.quad.topRightPos = leadingTopBack
+        background.quad.botLeftPos = leadingBottomFront
+        background.quad.botRightPos = leadingBottomBack
+    }
+    
+    var trailingBounds: Bounds { Bounds(trailingBottomBack, trailingTopFront) }
+    var trailingSize: LFloat2 { LFloat2(trailingBounds.length, trailingBounds.height) }
+    func applyTrailing(_ background: BackgroundQuad) {
+        background.quad.topLeftPos = trailingTopBack
+        background.quad.topRightPos = trailingTopFront
+        background.quad.botLeftPos = trailingBottomBack
+        background.quad.botRightPos = trailingBottomFront
+    }
 }
 
 public extension Bounds {
