@@ -35,3 +35,47 @@ public class BackgroundQuad: MetalLinkObject, QuadSizable {
         super.doRender(in: sdp)
     }
 }
+
+public extension BackgroundQuad {
+    func applyTop(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.leadingTopFront
+        quad.topRightPos = bounds.trailingTopFront
+        quad.botLeftPos = bounds.leadingTopBack
+        quad.botRightPos = bounds.trailingTopBack
+    }
+    
+    func applyBottom(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.leadingBottomFront
+        quad.topRightPos = bounds.trailingBottomFront
+        quad.botLeftPos = bounds.leadingBottomBack
+        quad.botRightPos = bounds.trailingBottomBack
+    }
+    
+    func applyFront(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.leadingTopFront
+        quad.topRightPos = bounds.trailingTopFront
+        quad.botLeftPos = bounds.leadingBottomFront
+        quad.botRightPos = bounds.trailingBottomFront
+    }
+    
+    func applyBack(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.leadingTopBack
+        quad.topRightPos = bounds.trailingTopBack
+        quad.botLeftPos = bounds.leadingBottomBack
+        quad.botRightPos = bounds.trailingBottomBack
+    }
+    
+    func applyLeading(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.leadingTopFront
+        quad.topRightPos = bounds.leadingTopBack
+        quad.botLeftPos = bounds.leadingBottomFront
+        quad.botRightPos = bounds.leadingBottomBack
+    }
+    
+    func applyTrailing(_ bounds: Bounds) {
+        quad.topLeftPos = bounds.trailingTopBack
+        quad.topRightPos = bounds.trailingTopFront
+        quad.botLeftPos = bounds.trailingBottomBack
+        quad.botRightPos = bounds.trailingBottomFront
+    }
+}
