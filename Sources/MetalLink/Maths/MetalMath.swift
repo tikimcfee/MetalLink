@@ -10,6 +10,14 @@ public let X_AXIS = LFloat3(1, 0, 0)
 public let Y_AXIS = LFloat3(0, 1, 0)
 public let Z_AXIS = LFloat3(0, 0, 1)
 
+public protocol TuplePrint4 {
+    var tupleString: String { get }
+    var x: Float { get }
+    var y: Float { get }
+    var z: Float { get }
+    var w: Float { get }
+}
+
 public protocol TuplePrint3 {
     var tupleString: String { get }
     var x: Float { get }
@@ -23,6 +31,10 @@ public protocol TuplePrint2 {
     var y: Float { get }
 }
 
+public extension TuplePrint4 {
+    var tupleString: String { "(\(x), \(y), \(z), \(w)" }
+}
+
 public extension TuplePrint3 {
     var tupleString: String { "(\(x), \(y), \(z))" }
 }
@@ -31,6 +43,7 @@ public extension TuplePrint2 {
     var tupleString: String { "(\(x), \(y))" }
 }
 
+extension LFloat4: TuplePrint4 { }
 extension LFloat3: TuplePrint3 { }
 extension LFloat2: TuplePrint2 { }
 

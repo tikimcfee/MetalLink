@@ -25,6 +25,7 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     private lazy var currentView = CachedValue { self.buildViewMatrix() }
     
     public let positionStream = PassthroughSubject<LFloat3, Never>()
+    public let rotationSream = PassthroughSubject<LFloat3, Never>()
     
     public var position: LFloat3 = .zero {
         didSet {
@@ -34,10 +35,13 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
         }
     }
     
-    public var rotation: LFloat3 = .zero { didSet {
-        currentProjection.dirty()
-        currentView.dirty()
-    } }
+    public var rotation: LFloat3 = .zero { 
+        didSet {
+            currentProjection.dirty()
+            currentView.dirty()
+            rotationSream.send(rotation)
+        }
+    }
     
     public var nearClipPlane: Float {
         return GlobalLiveConfig.Default.cameraNearZ
@@ -132,7 +136,7 @@ public extension DebugCamera {
         let invViewMatrix = viewMatrix.inverse
         let worldCoords = invViewMatrix * invProjMatrix * clipCoords
         let worldCoordsNormalized = LFloat3(xyzSource: worldCoords) / worldCoords.w
-
+        
         return worldCoordsNormalized
     }
 }
