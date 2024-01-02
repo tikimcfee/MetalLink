@@ -78,6 +78,11 @@ open class MetalLinkNode: Measures {
         rebuildTreeState()
     } }
     
+    // Is this... true?
+    open var eulerAngles: LFloat3 {
+        get { rotation }
+        set { rotation = newValue }
+    }
 
     // MARK: - Overridable Measures
     

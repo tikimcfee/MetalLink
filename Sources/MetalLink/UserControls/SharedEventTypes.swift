@@ -24,7 +24,7 @@ public struct MagnificationEvent {
     public static var newEmptyPair: (MagnificationEvent, MagnificationEvent) { (.newEmpty, .newEmpty) }
 }
 
-public struct PanEvent {
+public struct PanEvent: Hashable, Equatable {
     public static var newEmpty: PanEvent { PanEvent(currentLocation: .zero) }
     public static var newEmptyPair: (PanEvent, PanEvent) { (.newEmpty, .newEmpty) }
     
