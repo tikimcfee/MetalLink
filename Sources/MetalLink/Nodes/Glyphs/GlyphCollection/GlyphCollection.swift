@@ -282,15 +282,17 @@ public extension GlyphCollection {
         }
         
         // TODO: Use safe
+        
+        
+        
         let pointer = instanceState.constants.pointer
-        guard let firstIndex = instanceState.instanceBufferRange.first(where: { index in
-            pointer[index].textureSize.x > 0.1
-        }) else {
-            return
-        }
-        let firstSize = pointer[firstIndex].textureSize
+        let initialSize = instanceState.instanceBufferRange
+            .lazy
+            .map { pointer[$0].textureSize }
+            .filter { $0 != .one && $0.x > 0.1 }
+            .first ?? .one
         
         instanceState.didSetRoot = true
-        (mesh as? MetalLinkQuadMesh)?.setSize(firstSize)
+        (mesh as? MetalLinkQuadMesh)?.setSize(initialSize)
     }
 }
