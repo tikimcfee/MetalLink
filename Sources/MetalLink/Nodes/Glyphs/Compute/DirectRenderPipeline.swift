@@ -56,7 +56,8 @@ public class DataStreamRenderer: MetalLinkReader {
     public let name: String
     
     public let sourceStream: DataStream
-    public let collectionStream: CollectionStream
+    public lazy var collectionStream: CollectionStream = makeCollectionStream()
+    public private(set) var lastEncodeResult: EncodeResult?
     
     private var token: Any?
     
@@ -72,49 +73,42 @@ public class DataStreamRenderer: MetalLinkReader {
         self.compute = compute
         self.name = name
         self.sourceStream = dataStream
-        self.collectionStream = dataStream
-            .receive(on: DispatchQueue.global())
-            .compactMap { data in
-                do {
-                    return try Self.regenerateCollection(
-                        name: name,
-                        for: data,
-                        compute: compute,
-                        atlas: atlas,
-                        link: link
-                    )
-                } catch {
-                    print(error)
-                    return nil
-                }
-            }
+    }
+}
+
+extension DataStreamRenderer {
+    private func makeCollectionStream() -> CollectionStream {
+        sourceStream
+            .receive(on: WorkerPool.shared.nextWorker())
+            .compactMap(regenerateCollection(for:))
             .share()
             .eraseToAnyPublisher()
     }
-
-    private static func regenerateCollection(
-        name: String,
-        for data: Data,
-        compute: ConvertCompute,
-        atlas: MetalLinkAtlas,
-        link: MetalLink
-    ) throws -> GlyphCollection {
-        let encodeResult = try compute.executeDataWithAtlas(
-            name: name,
-            source: data,
-            atlas: atlas
-        )
-        
-        switch encodeResult.collection {
-        case .built(let result):
-            return result
+    
+    private func regenerateCollection(
+        for data: Data
+    ) -> GlyphCollection? {
+        do {
+            let encodeResult = try compute.executeDataWithAtlas(
+                name: name,
+                source: data,
+                atlas: atlas
+            )
             
-        case .notBuilt:
-            print("""
-            XXX - Encoding pipeline failed for name: \(name)
-            XXX   Returning default empty collection. Expect bad things.
-            """)
-            return try GlyphCollection(link: link, linkAtlas: atlas)
+            switch encodeResult.collection {
+            case .built(let result):
+                return result
+                
+            case .notBuilt:
+                print("""
+                XXX - Encoding pipeline failed for name: \(name)
+                XXX   Returning default empty collection. Expect bad things.
+                """)
+                return try GlyphCollection(link: link, linkAtlas: atlas)
+            }
+        } catch {
+            print(error)
+            return nil
         }
     }
 }
