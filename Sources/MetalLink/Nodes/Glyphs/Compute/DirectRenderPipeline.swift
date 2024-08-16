@@ -85,6 +85,19 @@ extension DataStreamRenderer {
             .eraseToAnyPublisher()
     }
     
+    func startCapture() throws {
+        let captureManager = MTLCaptureManager.shared()
+        let captureDescriptor = MTLCaptureDescriptor()
+        captureDescriptor.captureObject = self.device
+        try captureManager.startCapture(with: captureDescriptor)
+    }
+    
+
+    func stopCapture() {
+        let captureManager = MTLCaptureManager.shared()
+        captureManager.stopCapture()
+    }
+    
     private func regenerateCollection(
         for data: Data
     ) -> GlyphCollection? {

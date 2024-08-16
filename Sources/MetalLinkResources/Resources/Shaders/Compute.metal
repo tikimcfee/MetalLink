@@ -467,7 +467,7 @@ kernel void utf32GlyphMapLayout(
 ) {
     uint localSize = *utf32BufferSize;
     uint offsetMax = localSize - 1;
-    if (id < 0 || id >= offsetMax) {
+    if (id < 0 || id > offsetMax) {
         return;
     }
     
@@ -565,7 +565,7 @@ kernel void utf8ToUtf32Kernel(
     constant     uint* utf8BufferSize           [[buffer(2)]]
 ) {
     // Boundary check
-    if (id >= *utf8BufferSize) {
+    if (id > *utf8BufferSize) {
         return;
     }
     
@@ -613,7 +613,7 @@ kernel void processNewUtf32AtlasMapping(
     constant     uint* unprocessedSize                    [[buffer(2)]],
     constant     uint* cleanOutputSize                    [[buffer(3)]]
 ) {
-    if (id < 0 || id >= *unprocessedSize) {
+    if (id < 0 || id > *unprocessedSize) {
         return;
     }
     GlyphMapKernelOut glyphCopy = unprocessedGlyphs[id];
@@ -622,7 +622,7 @@ kernel void processNewUtf32AtlasMapping(
     }
     
     uint targetBufferIndex = glyphCopy.sourceRenderableStringIndex;
-    if (targetBufferIndex < 0 || targetBufferIndex >= *cleanOutputSize) {
+    if (targetBufferIndex < 0 || targetBufferIndex > *cleanOutputSize) {
         return;
     }
     
@@ -637,7 +637,7 @@ kernel void blitGlyphsIntoConstants(
     constant     uint* expectedCharacterCount             [[buffer(3)]],
     device       atomic_uint* instanceCounter             [[buffer(4)]]
 ) {
-    if (id < 0 || id >= *unprocessedSize) {
+    if (id < 0 || id > *unprocessedSize) {
         return;
     }
     GlyphMapKernelOut glyphCopy = unprocessedGlyphs[id];
@@ -646,7 +646,7 @@ kernel void blitGlyphsIntoConstants(
     }
     
     uint targetBufferIndex = glyphCopy.sourceRenderableStringIndex;
-    if (targetBufferIndex < 0 || targetBufferIndex >= *expectedCharacterCount) {
+    if (targetBufferIndex < 0 || targetBufferIndex > *expectedCharacterCount) {
         return;
     }
     
@@ -688,7 +688,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     device       atomic_uint* totalCharacterCount   [[buffer(5)]]
 ) {
     // Boundary check
-    if (id >= *utf8BufferSize) {
+    if (id > *utf8BufferSize) {
         return;
     }
     
