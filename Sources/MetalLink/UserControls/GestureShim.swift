@@ -91,12 +91,14 @@ public class GestureShim {
 
 public extension CGPoint {
     func distance(to point: CGPoint) -> CGFloat {
-        return sqrt(pow(point.x - x, 2) + pow(point.y - y, 2))
+        sqrt(pow(point.x - x, 2) + pow(point.y - y, 2))
     }
 
     func scaled(_ factor: CGFloat) -> CGPoint {
-        return CGPoint(x: x * factor, y: y * factor)
+        CGPoint(x: x * factor, y: y * factor)
     }
     
-    var asSimd: LFloat2 { LFloat2(x.float, y.float) }
+    var asSimd: LFloat2 {
+        LFloat2(x.float, y.float)
+    }
 }
