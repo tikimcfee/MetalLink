@@ -80,6 +80,11 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
 }
 
 public extension DebugCamera {
+    func updating(_ camera: (DebugCamera) -> Void) -> Self {
+        camera(self)
+        return self
+    }
+    
     func moveCameraLocation(_ dX: Float, _ dY: Float, _ dZ: Float) {
         var rotationTransform = simd_mul(
             simd_quatf(angle: rotation.x, axis: X_AXIS),
@@ -153,10 +158,10 @@ public extension DebugCamera {
     
     private func buildProjectionMatrix() -> matrix_float4x4 {
         let matrix = matrix_float4x4.init(
-            perspectiveProjectionFov: GlobalLiveConfig.Default.cameraFieldOfView,
+            perspectiveProjectionFov: fov,
             aspectRatio: viewAspectRatio,
-            nearZ: GlobalLiveConfig.Default.cameraNearZ,
-            farZ: GlobalLiveConfig.Default.cameraFarZ
+            nearZ: nearClipPlane,
+            farZ: farClipPlane
         )
         return matrix
     }

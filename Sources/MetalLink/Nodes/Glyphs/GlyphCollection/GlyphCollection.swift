@@ -7,6 +7,7 @@
 
 import MetalKit
 import MetalLinkHeaders
+import BitHandling
 import Combine
 
 // There's some kind of `GlyphCollection` in Foundation that gets picked up sometimes.. need to alias
@@ -245,7 +246,21 @@ public extension GlyphCollection {
     func pointerHasIntrinsicSize() -> Bool {
         instanceState.constants.endIndex > 0
     }
-    
+//    
+//    func loadFileToInstances(
+//        _ fileURL: URL
+//    ) {
+//        let reader = SplittingFileReader(targetURL: fileURL)
+//        let iterator = reader.doSplitNSData(
+//            receiver: { line, stopFlag in
+//                
+//            },
+//            lineBreaks: { lineRange, lineBreakFlag in
+//                
+//            }
+//        )
+//    }
+//    
     func pointerBounds() -> Bounds {
         var totalBounds = Bounds.forBaseComputing
         let pointer = instanceState.constants.pointer
