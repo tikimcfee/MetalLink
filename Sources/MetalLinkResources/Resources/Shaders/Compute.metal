@@ -675,7 +675,8 @@ kernel void blitColorsIntoConstants(
         return;
     }
     // TODO: Multiple color values
-    targetConstants[id].addedColor = colors[id];
+//    targetConstants[id].addedColor = colors[id];
+    targetConstants[id].multipliedColor = colors[id];
 }
 
 kernel void utf8ToUtf32KernelAtlasMapped(

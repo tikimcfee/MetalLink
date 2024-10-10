@@ -198,6 +198,11 @@ private extension GlyphCollection {
                                            constants.positionOffset.y,
                                            constants.positionOffset.z)
                 newNode.instanceUpdate = state.updateBufferOnChange
+                newNode.instanceFetch = {
+                    let index = constants.arrayIndex
+                    guard self.instanceState.indexValid(index) else { return nil }
+                    return self.instanceState.rawPointer[index]
+                }
                 newNode.setQuadUnitSize(size: constants.textureSize)
 //                state.instanceIdNodeLookup[constants.instanceID] = newNode
                 state.nodes.append(newNode)
