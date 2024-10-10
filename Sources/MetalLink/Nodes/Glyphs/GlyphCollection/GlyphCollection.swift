@@ -121,6 +121,11 @@ public extension GlyphCollection {
             node.quadSize = instance.textureSize
             node.instanceConstants = instance
             node.instanceUpdate = instanceState.updateBufferOnChange
+            node.instanceFetch = {
+                let index = instance.arrayIndex
+                guard self.instanceState.indexValid(index) else { return nil }
+                return self.instanceState.rawPointer[index]
+            }
             
             return node
         }
@@ -145,7 +150,8 @@ private extension GlyphCollection {
     func nodeBounds() -> Bounds {
         var totalBounds = Bounds.forBaseComputing
         
-        for node in instanceState.nodes.values {
+//        for node in instanceState.nodes.values {
+        for node in instanceState.nodes {
             totalBounds.union(with: node.sizeBounds)
         }
         
@@ -225,7 +231,8 @@ private extension GlyphCollection {
         }
         
         // TODO: Use safe
-        guard let safeMesh = instanceState.nodes.values.first(where: {
+//        guard let safeMesh = instanceState.nodes.values.first(where: {
+        guard let safeMesh = instanceState.nodes.first(where: {
             ($0.mesh as? MetalLinkQuadMesh)?.width ?? 0.0 > 0.1 }
         ) else {
             return

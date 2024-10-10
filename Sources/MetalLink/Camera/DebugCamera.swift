@@ -80,6 +80,7 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
 }
 
 public extension DebugCamera {
+    @discardableResult
     func updating(_ camera: (DebugCamera) -> Void) -> Self {
         camera(self)
         return self
@@ -123,26 +124,55 @@ public extension DebugCamera {
         return LFloat3(ndc.x, ndc.y, ndc.z)
     }
 
+//    func unprojectPoint(_ screenPoint: LFloat2, worldDepth: Float) -> LFloat3 {
+//        // Convert screen point to normalized device coordinates (NDC)
+//        let xNDC = (screenPoint.x / viewBounds.x) * 2 - 1
+//        let yNDC = 1 - (screenPoint.y / viewBounds.y) * 2
+//
+//        // Convert world depth to a depth value in view space using the camera's view matrix
+//        let worldPoint = LFloat3(0, 0, -worldDepth) // Assuming worldDepth is along the camera's forward axis
+//        let viewSpacePoint = (viewMatrix * LFloat4(worldPoint, 1)).z
+//
+//        // Use the view space depth for unprojection
+//        let zNDC = (viewSpacePoint - nearClipPlane) / (farClipPlane - nearClipPlane) // Map to NDC depth
+//
+//        // Unproject from NDC to world space
+//        let clipCoords = LFloat4(xNDC, yNDC, zNDC, 1.0)
+//        let invProjMatrix = projectionMatrix.inverse
+//        let invViewMatrix = viewMatrix.inverse
+//        let worldCoords = invViewMatrix * invProjMatrix * clipCoords
+//        let worldCoordsNormalized = LFloat3(xyzSource: worldCoords) / worldCoords.w
+//        
+//        return worldCoordsNormalized
+//    }
+    
     func unprojectPoint(_ screenPoint: LFloat2, worldDepth: Float) -> LFloat3 {
-        // Convert screen point to normalized device coordinates (NDC)
-        let xNDC = (screenPoint.x / viewBounds.x) * 2 - 1
-        let yNDC = 1 - (screenPoint.y / viewBounds.y) * 2
+        // Convert screen coordinates to NDC
+        let xNDC = (2.0 * screenPoint.x) / viewBounds.x - 1.0
+        let yNDC = 1.0 - (2.0 * screenPoint.y) / viewBounds.y
 
-        // Convert world depth to a depth value in view space using the camera's view matrix
-        let worldPoint = LFloat3(0, 0, -worldDepth) // Assuming worldDepth is along the camera's forward axis
-        let viewSpacePoint = (viewMatrix * LFloat4(worldPoint, 1)).z
+        // Create clip space position at z = -1 (near plane)
+        let nearPoint = LFloat4(xNDC, yNDC, -1.0, 1.0)
+        // Create clip space position at z = 1 (far plane)
+        let farPoint = LFloat4(xNDC, yNDC, 1.0, 1.0)
 
-        // Use the view space depth for unprojection
-        let zNDC = (viewSpacePoint - nearClipPlane) / (farClipPlane - nearClipPlane) // Map to NDC depth
+        // Transform to view space
+        let invProjectionMatrix = projectionMatrix.inverse
+        let nearViewSpace = invProjectionMatrix * nearPoint
+        let farViewSpace = invProjectionMatrix * farPoint
 
-        // Unproject from NDC to world space
-        let clipCoords = LFloat4(xNDC, yNDC, zNDC, 1.0)
-        let invProjMatrix = projectionMatrix.inverse
-        let invViewMatrix = viewMatrix.inverse
-        let worldCoords = invViewMatrix * invProjMatrix * clipCoords
-        let worldCoordsNormalized = LFloat3(xyzSource: worldCoords) / worldCoords.w
-        
-        return worldCoordsNormalized
+        // Perspective divide
+        let nearWorldSpace = (nearViewSpace / nearViewSpace.w).xyz
+        let farWorldSpace = (farViewSpace / farViewSpace.w).xyz
+
+        // Compute the ray direction
+        let rayDirection = normalize(farWorldSpace - nearWorldSpace)
+
+        // Compute the intersection with the plane at planeDepth
+        let t = (worldDepth - position.z) / rayDirection.z
+        let intersectionPoint = position + rayDirection * t
+
+        return intersectionPoint
     }
 }
 

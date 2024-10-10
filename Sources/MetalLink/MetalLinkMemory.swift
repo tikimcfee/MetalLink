@@ -43,6 +43,7 @@ extension LFloat3: MemoryLayoutSizable { }
 extension LFloat4: MemoryLayoutSizable { }
 extension Float: MemoryLayoutSizable { }
 extension Int: MemoryLayoutSizable { }
+extension Int32: MemoryLayoutSizable { }
 extension Vertex: MemoryLayoutSizable { }
 extension ForceLayoutEdge: MemoryLayoutSizable { }
 extension ForceLayoutNode: MemoryLayoutSizable { }

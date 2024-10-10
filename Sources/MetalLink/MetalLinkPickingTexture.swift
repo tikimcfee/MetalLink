@@ -128,9 +128,7 @@ private extension MetalLinkPickingTexture {
     
     func onPickBlitComplete(_ pickBuffer: MTLBuffer) {
         let pointer = pickBuffer.boundPointer(as: InstanceIDType.self, count: 1)
-//        print("--------------------------------------\n")
-//        print("\nPick complete, found: \(pointer.pointee)")
-//        print("--------------------------------------\n")
+
         guard pointer.pointee >= InstanceCounter.startingGeneratedID else {
             return currentHover = .zero
         }

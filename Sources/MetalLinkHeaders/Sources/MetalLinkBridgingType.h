@@ -14,7 +14,7 @@
 struct BasicModelConstants {
     simd_float4x4 modelMatrix;
     simd_float4 color;
-    uint pickingId;
+    int pickingId;
 };
 
 struct InstancedConstants {
@@ -27,11 +27,12 @@ struct InstancedConstants {
     simd_float4 positionOffset;
     uint64_t unicodeHash;
     
-    uint instanceID;
+    int instanceID;
     simd_float4 addedColor;
     simd_float4 multipliedColor;
-    uint bufferIndex; // index of self in cpu mtlbuffer
-    uint useParentMatrix; // 0 == no, 1 == yes, other == undefined
+    int bufferIndex; // index of self in cpu mtlbuffer
+    int useParentMatrix; // 0 == no, 1 == yes, other == undefined
+    int ignoreHover;     // 0 == no, 1 == yes, other == undefined
 };
 
 // Glyphees
@@ -86,12 +87,12 @@ struct GlyphMapKernelAtlasIn {
 struct GlyphMapKernelOut {
     // --- faux-nicode data
     enum GraphemeCategory graphemeCategory;
-    uint codePointIndex;
+    int codePointIndex;
     uint32_t codePoint;
     uint64_t unicodeHash;
     
-    uint unicodeCodePointLength;
-    uint totalUnicodeSequenceCount;
+    int unicodeCodePointLength;
+    int totalUnicodeSequenceCount;
     uint32_t unicodeSlot1;
     uint32_t unicodeSlot2;
     uint32_t unicodeSlot3;
@@ -104,8 +105,8 @@ struct GlyphMapKernelOut {
     uint32_t unicodeSlot10;
     
     // --- buffer indexing
-    uint sourceUtf8BufferIndex;       // the previous character's index
-    uint sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
+    int sourceUtf8BufferIndex;       // the previous character's index
+    int sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
     
     // --- texture
     simd_float4 foreground;

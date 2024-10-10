@@ -10,7 +10,7 @@ import Combine
 import MetalLinkHeaders
 import simd
 
-open class MetalLinkNode: Measures {
+open class  MetalLinkNode: Measures {
     public lazy var nodeId = UUID().uuidString
     
     public init() {
@@ -27,17 +27,25 @@ open class MetalLinkNode: Measures {
     public lazy var cachedWorldBounds = CachedValue(update: computeWorldBounds)
     
     // Whatever just instance everything lolol
+    public var localConstants: InstancedConstants = InstancedConstants()
     public var instanceID: InstanceIDType? { instanceConstants?.instanceID }
     public var instanceBufferIndex: Int? { instanceConstants?.arrayIndex }
     public var instanceUpdate: ((InstancedConstants, MetalLinkNode) -> Void)?
+    public var instanceFetch: (() -> InstancedConstants?)?
     
-    public func pushInstanceUpdate() {
-        if let instanceUpdate, let instanceConstants {
-            instanceUpdate(instanceConstants, self)
-        }
-    }
     public var instanceConstants: InstancedConstants? {
-        didSet { pushInstanceUpdate() }
+        get {
+            instanceFetch?() ?? localConstants
+        }
+        set {
+            if let newValue {
+                if let instanceUpdate {
+                    instanceUpdate(newValue, self)
+                } else {
+                    localConstants = newValue
+                }
+            }
+        }
     }
     
     open var asNode: MetalLinkNode { self }

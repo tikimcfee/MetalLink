@@ -42,6 +42,7 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         multipliedColor = .one
         bufferIndex = .zero
         useParentMatrix = 1
+        ignoreHover = 0
     }
 }
 
