@@ -24,7 +24,6 @@ public extension TextureUVCache {
 
 public class TextureUVCache: Codable {
     public var map = [GlyphCacheKey: Pair]()
-    
     public var unicodeMap = [UInt64: GlyphCacheKey]()
     
     public init() {
@@ -38,7 +37,7 @@ public class TextureUVCache: Codable {
         
         if unicodeMap.isEmpty && !map.isEmpty {
             map.keys.forEach {
-                unicodeMap[$0.unicodeHash] = $0
+                unicodeMap[$0.glyphComputeHash] = $0
             }
         }
     }
@@ -79,8 +78,8 @@ public extension TextureUVCache {
     subscript(_ key: GlyphCacheKey) -> Pair? {
         get {
             // I truly am a monster p1
-            if safeReadUnicodeHash(hash: key.unicodeHash) == nil {
-                safeWriteUnicodeHash(hash: key.unicodeHash, newValue: key)
+            if safeReadUnicodeHash(hash: key.glyphComputeHash) == nil {
+                safeWriteUnicodeHash(hash: key.glyphComputeHash, newValue: key)
             }
             
             return map[key]
@@ -89,8 +88,8 @@ public extension TextureUVCache {
             map[key] = newValue
             
             // I truly am a monster p2
-            if safeReadUnicodeHash(hash: key.unicodeHash) == nil {
-                safeWriteUnicodeHash(hash: key.unicodeHash, newValue: key)
+            if safeReadUnicodeHash(hash: key.glyphComputeHash) == nil {
+                safeWriteUnicodeHash(hash: key.glyphComputeHash, newValue: key)
             }
         }
     }

@@ -23,9 +23,3 @@ extension GlyphCacheKey: Codable {
         self = (try container.decode(String.self)).first!
     }
 }
-
-public extension GlyphCacheKey {
-    var unicodeHash: UInt64 {
-        glyphComputeHash
-    }
-}
