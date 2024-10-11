@@ -178,7 +178,11 @@ public extension GlyphCollection {
     
     func rebuildInstanceAfterCompute() {
         // Pointer doesn't need rebuilding, we use the pointer data directly
-        cachedPointerBounds.dirty()
+        if let bufferedBounds = instanceState.bufferedBounds {
+            cachedPointerBounds.set(bufferedBounds)
+        } else {
+            cachedPointerBounds.dirty()
+        }
         instanceState.constants.remakePointer()
         setRootMeshPointer()
     }

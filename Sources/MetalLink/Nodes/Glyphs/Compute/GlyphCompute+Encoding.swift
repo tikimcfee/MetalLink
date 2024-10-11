@@ -154,10 +154,37 @@ public extension ConvertCompute {
         computeCommandEncoder.setBytes(&expectedCharacterCount, length: Int.memSize, index: 3)
         
         // Borrow the instance counter, lolz. // TODO: I didn't use this yet for the global id, oopselies
-        
         let starting = UInt32(10)
         let instanceCountBuffer = try makeCharacterCountBuffer(starting: starting)
         computeCommandEncoder.setBuffer(instanceCountBuffer, offset: 0, index: 4)
+        
+        // Bounds computing
+        let minBounds = LFloat4(Bounds.forBaseComputing.min, .infinity)
+        let maxBounds = LFloat4(Bounds.forBaseComputing.max, -.infinity)
+        
+        let minXBuffer = try makeBoundsBuffer(starting: minBounds.x)
+        let minYBuffer = try makeBoundsBuffer(starting: minBounds.y)
+        let minZBuffer = try makeBoundsBuffer(starting: minBounds.z)
+        
+        let maxXBuffer = try makeBoundsBuffer(starting: maxBounds.x)
+        let maxYBuffer = try makeBoundsBuffer(starting: maxBounds.y)
+        let maxZBuffer = try makeBoundsBuffer(starting: maxBounds.z)
+        
+        computeCommandEncoder.setBuffer(minXBuffer, offset: 0, index: 5)
+        computeCommandEncoder.setBuffer(minYBuffer, offset: 0, index: 6)
+        computeCommandEncoder.setBuffer(minZBuffer, offset: 0, index: 7)
+        
+        computeCommandEncoder.setBuffer(maxXBuffer, offset: 0, index: 8)
+        computeCommandEncoder.setBuffer(maxYBuffer, offset: 0, index: 9)
+        computeCommandEncoder.setBuffer(maxZBuffer, offset: 0, index: 10)
+        
+        targetConstants.minXBuffer = minXBuffer
+        targetConstants.minYBuffer = minYBuffer
+        targetConstants.minZBuffer = minZBuffer
+        
+        targetConstants.maxXBuffer = maxXBuffer
+        targetConstants.maxYBuffer = maxYBuffer
+        targetConstants.maxZBuffer = maxZBuffer
         
         // -- Set pipeline state --
         computeCommandEncoder.setComputePipelineState(constantsBlitPipelineState)

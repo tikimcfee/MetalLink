@@ -25,6 +25,36 @@ public class InstanceState<
     public var didSetRoot = false
     public let constants: BackingBuffer<InstancedConstants>
     
+    public var minXBuffer: MTLBuffer?
+    public var minYBuffer: MTLBuffer?
+    public var minZBuffer: MTLBuffer?
+    public var bufferedBounds: Bounds? {
+        guard let minXBuffer = minXBuffer?.boundPointer(as: Float.self, count: 1),
+              let minYBuffer = minYBuffer?.boundPointer(as: Float.self, count: 1),
+              let minZBuffer = minZBuffer?.boundPointer(as: Float.self, count: 1),
+              let maxXBuffer = maxXBuffer?.boundPointer(as: Float.self, count: 1),
+              let maxYBuffer = maxYBuffer?.boundPointer(as: Float.self, count: 1),
+              let maxZBuffer = maxZBuffer?.boundPointer(as: Float.self, count: 1)
+        else { return nil }
+        
+        return Bounds(
+            LFloat3(
+                x: minXBuffer[0],
+                y: minYBuffer[0],
+                z: minZBuffer[0]
+            ),
+            LFloat3(
+                x: maxXBuffer[0],
+                y: maxYBuffer[0],
+                z: maxZBuffer[0]
+            )
+        )
+    }
+    
+    public var maxXBuffer: MTLBuffer?
+    public var maxYBuffer: MTLBuffer?
+    public var maxZBuffer: MTLBuffer?
+    
     public var instanceBufferRange: Range<Int> { (0..<constants.currentEndIndex) }
     public var instanceBufferCount: Int { constants.currentEndIndex }
     public var instanceBuffer: MTLBuffer { constants.buffer }

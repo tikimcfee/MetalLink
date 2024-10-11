@@ -4,6 +4,7 @@
 //  
 
 import Foundation
+import simd
 
 // Rename this to 'Box'
 public struct Bounds {
@@ -21,24 +22,24 @@ public struct Bounds {
 
 public extension Bounds {
     static func * (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min *= rhs
-        newBounds.max *= rhs
-        return newBounds
+        var (min, max) = (lhs.min, lhs.max)
+        min *= rhs
+        max *= rhs
+        return Bounds(min, max)
     }
     
     static func + (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min += rhs
-        newBounds.max += rhs
-        return newBounds
+        var (min, max) = (lhs.min, lhs.max)
+        min += rhs
+        max += rhs
+        return Bounds(min, max)
     }
     
     static func / (lhs: Bounds, rhs: LFloat3) -> Bounds {
-        var newBounds = lhs
-        newBounds.min /= rhs
-        newBounds.max /= rhs
-        return newBounds
+        var (min, max) = (lhs.min, lhs.max)
+        min /= rhs
+        max /= rhs
+        return Bounds(min, max)
     }
 }
 

@@ -21,6 +21,11 @@ public class CachedValue<T> {
         willUpdate = true
     }
     
+    public func set(_ new: T) {
+        willUpdate = false
+        value = new
+    }
+    
     public func updateNow() {
         value = update()
         willUpdate = false

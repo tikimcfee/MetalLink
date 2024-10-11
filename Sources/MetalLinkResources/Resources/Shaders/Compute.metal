@@ -532,13 +532,71 @@ kernel void processNewUtf32AtlasMapping(
     cleanGlyphBuffer[targetBufferIndex] = glyphCopy;
 }
 
+// Function to atomically set the minimum value in a buffer
+void atomicMin(
+   device atomic_float *atomicBuffer,
+   uint index,
+   float newValue
+) {
+    float oldValue;
+    // Loop to attempt the atomic min operation until it succeeds
+    do {
+        // Load the current value from the atomic buffer
+        oldValue = atomic_load_explicit(&atomicBuffer[index], memory_order_relaxed);
+
+        // If the new value is not smaller than the current value, no need to swap
+        if (newValue >= oldValue) {
+            return;
+        }
+        
+        // Attempt to set the atomic buffer to the new minimum value
+    } while (!atomic_compare_exchange_weak_explicit(&atomicBuffer[index],
+                                                    &oldValue,
+                                                    newValue,
+                                                    memory_order_relaxed,
+                                                    memory_order_relaxed));
+}
+              
+// Function to atomically set the maximum value in a buffer
+void atomicMax(
+   device atomic_float *atomicBuffer,
+   uint index,
+   float newValue
+) {
+    float oldValue;
+    // Loop to attempt the atomic max operation until it succeeds
+    do {
+        // Load the current value from the atomic buffer
+        oldValue = atomic_load_explicit(&atomicBuffer[index], memory_order_relaxed);
+
+        // If the new value is not larger than the current value, no need to swap
+        if (newValue <= oldValue) {
+            return;
+        }
+        
+        // Attempt to set the atomic buffer to the new maximum value
+    } while (!atomic_compare_exchange_weak_explicit(&atomicBuffer[index],
+                                                    &oldValue,
+                                                    newValue,
+                                                    memory_order_relaxed,
+                                                    memory_order_relaxed));
+}
+
 kernel void blitGlyphsIntoConstants(
     device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
                  uint id                                  [[thread_position_in_grid]],
     device       InstancedConstants* targetConstants      [[buffer(1)]],
     constant     uint* unprocessedSize                    [[buffer(2)]],
     constant     uint* expectedCharacterCount             [[buffer(3)]],
-    device       atomic_uint* instanceCounter             [[buffer(4)]]
+    device       atomic_uint* instanceCounter             [[buffer(4)]],
+    
+    device       atomic_float* minX                       [[buffer(5)]],
+    device       atomic_float* minY                       [[buffer(6)]],
+    device       atomic_float* minZ                       [[buffer(7)]],
+                                    
+    device       atomic_float* maxX                       [[buffer(8)]],
+    device       atomic_float* maxY                       [[buffer(9)]],
+    device       atomic_float* maxZ                       [[buffer(10)]]
 ) {
     if (id < 0 || id > *unprocessedSize) {
         return;
@@ -569,6 +627,14 @@ kernel void blitGlyphsIntoConstants(
     out.positionOffset = glyphCopy.positionOffset;
     
     targetConstants[targetBufferIndex] = out;
+    
+    atomicMin(minX, 0, glyphCopy.positionOffset.x - glyphCopy.textureSize.x / 2.0);
+    atomicMin(minY, 0, glyphCopy.positionOffset.y - glyphCopy.textureSize.y / 2.0);
+    atomicMin(minZ, 0, glyphCopy.positionOffset.z);
+    
+    atomicMax(maxX, 0, glyphCopy.positionOffset.x + glyphCopy.textureSize.x / 2.0);
+    atomicMax(maxY, 0, glyphCopy.positionOffset.y + glyphCopy.textureSize.x / 2.0);
+    atomicMax(maxZ, 0, glyphCopy.positionOffset.z);
 }
 
 kernel void blitColorsIntoConstants(
