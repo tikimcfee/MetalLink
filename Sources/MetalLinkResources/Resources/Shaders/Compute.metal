@@ -172,7 +172,7 @@ uint32_t codePointForSequence(
 // MARK: - Compute hash for given kernel output glyph
 // See:
 /*
- // MetalLinkAtlasBuilder
+ // SwiftGlyph
  public extension Character {
      var glyphComputeHash: UInt64 {
  */

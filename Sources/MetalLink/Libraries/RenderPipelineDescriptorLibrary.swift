@@ -26,7 +26,7 @@ public class RenderPipelineDescriptorLibrary: LockingCache<MetalLinkDescriptorPi
         self.link = link
     }
     
-    public override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         switch key {
         case .BasicPipelineDescriptor:
             return Basic(link)

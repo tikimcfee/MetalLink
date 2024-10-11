@@ -20,7 +20,7 @@ public class DepthStencilStateLibrary: LockingCache<MetalLinkDepthStencilStateTy
         super.init()
     }
     
-    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         switch key {
         case .Less:
             return try! Less(link).depthStencilState

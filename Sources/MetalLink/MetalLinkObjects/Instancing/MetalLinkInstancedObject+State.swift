@@ -22,14 +22,8 @@ public class InstanceState<
     ) -> Void
     
     public let link: MetalLink
-        
-//    public var nodes = ConcurrentArray<InstancedNodeType>()
-    public var nodes = [InstancedNodeType]()
     public var didSetRoot = false
-    
     public let constants: BackingBuffer<InstancedConstants>
-    
-//    public private(set) var instanceIdNodeLookup = ConcurrentDictionary<InstanceIDType, InstancedNodeType>()
     
     public var instanceBufferRange: Range<Int> { (0..<constants.currentEndIndex) }
     public var instanceBufferCount: Int { constants.currentEndIndex }
@@ -74,9 +68,6 @@ public class InstanceState<
             guard self.indexValid(index) else { return nil }
             return self.rawPointer[index]
         }
-        
-//        instanceIdNodeLookup[newInstanceConstants.instanceID] = instanceTarget
-        nodes.append(instanceTarget)
         
         return instanceTarget
     }

@@ -30,7 +30,7 @@ private class ShaderFunctionCache: LockingCache<MetalLinkShaderType, MTLFunction
         super.init()
     }
     
-    override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         key.getFunction(link)
     }
 }
