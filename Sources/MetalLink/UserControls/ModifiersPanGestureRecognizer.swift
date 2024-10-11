@@ -175,7 +175,7 @@ extension NSGestureRecognizer.State {
     }
 }
 
-extension NSGestureRecognizer.State: CustomStringConvertible {
+extension NSGestureRecognizer.State: @retroactive CustomStringConvertible {
     public var description: String {
         switch self {
         case .began:
@@ -197,7 +197,7 @@ extension NSGestureRecognizer.State: CustomStringConvertible {
     }
 }
 
-extension NSEvent.ModifierFlags: Hashable {
+extension NSEvent.ModifierFlags: @retroactive Hashable {
     public var hashValue: Int {
         return rawValue.hashValue
     }

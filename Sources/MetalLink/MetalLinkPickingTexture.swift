@@ -190,7 +190,7 @@ extension MetalLinkPickingTexture {
     }
 }
 
-extension LFloat2: Comparable {
+extension LFloat2: @retroactive Comparable {
     public static func < (lhs: SIMD2<Scalar>, rhs: SIMD2<Scalar>) -> Bool {
         return lhs.x < rhs.x
             && lhs.y < rhs.y

@@ -80,7 +80,7 @@ public extension MetalLink {
     }
 }
 
-extension GraphemeStatus: CustomStringConvertible {
+extension GraphemeStatus: @retroactive CustomStringConvertible {
     public var description: String {
         switch self {
         case SINGLE: return "single"
@@ -97,7 +97,7 @@ extension GraphemeStatus: CustomStringConvertible {
     var isEnd: Bool { self == END }
 }
 
-extension GraphemeCategory: CustomStringConvertible {
+extension GraphemeCategory: @retroactive CustomStringConvertible {
     public var description: String {
         switch self {
         case utf32GlyphSingle: return "single character"
