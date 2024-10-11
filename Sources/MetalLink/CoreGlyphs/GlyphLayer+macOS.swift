@@ -45,7 +45,7 @@ public extension CALayer {
             return nil
         }
         
-        backgroundColor = key.background.asColor.cgColor
+        backgroundColor = NSUIColor.black.cgColor
         render(in: requestedContext.cgContext)
         
         backgroundColor = NSUIColor(displayP3Red: 0.2, green: 0.7, blue: 0.7, alpha: 0.8).cgColor

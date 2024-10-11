@@ -33,64 +33,6 @@ uint8_t getByte(
     return bytes[index];
 }
 
-// TODO: I mean you could just keep a count and hash it all at once but then debugging is just lulz
-uint getUnicodeLengthFromSlots(
-   device       GlyphMapKernelOut* utf32Buffer,
-                uint id
-) {
-    if (utf32Buffer[id].unicodeSlot10 != 0) { return 10; }
-    if (utf32Buffer[id].unicodeSlot9 != 0) { return 9; }
-    if (utf32Buffer[id].unicodeSlot8 != 0) { return 8; }
-    if (utf32Buffer[id].unicodeSlot7 != 0) { return 7; }
-    if (utf32Buffer[id].unicodeSlot6 != 0) { return 6; }
-    if (utf32Buffer[id].unicodeSlot5 != 0) { return 5; }
-    if (utf32Buffer[id].unicodeSlot4 != 0) { return 4; }
-    if (utf32Buffer[id].unicodeSlot3 != 0) { return 3; }
-    if (utf32Buffer[id].unicodeSlot2 != 0) { return 2; }
-    if (utf32Buffer[id].unicodeSlot1 != 0) { return 1; }
-    return 0;
-}
-
-void setDataOnSlotAtIndex(
-   device       GlyphMapKernelOut* utf32Buffer,
-                uint id,
-                int slotNumber,
-                uint32_t data
-) {
-    switch (slotNumber) {
-        case 1:
-            utf32Buffer[id].unicodeSlot1 = data;
-            break;
-        case 2:
-            utf32Buffer[id].unicodeSlot2 = data;
-            break;
-        case 3:
-            utf32Buffer[id].unicodeSlot3 = data;
-            break;
-        case 4:
-            utf32Buffer[id].unicodeSlot4 = data;
-            break;
-        case 5:
-            utf32Buffer[id].unicodeSlot5 = data;
-            break;
-        case 6:
-            utf32Buffer[id].unicodeSlot6 = data;
-            break;
-        case 7:
-            utf32Buffer[id].unicodeSlot7 = data;
-            break;
-        case 8:
-            utf32Buffer[id].unicodeSlot8 = data;
-            break;
-        case 9:
-            utf32Buffer[id].unicodeSlot9 = data;
-            break;
-        case 10:
-            utf32Buffer[id].unicodeSlot10 = data;
-            break;
-    }
-}
-
 // MARK: - faux-nicode parsing helpers
 
 // Get the expected byte sequence count from index in buffer.
@@ -228,66 +170,29 @@ uint32_t codePointForSequence(
 }
 
 // MARK: - Compute hash for given kernel output glyph
+// See:
+/*
+ // MetalLinkAtlasBuilder
+ public extension Character {
+     var glyphComputeHash: UInt64 {
+ */
 
-uint64_t glyphHashKernel(
+constant uint64_t hashPrime = 31;
+constant uint64_t hashModulo = 1000000;
+void accumulateGlyphHashKernel(
     device GlyphMapKernelOut* utf32Buffer,
-    uint index
+    uint index,
+    uint32_t data
 ) {
-    const uint64_t prime = 31;
-    uint64_t hash = 0;
-    uint64_t slot1 = utf32Buffer[index].unicodeSlot1;
-    if (slot1 != 0) {
-        hash = (hash * prime + slot1) % 1000000;
-    } else { return hash; }
-
-    uint64_t slot2 = utf32Buffer[index].unicodeSlot2;
-    if (slot2 != 0) {
-        hash = (hash * prime + slot2) % 1000000;
-    } else { return hash; }
+    GlyphMapKernelOut out = utf32Buffer[index];
     
-    uint64_t slot3 = utf32Buffer[index].unicodeSlot3;
-    if (slot3 != 0) {
-        hash = (hash * prime + slot3) % 1000000;
-    } else { return hash; }
+    uint64_t hash = out.unicodeHash;
+    hash = (hash * hashPrime + data) % hashModulo;
+    out.unicodeHash = hash;
+    out.unicodeCodePointLength += 1;
     
-    uint64_t slot4 = utf32Buffer[index].unicodeSlot4;
-    if (slot4 != 0) {
-        hash = (hash * prime + slot4) % 1000000;
-    } else { return hash; }
+    utf32Buffer[index] = out;
     
-    uint64_t slot5 = utf32Buffer[index].unicodeSlot5;
-    if (slot5 != 0) {
-        hash = (hash * prime + slot5) % 1000000;
-    } else { return hash; }
-    
-    uint64_t slot6 = utf32Buffer[index].unicodeSlot6;
-    if (slot6 != 0) {
-        hash = (hash * prime + slot6) % 1000000;
-    } else { return hash; }
-    
-    uint64_t slot7 = utf32Buffer[index].unicodeSlot7;
-    if (slot7 != 0) {
-        hash = (hash * prime + slot7) % 1000000;
-    } else { return hash; }
-    
-    uint64_t slot8 = utf32Buffer[index].unicodeSlot8;
-    if (slot8 != 0) {
-        hash = (hash * prime + slot8) % 1000000;
-    } else { return hash; }
-    
-    uint64_t slot9 = utf32Buffer[index].unicodeSlot9;
-    if (slot9 != 0) {
-        hash = (hash * prime + slot9) % 1000000;
-    } else { return hash; }
-    
-    uint64_t slot10 = utf32Buffer[index].unicodeSlot10;
-    if (slot10 != 0) {
-        hash = (hash * prime + slot10) % 1000000;
-    } else { return hash; }
-    
-    // moar slots
-    
-    return hash;
 }
 
 // MARK: -- <> Magix fauxnicode looking/lookbehind handling
@@ -313,7 +218,7 @@ void attemptUnicodeScalarSetLookahead(
     // Data and single-byte glyphs just return their initial bytes;
     // this particular lookahead is done.
     if (category == utf32GlyphSingle || category == utf32GlyphData) {
-        setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+        accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
         
         const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
         utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
@@ -321,7 +226,7 @@ void attemptUnicodeScalarSetLookahead(
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
     else if (category == utf32GlyphEmojiSingle) {
-        setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+        accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
         
         const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
         utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
@@ -343,10 +248,10 @@ void attemptUnicodeScalarSetLookahead(
             }
             
             // otherwise we're the glyph leader so store the points
-            setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+            accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
             
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
-            setDataOnSlotAtIndex(utf32Buffer, id, 2, nextCodePoint);
+            accumulateGlyphHashKernel(utf32Buffer, id, nextCodePoint);
             
             const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
             const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
@@ -355,7 +260,7 @@ void attemptUnicodeScalarSetLookahead(
         
         // If it's a tag, we start doing some special lookahead magic...
         else if (lookaheadCategory == utf32GlyphTag) {
-            setDataOnSlotAtIndex(utf32Buffer, id, 1, codePoint);
+            accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
             const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
             utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
             
@@ -364,7 +269,7 @@ void attemptUnicodeScalarSetLookahead(
             int lookaheadSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, lookaheadStartIndex, *utf8BufferSize);
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
-                setDataOnSlotAtIndex(utf32Buffer, id, writeSlot, codePoint);
+                accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
                 utf32Buffer[id].totalUnicodeSequenceCount += lookaheadSequenceCount;
                 
                 // Move to the next slot and lookahead start
@@ -600,8 +505,6 @@ kernel void utf8ToUtf32Kernel(
        category,
        codePoint
      );
-    
-    utf32Buffer[id].unicodeHash = glyphHashKernel(utf32Buffer, id);
 }
 
 // MARK: -- Atlas texture mapping from utf8 -> GlyphMapKernelOut
@@ -651,18 +554,21 @@ kernel void blitGlyphsIntoConstants(
     }
     
 //    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
-    targetConstants[targetBufferIndex].instanceID = id + 10;
-    targetConstants[targetBufferIndex].bufferIndex = targetBufferIndex;
-    targetConstants[targetBufferIndex].addedColor = float4(0.0);
-    targetConstants[targetBufferIndex].multipliedColor = float4(1.0);
-    targetConstants[targetBufferIndex].useParentMatrix = 1;
+    InstancedConstants out = targetConstants[targetBufferIndex];
     
-    targetConstants[targetBufferIndex].unicodeHash = glyphCopy.unicodeHash;
-    targetConstants[targetBufferIndex].modelMatrix = glyphCopy.modelMatrix;
-    targetConstants[targetBufferIndex].textureDescriptorU = glyphCopy.textureDescriptorU;
-    targetConstants[targetBufferIndex].textureDescriptorV = glyphCopy.textureDescriptorV;
-    targetConstants[targetBufferIndex].textureSize = glyphCopy.textureSize;
-    targetConstants[targetBufferIndex].positionOffset = glyphCopy.positionOffset;
+    out.instanceID = id + 10;
+    out.bufferIndex = targetBufferIndex;
+    out.addedColor = float4(0.0);
+    out.multipliedColor = float4(1.0);
+    out.useParentMatrix = 1;
+    out.unicodeHash = glyphCopy.unicodeHash;
+    out.modelMatrix = glyphCopy.modelMatrix;
+    out.textureDescriptorU = glyphCopy.textureDescriptorU;
+    out.textureDescriptorV = glyphCopy.textureDescriptorV;
+    out.textureSize = glyphCopy.textureSize;
+    out.positionOffset = glyphCopy.positionOffset;
+    
+    targetConstants[targetBufferIndex] = out;
 }
 
 kernel void blitColorsIntoConstants(
@@ -710,11 +616,15 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     uint32_t codePoint = codePointForSequence(firstByte, secondByte, thirdByte, fourthByte, sequenceCount);
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
     
-    utf32Buffer[id].graphemeCategory = category;
-    utf32Buffer[id].codePoint = codePoint;
-    utf32Buffer[id].codePointIndex = id;
-    utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-    utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
+    GlyphMapKernelOut out = utf32Buffer[id];
+    
+    out.graphemeCategory = category;
+    out.codePoint = codePoint;
+    out.codePointIndex = id;
+    out.foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
+    out.background = simd_float4(0.0, 0.0, 0.0, 0.0);
+    
+    utf32Buffer[id] = out;
     
     attemptUnicodeScalarSetLookahead(
        utf8Buffer,
@@ -725,23 +635,23 @@ kernel void utf8ToUtf32KernelAtlasMapped(
        codePoint
      );
     
-    uint64_t hash = glyphHashKernel(utf32Buffer, id);
-    utf32Buffer[id].unicodeHash = hash;
+    uint64_t hash = utf32Buffer[id].unicodeHash;
     
     if (hash > 0 && hash < *atlasBufferSize) {
-        GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
-        
-        utf32Buffer[id].textureSize = unitSize(atlasData.textureSize);
-        utf32Buffer[id].textureDescriptorU = atlasData.textureDescriptorU;
-        utf32Buffer[id].textureDescriptorV = atlasData.textureDescriptorV;
-        
         /* MARK: Buffer compressomaticleanerating [Pass 1]
          Set the buffer index we started at. Set the original source index, to track both states. lolmemorywhat
         */
-        utf32Buffer[id].sourceUtf8BufferIndex = id;
-        utf32Buffer[id].unicodeCodePointLength = getUnicodeLengthFromSlots(utf32Buffer, id);
+        GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
+        GlyphMapKernelOut out = utf32Buffer[id];
         
-        utf32Buffer[id].sourceRenderableStringIndex = id;
+        out.sourceUtf8BufferIndex = id;
+        out.textureSize = unitSize(atlasData.textureSize);
+        out.textureDescriptorU = atlasData.textureDescriptorU;
+        out.textureDescriptorV = atlasData.textureDescriptorV;
+        out.sourceRenderableStringIndex = id;
+        
+        utf32Buffer[id] = out;
+        
         atomic_fetch_add_explicit(totalCharacterCount, 1, memory_order_relaxed);
     }
 }

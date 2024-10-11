@@ -54,7 +54,7 @@ public extension GlyphCollection {
                 static let fileOffsetMinimum: Float = -300
             }
             
-            if letterNode.key.glyph.first!.isNewline {
+            if letterNode.key.isNewline {
                 newLine(size)
                 
                 // lol 3d yo, if you have too many lines, we push you somewhere else
@@ -82,8 +82,7 @@ public extension GlyphCollection {
             pointer.down(lineOffsetSize.y * lineOffset.float)
             
             var nodes = [GlyphNode]()
-            for newCharacter in line {
-                let glyphKey = GlyphCacheKey(source: newCharacter)
+            for glyphKey in line {
                 guard let glyph = writer.writeGlyphToState(glyphKey) else {
                     print("nooooooooooooooooooooo!")
                     continue

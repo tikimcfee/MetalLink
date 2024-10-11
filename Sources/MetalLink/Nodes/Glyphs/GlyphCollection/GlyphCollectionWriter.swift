@@ -97,7 +97,7 @@ public struct GlyphCollectionWriter {
         } else {
             print("--------------")
             print("MISSING UV PAIR")
-            print("\(key.glyph)")
+            print("\(key)")
             print("--------------")
         }
         

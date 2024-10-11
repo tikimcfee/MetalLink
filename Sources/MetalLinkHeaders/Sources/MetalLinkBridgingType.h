@@ -93,16 +93,6 @@ struct GlyphMapKernelOut {
     
     int unicodeCodePointLength;
     int totalUnicodeSequenceCount;
-    uint32_t unicodeSlot1;
-    uint32_t unicodeSlot2;
-    uint32_t unicodeSlot3;
-    uint32_t unicodeSlot4;
-    uint32_t unicodeSlot5;
-    uint32_t unicodeSlot6;
-    uint32_t unicodeSlot7;
-    uint32_t unicodeSlot8;
-    uint32_t unicodeSlot9;
-    uint32_t unicodeSlot10;
     
     // --- buffer indexing
     int sourceUtf8BufferIndex;       // the previous character's index

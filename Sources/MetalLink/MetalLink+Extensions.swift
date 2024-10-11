@@ -115,33 +115,3 @@ extension GraphemeCategory: CustomStringConvertible {
     var isSingleEmoji: Bool { self == utf32GlyphEmojiSingle }
     var isData: Bool { self == utf32GlyphData }
 }
-
-public extension GlyphMapKernelOut {
-    var expressedAsString: String {
-        String(
-            String.UnicodeScalarView(
-                allSequentialScalars.compactMap {
-                    UnicodeScalar($0)
-                }
-            )
-        )
-    }
-    
-    var allSequentialScalars: [UInt32] {
-        let scalars = [
-         unicodeSlot1,
-         unicodeSlot2,
-         unicodeSlot3,
-         unicodeSlot4,
-         unicodeSlot5,
-         unicodeSlot6,
-         unicodeSlot7,
-         unicodeSlot8,
-         unicodeSlot9,
-         unicodeSlot10,
-        ]
-        .filter { $0 != .zero }
-        
-        return scalars
-    }
-}

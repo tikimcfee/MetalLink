@@ -12,12 +12,19 @@ import MetalLinkHeaders
 
 public let GRAPHEME_BUFFER_DEFAULT_SIZE = 1_000_512
 
-public extension Character {
-    var glyphComputeHash: UInt64 {
+class HashCache: LockingCache<Character, UInt64> {
+    override func make(_ key: Character, _ store: inout [Character : UInt64]) -> UInt64 {
         let prime: UInt64 = 31;
-        return unicodeScalars.reduce(into: 0) { hash, scalar in
+        return key.unicodeScalars.reduce(into: 0) { hash, scalar in
             hash = (hash * prime + UInt64(scalar.value)) % 1_000_000
         }
+    }
+}
+let hashCache = HashCache()
+
+public extension Character {
+    var glyphComputeHash: UInt64 {
+        hashCache[self]
     }
 }
 
@@ -268,7 +275,7 @@ public extension AtlasBuilder {
             return
         }
         
-        print("Adding glyph to Atlas: [\(key.glyph)]")
+        print("Adding glyph to Atlas: [\(key)]")
         
         // Set Vertex and UV info for packing
         let bundleUVSize = atlasUVSize(for: texture)
@@ -310,7 +317,7 @@ public extension AtlasBuilder {
         )
         cacheRef[key] = newPair
         
-        let hash = key.glyph.first!.glyphComputeHash
+        let hash = key.glyphComputeHash
         let hashIndex = Int(hash)
         let graphemePointer = currentGraphemeHashBuffer.boundPointer(
             as: GlyphMapKernelAtlasIn.self,

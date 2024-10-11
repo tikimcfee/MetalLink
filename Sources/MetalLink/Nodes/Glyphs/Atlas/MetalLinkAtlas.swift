@@ -80,6 +80,11 @@ extension MetalLinkAtlas {
         let sourceString = BIG_CHARACTER_WALL
         let uniqueString = sourceString.joined()
         let uniqueData = uniqueString.data(using: .utf8)!
+        let reverseMap = uniqueString.reduce(
+            into: [UInt64: Character]()
+        ) { map, character in
+            map[character.glyphComputeHash] = character
+        }
         
         print("< ~ > Preloading \(uniqueString.count) characters (from \(sourceString.count)), \(uniqueData.count) bytes.")
         
@@ -92,12 +97,8 @@ extension MetalLinkAtlas {
         for index in (0..<count) {
             let pointee = pointer[index]
             let hash = pointee.unicodeHash
-            guard hash > 0 else { continue; }
-            
-            // We should always get back 1 character.. that's.. kinda the whole point.
-            let unicodeCharacter = pointee.expressedAsString.first!
-            
-            let key = GlyphCacheKey.fromCache(source: unicodeCharacter, .white)
+            guard hash > 0 else { continue }
+            guard let key = reverseMap[hash] else { continue }
             addGlyphToAtlasIfMissing(key)
         }
         

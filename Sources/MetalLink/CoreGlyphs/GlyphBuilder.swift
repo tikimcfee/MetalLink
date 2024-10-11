@@ -20,12 +20,12 @@ public class GlyphBuilder {
     }
     
     public func makeTextLayer(_ key: GlyphCacheKey) -> CATextLayer {
-        let safeString = key.glyph
+        let safeString = String(key)
         let (_, wordSizeScaled) = fontRenderer.measure(safeString)
         
         // Create and configure text layer
         let textLayer = CATextLayer()
-        textLayer.foregroundColor = key.foreground.asColor.cgColor
+        textLayer.foregroundColor = .white
         textLayer.string = safeString
         textLayer.font = fontRenderer.renderingFont
         textLayer.alignmentMode = .left

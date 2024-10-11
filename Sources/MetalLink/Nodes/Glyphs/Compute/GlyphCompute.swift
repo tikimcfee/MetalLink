@@ -71,27 +71,6 @@ public extension ConvertCompute {
         let scalarString = String(scalarView)
         return scalarString
     }
-    
-    func makeGraphemeBasedString(
-        from pointer: UnsafeMutablePointer<GlyphMapKernelOut>,
-        count: Int
-    ) -> String {
-        let allUnicodeScalarsInView: String.UnicodeScalarView =
-            (0..<count)
-                .lazy
-                .map { pointer[$0].allSequentialScalars }
-                .filter { !$0.isEmpty }
-                .map { scalarList in
-                    scalarList.lazy.compactMap { scalar in
-                        UnicodeScalar(scalar)
-                    }
-                }
-                .reduce(into: String.UnicodeScalarView()) { view, scalars in
-                    view.append(contentsOf: scalars)
-                }
-        let manualGraphemeString = String(allUnicodeScalarsInView)
-        return manualGraphemeString
-    }
 }
 
 // MARK: - Da Buffers

@@ -135,8 +135,8 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
     
 //    color = colorBlend_Overlay(color, rasterizerData.addedColor);
     // TODO: Configure ordering
-    color = colorBlend_Add(color, rasterizerData.addedColor);
     color = colorBlend_Multiply(color, rasterizerData.multipliedColor);
+    color = colorBlend_Add(color, rasterizerData.addedColor);
         
     PickingTextureFragmentOut out;
     out.mainColor = float4(color.r, color.g, color.b, color.a);
