@@ -424,19 +424,27 @@ kernel void utf32GlyphMapLayout(
          in space. And, importantly, it knows whether or not it found a '\n' line-
          break ahead of it so it would stop iterating the x offset. That interacts
          with the main loop's work.
+         
+         // This works alright to reduce time but it's still not safe.
+         // Seems that the issue is at the start and end of the buffer, which means I'm
+         // either iterating incorrectly around there, or I'm assuming something
+         // faulty about ordering or something for this algorithm.
+ //        if (previousGlyph.rendered == 3 && (id > 500) && (id < (localSize - 1000))) {
+         
          */
-
-        // This works alright to reduce time but it's still not safe.
-        // Seems that the issue is at the start and end of the buffer, which means I'm
-        // either iterating incorrectly around there, or I'm assuming something
-        // faulty about ordering or something for this algorithm.
-//        if (previousGlyph.rendered == 3 && (id > 500) && (id < (localSize - 1000))) {
         if (previousGlyph.rendered == 3) {
             if (foundLineStart == false && previousGlyph.codePoint != 10) {
                 currentXOffset += previousGlyph.positionOffset.x;
             }
             foundLineStart = foundLineStart || previousGlyph.foundLineStart;
-            currentYOffset += previousGlyph.positionOffset.y;
+            
+            LineBreaksAtRender += previousGlyph.LineBreaksAtRender;
+            if (previousGlyph.codePoint == 10) {
+                LineBreaksAtRender -= 1;
+                currentYOffset += previousGlyph.textureSize.y;
+            }
+            
+            currentYOffset += -1 * previousGlyph.LineBreaksAtRender * previousGlyph.textureSize.y;
             currentZOffset += previousGlyph.positionOffset.z;
             
             currentCharacterOffset += previousGlyph.sourceRenderableStringIndex;
@@ -449,7 +457,7 @@ kernel void utf32GlyphMapLayout(
         if (previousGlyph.codePoint == 10) {
             currentYOffset -= previousGlyph.textureSize.y;
             foundLineStart = true;
-            LinesBeforeRender += 1;
+            LineBreaksAtRender += 1;
         }
         // And if we're still iterating backward in the same line, accumulate some width
         if (foundLineStart == false) {
@@ -501,9 +509,10 @@ kernel void utf32GlyphMapLayout(
     out.sourceRenderableStringIndex = currentCharacterOffset;
     
     out.foundLineStart = foundLineStart;
-    out.PageStartOffsetX = PageStartOffsetX;
-    out.PageWidth = PageWidth;
-    out.LinesBeforeRender = LinesBeforeRender;
+    out.LineBreaksAtRender = LineBreaksAtRender;
+    if (out.codePoint == 10) {
+        out.LineBreaksAtRender += 1;
+    }
     
     out.rendered = 3;
     

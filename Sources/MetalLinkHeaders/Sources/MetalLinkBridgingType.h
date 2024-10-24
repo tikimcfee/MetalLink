@@ -113,14 +113,6 @@ struct GlyphMapKernelOut {
     int rendered;
     int foundLineStart;
     int LineBreaksAtRender;
-    
-    float PageStartOffsetX;
-    float PageWidth;
-    
-    
-//    float lastMaxX;
-//    float lastMinY;
-//    float lastRowStart;
 };
 
 struct SceneConstants {
