@@ -33,9 +33,24 @@ public class ConvertCompute: MetalLinkReader {
     public init(link: MetalLink) {
         self.link = link
         self.commandQueue = link.device.makeCommandQueue()!
+        self.commandQueue.label = "GlyphComputeQueue"
     }
     
     internal lazy var functions = ConvertComputeFunctions(link: link)
+    
+    func startCapture() throws {
+        let captureManager = MTLCaptureManager.shared()
+        let captureDescriptor = MTLCaptureDescriptor()
+        captureDescriptor.captureObject = self.device
+        captureDescriptor.destination = MTLCaptureDestination.developerTools
+        try captureManager.startCapture(with: captureDescriptor)
+    }
+    
+
+    func stopCapture() {
+        let captureManager = MTLCaptureManager.shared()
+        captureManager.stopCapture()
+    }
 }
 
 // MARK: - Pointer helpers, String Builders

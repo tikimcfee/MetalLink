@@ -16,6 +16,8 @@ public extension ConvertCompute {
         onEvent: @escaping (Event) -> Void = { _ in }
     ) throws -> [EncodeResult] {
         let errors = ConcurrentArray<Error>()
+        
+//        try startCapture()
 
         // MARK: ------ [Many Buffer build]
         // Setup buffers from CPU side...
@@ -53,6 +55,8 @@ public extension ConvertCompute {
             atlas: atlas,
             onEvent: onEvent
         )
+        
+//        stopCapture()
         
         return results.values
     }

@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "sgalpha-bits"),
-        .package(url: "https://github.com/schwa/MetalCompilerPlugin", branch: "main")
+//        .package(url: "https://github.com/schwa/MetalCompilerPlugin", branch: "main")
     ],
     targets: [
 //        .target(

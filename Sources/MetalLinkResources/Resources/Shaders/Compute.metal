@@ -351,15 +351,18 @@ uint indexOfCharacterAfter(
     return id;
 }
 
-/* Use a bit of `chopsticks`:
- - If I'm a newline, I just change vertical offsets.
- -- I to the appropriate side and set the vertical offset of the leader.
- - If I'm adjacent to a newline, I'm the line leader or trailer, and I start and stop.
- -- I'm responsible for 'resetting' the horizontal offset as appropriate for a row
- - If I'm not, I get cheeky:
- -- I iterate forward from my index down to my line trailer;
- -- I add my texture size width to the offset of that character, and it will now be included in the total line size;
- -- Eventually I will have my offset incremented by other leading characters, that will be doing the same thing.
+/* Layout
+ - Iterate backward in the output buffer.
+    - get last glyph
+        - If it's a character, add it's width to the current line.
+        - If it's a line break, don't add width, and drop down y-offset
+            - also, we stop adding width; we're at the x-offset we want.
+    - if we're off the max width of a 'page'
+        - drop to the leftmost of the page, drop back in depth, and restart line
+    - if we're off the max height of a 'page'
+        - drop y offset to 0 (top), set the x-offset to horizontal page break (+88), and increase max page width
+        -
+     
 */
 kernel void utf32GlyphMapLayout(
     const device uint8_t* utf8Buffer                [[buffer(0)]],
@@ -380,16 +383,18 @@ kernel void utf32GlyphMapLayout(
         return;
     }
 
-    float currentRowStart = 0;
     float currentXOffset = 0;
     float currentYOffset = 0;
     float currentZOffset = 0;
     float currentCharacterOffset = 0;
-    float MAX_X_OFFSET = 256;  // because some rectangles are just whacky.
-    float MIN_Y_OFFSET = -256; // because some rectangles are just whacky.
+    int LineBreaksAtRender = 0;
     
-    bool foundLineStart = false;
-    bool shouldContinueBacktrack = true;
+    float PageStartOffsetX = 0;
+    float PageWidth  =  200;
+    float PageHeight = -256;
+
+    int foundLineStart = false;
+    int shouldContinueBacktrack = true;
     
     uint previousGlyphIndex = id;
     previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
@@ -405,58 +410,104 @@ kernel void utf32GlyphMapLayout(
         
         // --- Do the offset mathing
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
-        
+        currentCharacterOffset += 1;
+
+        // --------------------------------------------------------------------------
+        /*
+         We should basically 'prefix' the last glyph's state
+         onto ours, which is hard, lol. Offsetting y is kinda easy - we just
+         add the last offset to ours. It's always additive and only resets at
+         a page limit, not a line limit. Z is also only additive, for now. So
+         X is the problem since it has the weird x/y interaction.
+
+         If the glyph was rendered, it means it knows it's exact x/y/z position
+         in space. And, importantly, it knows whether or not it found a '\n' line-
+         break ahead of it so it would stop iterating the x offset. That interacts
+         with the main loop's work.
+         */
+
+        // This works alright to reduce time but it's still not safe.
+        // Seems that the issue is at the start and end of the buffer, which means I'm
+        // either iterating incorrectly around there, or I'm assuming something
+        // faulty about ordering or something for this algorithm.
+//        if (previousGlyph.rendered == 3 && (id > 500) && (id < (localSize - 1000))) {
+        if (previousGlyph.rendered == 3) {
+            if (foundLineStart == false && previousGlyph.codePoint != 10) {
+                currentXOffset += previousGlyph.positionOffset.x;
+            }
+            foundLineStart = foundLineStart || previousGlyph.foundLineStart;
+            currentYOffset += previousGlyph.positionOffset.y;
+            currentZOffset += previousGlyph.positionOffset.z;
+            
+            currentCharacterOffset += previousGlyph.sourceRenderableStringIndex;
+            
+            shouldContinueBacktrack = false;
+        }
+        // --------------------------------------------------------------------------
+
         // If we found a new line, add to the current y offset..
         if (previousGlyph.codePoint == 10) {
             currentYOffset -= previousGlyph.textureSize.y;
             foundLineStart = true;
+            LinesBeforeRender += 1;
         }
         // And if we're still iterating backward in the same line, accumulate some width
-        if (!foundLineStart) {
+        if (foundLineStart == false) {
             currentXOffset += previousGlyph.textureSize.x;
         }
         
         // .. If we're running off max-x, the go back to the leading, drop a line, and move back.
-        if (currentXOffset >= MAX_X_OFFSET) {
-            currentXOffset = currentRowStart;
-            currentZOffset -= 2.0; // Make it a little more visually distinct than a regular /n
-        }
+//        if (currentXOffset >= PageWidth) {
+//            currentXOffset = 0;
+//            currentZOffset -= 4.0; // Make it a little more visually distinct than a regular /n
+//        }
         
-        // .. We're adding up offset for every previous character, but we need to move ourselves.
-        // If we're off the bottom, jump back to top and move backward.
-        if (currentYOffset <= MIN_Y_OFFSET) {
-            currentYOffset = 0;
-            currentZOffset -= 24.0;
-            
-            currentXOffset += 88;
-            MAX_X_OFFSET += 100;
-        }
-        
-        currentCharacterOffset += 1;
+//        // .. We're adding up offset for every previous character, but we need to move ourselves.
+//        // If we're off the bottom, jump back to top and move backward.
+//        if (currentYOffset <= PageHeight) {
+//            currentYOffset  = 0;
+//            currentZOffset -= 32.0;
+//            currentXOffset += 88;
+//            
+//            PageStartOffsetX = currentXOffset;
+//            PageWidth += 100;
+//        }
         // ---
         
         // --- Do the iterator backtracking
         // Grab the current index, and check the last one
-        uint currentIndex = previousGlyphIndex;
-        previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
-                                                    utf32Buffer,
-                                                    previousGlyphIndex,
-                                                    utf8BufferSize);
-        
-        // Stop backtracking if the index we get back as 'before' is us, which means we're done.
-        // Also said, you should keep going iff the previous index is not the current index.
-        shouldContinueBacktrack = previousGlyphIndex != currentIndex;
-        shouldContinueBacktrack = shouldContinueBacktrack
-                               && previousGlyphIndex >= 0
-                               && previousGlyphIndex <* utf8BufferSize;
+        if (shouldContinueBacktrack) {
+            uint currentIndex = previousGlyphIndex;
+            previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
+                                                        utf32Buffer,
+                                                        previousGlyphIndex,
+                                                        utf8BufferSize);
+            
+            // Stop backtracking if the index we get back as 'before' is us, which means we're done.
+            // Also said, you should keep going iff the previous index is not the current index.
+            shouldContinueBacktrack = previousGlyphIndex != currentIndex
+                                   && previousGlyphIndex >= 0
+                                   && previousGlyphIndex <* utf8BufferSize;
+        }
     }
     
     // --- Set the final values all safe like because we're the only writer.. lol.
-    utf32Buffer[id].positionOffset.x = currentXOffset;
-    utf32Buffer[id].positionOffset.y = currentYOffset;
-    utf32Buffer[id].positionOffset.z = currentZOffset;
-    utf32Buffer[id].modelMatrix = float4x4(1.0) * translationOf(float3(currentXOffset, currentYOffset, currentZOffset));
-    utf32Buffer[id].sourceRenderableStringIndex = currentCharacterOffset;
+    GlyphMapKernelOut out = utf32Buffer[id];
+    
+    out.positionOffset.x = currentXOffset;
+    out.positionOffset.y = currentYOffset;
+    out.positionOffset.z = currentZOffset;
+    out.modelMatrix = float4x4(1.0) * translationOf(float3(currentXOffset, currentYOffset, currentZOffset));
+    out.sourceRenderableStringIndex = currentCharacterOffset;
+    
+    out.foundLineStart = foundLineStart;
+    out.PageStartOffsetX = PageStartOffsetX;
+    out.PageWidth = PageWidth;
+    out.LinesBeforeRender = LinesBeforeRender;
+    
+    out.rendered = 3;
+    
+    utf32Buffer[id] = out;
 }
 
 

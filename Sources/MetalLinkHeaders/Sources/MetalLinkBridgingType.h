@@ -109,6 +109,18 @@ struct GlyphMapKernelOut {
     // --- layout
     simd_float4 positionOffset;
     simd_float4x4 modelMatrix;
+    
+    int rendered;
+    int foundLineStart;
+    int LineBreaksAtRender;
+    
+    float PageStartOffsetX;
+    float PageWidth;
+    
+    
+//    float lastMaxX;
+//    float lastMinY;
+//    float lastRowStart;
 };
 
 struct SceneConstants {
