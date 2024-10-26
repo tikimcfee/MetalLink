@@ -434,7 +434,7 @@ kernel void utf32GlyphMapLayout(
     float currentCharacterOffset = 0;
     int LineBreaksAtRender = 0;
     
-    float PageWidth  =  120;
+    float PageWidth  =  140;
     float PageHeight = -250;
 
     int foundLineStart = false;
