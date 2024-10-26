@@ -364,20 +364,39 @@ uint indexOfCharacterAfter(
         -
      
 */
-float2 calculatePageOffsets(
-    float yPosition,
-    float pageHeight
-) {
-    // Calculate which page we're on (0-based)
-    int pageNumber = int(abs(yPosition) / pageHeight);
+struct PageOffset {
+    float x;      // Adjusted x position
+    float y;      // Adjusted y position
+    float z;      // Z-depth
+    int xPages;   // How many horizontal pages we've moved
+    int yPages;   // How many vertical pages we've moved
+};
+
+PageOffset calculatePageOffsets(float xPosition, float yPosition, float pageWidth, float pageHeight) {
+    PageOffset result;
     
-    // Calculate the adjusted y position within the current page
-    float adjustedY = yPosition + (pageHeight * pageNumber);
+    // Calculate vertical page and offset
+    result.yPages = int(abs(yPosition) / pageHeight);
+    result.y = yPosition + (pageHeight * result.yPages);
     
-    // Calculate z offset (-32 units per page)
-    float zOffset = float(pageNumber) * -32.0;
+    // Calculate horizontal page and offset
+    result.xPages = int(xPosition / pageWidth);
+    result.x = fmod(xPosition, pageWidth);
     
-    return float2(adjustedY, zOffset);
+    // Calculate z offset
+    // We can make horizontal overflow go "deeper" than vertical overflow
+    // or use a different scheme entirely
+    float zFromVertical = float(result.yPages) * 32.0;
+    float zFromHorizontal = float(result.xPages) * -16.0; // Using -16 to differentiate
+    
+    // You could combine z-offsets in different ways:
+    // Option 1: Add them (makes items further back as they overflow in either direction)
+    result.z = zFromVertical + zFromHorizontal;
+    
+    // Option 2: Take the larger offset (items are either back by vertical or horizontal amount)
+    // result.z = min(zFromVertical, zFromHorizontal); // min because we're using negative values
+    
+    return result;
 }
 
 kernel void utf32GlyphMapLayout(
@@ -508,9 +527,12 @@ kernel void utf32GlyphMapLayout(
     }
     
     // Before setting final values, adjust for pagination
-    float2 pageOffsets = calculatePageOffsets(currentYOffset, PageHeight);
-    currentYOffset = pageOffsets.x;
-    currentZOffset = pageOffsets.y;
+    PageOffset pageOffsets = calculatePageOffsets(
+          currentXOffset, currentYOffset, PageWidth, PageHeight
+    );
+    currentXOffset = pageOffsets.x;
+    currentYOffset = pageOffsets.y;
+    currentZOffset = pageOffsets.z;
     
     out.positionOffset.x = currentXOffset;
     out.positionOffset.y = currentYOffset;
