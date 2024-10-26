@@ -372,7 +372,12 @@ struct PageOffset {
     int yPages;   // How many vertical pages we've moved
 };
 
-PageOffset calculatePageOffsets(float xPosition, float yPosition, float pageWidth, float pageHeight) {
+PageOffset calculatePageOffsets(
+    float xPosition,
+    float yPosition,
+    float pageWidth,
+    float pageHeight
+) {
     PageOffset result;
     
     // Calculate vertical page and offset
@@ -383,6 +388,7 @@ PageOffset calculatePageOffsets(float xPosition, float yPosition, float pageWidt
     result.xPages = int(xPosition / pageWidth);
     result.x = fmod(xPosition, pageWidth);
     
+    // Mod the position above, and then offset it by the page.
     // This ALMOST works with current logic, but some lines end up with too much x-offset and in the wrong z.
     // Memory barriers didn't seem to have an effect here, so it's logical stuff I think.
 //    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
