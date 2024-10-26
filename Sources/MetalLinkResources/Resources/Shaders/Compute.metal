@@ -382,12 +382,13 @@ PageOffset calculatePageOffsets(float xPosition, float yPosition, float pageWidt
     // Calculate horizontal page and offset
     result.xPages = int(xPosition / pageWidth);
     result.x = fmod(xPosition, pageWidth);
+    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
     
     // Calculate z offset
     // We can make horizontal overflow go "deeper" than vertical overflow
     // or use a different scheme entirely
-    float zFromVertical = float(result.yPages) * 32.0;
-    float zFromHorizontal = float(result.xPages) * -16.0; // Using -16 to differentiate
+    float zFromVertical = result.yPages * 32.0;
+    float zFromHorizontal = result.xPages * -2.0; // Using -16 to differentiate
     
     // You could combine z-offsets in different ways:
     // Option 1: Add them (makes items further back as they overflow in either direction)
@@ -457,6 +458,7 @@ kernel void utf32GlyphMapLayout(
         }
         
         // --- Do the offset mathing
+//        threadgroup_barrier(mem_flags::mem_device);
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
         currentCharacterOffset += 1;
         
@@ -472,6 +474,10 @@ kernel void utf32GlyphMapLayout(
             if (foundLineStart == false && previousGlyph.codePoint != 10) {
                 currentXOffset += previousGlyph.positionOffset.x;
             }
+            if (previousGlyph.foundLineStart == false) {
+                currentZOffset += previousGlyph.positionOffset.z;
+            }
+            
             foundLineStart = foundLineStart || previousGlyph.foundLineStart;
             
             LineBreaksAtRender += previousGlyph.LineBreaksAtRender;
@@ -517,6 +523,7 @@ kernel void utf32GlyphMapLayout(
     }
     
     // --- Set the final values all safe like because we're the only writer.. lol.
+//    threadgroup_barrier(mem_flags::mem_device);
     GlyphMapKernelOut out = utf32Buffer[id];
     
     out.sourceRenderableStringIndex = currentCharacterOffset;
@@ -528,11 +535,14 @@ kernel void utf32GlyphMapLayout(
     
     // Before setting final values, adjust for pagination
     PageOffset pageOffsets = calculatePageOffsets(
-          currentXOffset, currentYOffset, PageWidth, PageHeight
+          currentXOffset,
+          currentYOffset,
+          PageWidth,
+          PageHeight
     );
     currentXOffset = pageOffsets.x;
     currentYOffset = pageOffsets.y;
-    currentZOffset = pageOffsets.z;
+    currentZOffset += pageOffsets.z;
     
     out.positionOffset.x = currentXOffset;
     out.positionOffset.y = currentYOffset;
@@ -542,7 +552,9 @@ kernel void utf32GlyphMapLayout(
     ));
     
     out.rendered = 3;
+//    threadgroup_barrier(mem_flags::mem_device);
     utf32Buffer[id] = out;
+//    threadgroup_barrier(mem_flags::mem_device);
 }
 
 
