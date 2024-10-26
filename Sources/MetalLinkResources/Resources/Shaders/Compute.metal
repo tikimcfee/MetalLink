@@ -382,7 +382,10 @@ PageOffset calculatePageOffsets(float xPosition, float yPosition, float pageWidt
     // Calculate horizontal page and offset
     result.xPages = int(xPosition / pageWidth);
     result.x = fmod(xPosition, pageWidth);
-    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
+    
+    // This ALMOST works with current logic, but some lines end up with too much x-offset and in the wrong z.
+    // Memory barriers didn't seem to have an effect here, so it's logical stuff I think.
+//    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
     
     // Calculate z offset
     // We can make horizontal overflow go "deeper" than vertical overflow
@@ -460,6 +463,7 @@ kernel void utf32GlyphMapLayout(
         // --- Do the offset mathing
 //        threadgroup_barrier(mem_flags::mem_device);
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
+//        threadgroup_barrier(mem_flags::mem_device);
         currentCharacterOffset += 1;
         
         /*
@@ -474,10 +478,11 @@ kernel void utf32GlyphMapLayout(
             if (foundLineStart == false && previousGlyph.codePoint != 10) {
                 currentXOffset += previousGlyph.positionOffset.x;
             }
+            
             if (previousGlyph.foundLineStart == false) {
                 currentZOffset += previousGlyph.positionOffset.z;
             }
-            
+
             foundLineStart = foundLineStart || previousGlyph.foundLineStart;
             
             LineBreaksAtRender += previousGlyph.LineBreaksAtRender;
