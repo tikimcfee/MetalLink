@@ -24,6 +24,9 @@ internal class ConvertComputeFunctions: MetalLinkReader {
     let fastLayoutKernelName = "utf32GlyphMap_FastLayout"
     lazy var fastLayoutKernelFunction = library.makeFunction(name: fastLayoutKernelName)
     
+    let fastLayoutPaginateKernelName = "utf32GlyphMap_FastLayout_Paginate"
+    lazy var fastLayoutPaginateKernelFunction = library.makeFunction(name: fastLayoutPaginateKernelName)
+    
     let compressionKernalName = "processNewUtf32AtlasMapping"
     lazy var compressionKernelFunction = library.makeFunction(name: compressionKernalName)
     
@@ -52,6 +55,12 @@ internal class ConvertComputeFunctions: MetalLinkReader {
         guard let fastLayoutKernelFunction
         else { throw ComputeError.missingFunction(fastLayoutKernelName) }
         return try device.makeComputePipelineState(function: fastLayoutKernelFunction)
+    }
+    
+    func makeFastLayoutPaginateRenderPipelineState() throws -> MTLComputePipelineState {
+        guard let fastLayoutPaginateKernelFunction
+        else { throw ComputeError.missingFunction(fastLayoutPaginateKernelName) }
+        return try device.makeComputePipelineState(function: fastLayoutPaginateKernelFunction)
     }
     
     func makeCompressionRenderPipelineState() throws -> MTLComputePipelineState {

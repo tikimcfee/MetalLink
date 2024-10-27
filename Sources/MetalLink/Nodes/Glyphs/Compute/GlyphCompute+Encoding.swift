@@ -118,6 +118,17 @@ public extension ConvertCompute {
         )
         computeCommandEncoder.popDebugGroup()
         
+        let paginatePipelineState = try functions.makeFastLayoutPaginateRenderPipelineState()
+        computeCommandEncoder.setComputePipelineState(paginatePipelineState)
+        
+        // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
+        computeCommandEncoder.pushDebugGroup("[SG] - Dispatching layout paginate")
+        computeCommandEncoder.dispatchThreadgroups(
+            threadGroupsPerGrid,
+            threadsPerThreadgroup: threadGroupSize
+        )
+        computeCommandEncoder.popDebugGroup()
+        
         // Finalize encoding
         computeCommandEncoder.popDebugGroup()
         computeCommandEncoder.endEncoding()

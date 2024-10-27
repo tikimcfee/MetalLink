@@ -377,7 +377,8 @@ PageOffset calculatePageOffsets(
     float yPosition,
     float zPosition,
     float pageWidth  = 100,
-    float pageHeight = -300
+    float pageHeight = -300,
+    int pagesWide    = 5
 ) {
     PageOffset result;
     
@@ -390,15 +391,54 @@ PageOffset calculatePageOffsets(
     result.x = fmod(xPosition, pageWidth);
     
     // Mod the position above, and then offset it by the page.
-//    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
+    result.x -= (pageWidth + 20) * fmod(float(result.yPages), pagesWide);
     
     // Calculate z offset
-    float zFromVertical = result.yPages * 32.0;
+    float zFromVertical = int(result.yPages / pagesWide) * 32.0;
     float zFromHorizontal = result.xPages * -2.0;
 
     result.z = zPosition + zFromVertical + zFromHorizontal;
     
     return result;
+}
+
+kernel void utf32GlyphMap_FastLayout_Paginate(
+    const device uint8_t* utf8Buffer                [[buffer(0)]],
+    device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
+    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
+                 uint id                            [[thread_position_in_grid]],
+    constant     uint* utf8BufferSize               [[buffer(3)]],
+    constant     uint* atlasBufferSize              [[buffer(4)]],
+    constant     uint* utf32BufferSize              [[buffer(5)]]
+) {
+    uint localSize = *utf32BufferSize;
+    uint offsetMax = localSize - 1;
+    if (id > offsetMax) {
+        return;
+    }
+    
+    GlyphMapKernelOut out = utf32Buffer[id];
+    if (out.unicodeHash == 0) {
+        return;
+    }
+    
+    PageOffset pageOffsets = calculatePageOffsets(
+        out.positionOffset.x,
+        out.positionOffset.y,
+        out.positionOffset.z
+    );
+    
+    out.positionOffset.x = pageOffsets.x;
+    out.positionOffset.y = pageOffsets.y;
+    out.positionOffset.z = pageOffsets.z;
+    
+    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+        out.positionOffset.x,
+        out.positionOffset.y,
+        out.positionOffset.z
+    ));
+    
+    utf32Buffer[id] = out;
 }
 
 kernel void utf32GlyphMap_FastLayout(
@@ -439,9 +479,7 @@ kernel void utf32GlyphMap_FastLayout(
         }
         
         // --- Do the offset mathing
-//        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
-//        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
         
         float previousX = previousGlyph.positionOffset.x;
         float previousY = previousGlyph.positionOffset.y;
