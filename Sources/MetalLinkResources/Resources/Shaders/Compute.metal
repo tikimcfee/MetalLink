@@ -375,8 +375,9 @@ struct PageOffset {
 PageOffset calculatePageOffsets(
     float xPosition,
     float yPosition,
-    float pageWidth,
-    float pageHeight
+    float zPosition,
+    float pageWidth  = 100,
+    float pageHeight = -300
 ) {
     PageOffset result;
     
@@ -389,24 +390,117 @@ PageOffset calculatePageOffsets(
     result.x = fmod(xPosition, pageWidth);
     
     // Mod the position above, and then offset it by the page.
-    // This ALMOST works with current logic, but some lines end up with too much x-offset and in the wrong z.
-    // Memory barriers didn't seem to have an effect here, so it's logical stuff I think.
 //    result.x -= (pageWidth + 20) * fmod(float(result.yPages), 10);
     
     // Calculate z offset
-    // We can make horizontal overflow go "deeper" than vertical overflow
-    // or use a different scheme entirely
     float zFromVertical = result.yPages * 32.0;
-    float zFromHorizontal = result.xPages * -2.0; // Using -16 to differentiate
-    
-    // You could combine z-offsets in different ways:
-    // Option 1: Add them (makes items further back as they overflow in either direction)
-    result.z = zFromVertical + zFromHorizontal;
-    
-    // Option 2: Take the larger offset (items are either back by vertical or horizontal amount)
-    // result.z = min(zFromVertical, zFromHorizontal); // min because we're using negative values
+    float zFromHorizontal = result.xPages * -2.0;
+
+    result.z = zPosition + zFromVertical + zFromHorizontal;
     
     return result;
+}
+
+kernel void utf32GlyphMap_FastLayout(
+    const device uint8_t* utf8Buffer                [[buffer(0)]],
+    device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
+    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
+                 uint id                            [[thread_position_in_grid]],
+    constant     uint* utf8BufferSize               [[buffer(3)]],
+    constant     uint* atlasBufferSize              [[buffer(4)]],
+    constant     uint* utf32BufferSize              [[buffer(5)]]
+) {
+    uint localSize = *utf32BufferSize;
+    uint offsetMax = localSize - 1;
+    if (id > offsetMax) {
+        return;
+    }
+    
+    GlyphMapKernelOut out = utf32Buffer[id];
+    if (out.unicodeHash == 0) {
+        return;
+    }
+    
+    int shouldContinueBacktrack = true;
+    uint previousGlyphIndex = id;
+    previousGlyphIndex = indexOfCharacterBefore(
+        utf8Buffer,
+        utf32Buffer,
+        previousGlyphIndex,
+        utf8BufferSize
+    );
+    
+    while (shouldContinueBacktrack) {
+        // Early return; no previous, no previous to read.
+        if (previousGlyphIndex == id) {
+            shouldContinueBacktrack = false;
+            continue;
+        }
+        
+        // --- Do the offset mathing
+        GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
+        
+        float previousX = previousGlyph.positionOffset.x;
+        float previousY = previousGlyph.positionOffset.y;
+        float previousZ = previousGlyph.positionOffset.z;
+        float previousSizeX = previousGlyph.textureSize.x;
+        float previousSizeY = previousGlyph.textureSize.y;
+        int previousRendered = previousGlyph.rendered;
+        int previousFoundStart = previousGlyph.foundLineStart;
+        
+        if (previousRendered == true && previousX > 0 && previousY < 0 && previousZ == -0.1) {
+            out.positionOffset.y += previousY;
+            
+            if (previousGlyph.codePoint == '\n') {
+                out.positionOffset.x = 0;
+                out.positionOffset.y -= previousSizeY;
+                out.foundLineStart = true;
+            }
+            
+            if (out.foundLineStart == false) {
+                out.positionOffset.x += previousX;
+                out.positionOffset.x += previousSizeX;
+            }
+            
+            out.foundLineStart = previousFoundStart || out.foundLineStart;
+            shouldContinueBacktrack = false;
+        } else {
+            if (previousGlyph.codePoint == '\n') {
+                out.positionOffset.y -= previousSizeY;
+                out.foundLineStart = true;
+            }
+            if (out.foundLineStart == false) {
+                out.positionOffset.x += previousSizeX;
+            }
+        }
+        
+        // --- Do the iterator backtracking
+        // Grab the current index, and check the last one
+        if (shouldContinueBacktrack) {
+            uint currentIndex = previousGlyphIndex;
+            previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
+                                                        utf32Buffer,
+                                                        previousGlyphIndex,
+                                                        utf8BufferSize);
+            
+            // Stop backtracking if the index we get back as 'before' is us, which means we're done.
+            // Also said, you should keep going iff the previous index is not the current index.
+            shouldContinueBacktrack = previousGlyphIndex != currentIndex
+                                   && previousGlyphIndex >= 0
+                                   && previousGlyphIndex <* utf8BufferSize;
+        }
+    }
+    
+    out.positionOffset.z = -0.1;
+    
+    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+        out.positionOffset.x,
+        out.positionOffset.y,
+        out.positionOffset.z
+    ));
+    
+    utf32Buffer[id] = out;
+    utf32Buffer[id].rendered = true;
 }
 
 kernel void utf32GlyphMapLayout(
@@ -431,12 +525,8 @@ kernel void utf32GlyphMapLayout(
     float currentXOffset = 0;
     float currentYOffset = 0;
     float currentZOffset = 0;
-    float currentCharacterOffset = 0;
     int LineBreaksAtRender = 0;
     
-    float PageWidth  =  140;
-    float PageHeight = -250;
-
     int foundLineStart = false;
     int shouldContinueBacktrack = true;
     
@@ -467,10 +557,7 @@ kernel void utf32GlyphMapLayout(
         }
         
         // --- Do the offset mathing
-//        threadgroup_barrier(mem_flags::mem_device);
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
-//        threadgroup_barrier(mem_flags::mem_device);
-        currentCharacterOffset += 1;
         
         /*
         // This localSize check works alright to reduce time but it's still not safe.
@@ -497,8 +584,6 @@ kernel void utf32GlyphMapLayout(
                 currentYOffset += previousGlyph.textureSize.y;
             }
             currentYOffset += -1 * previousGlyph.LineBreaksAtRender * previousGlyph.textureSize.y;
-            
-            currentCharacterOffset += previousGlyph.sourceRenderableStringIndex;
             
             shouldContinueBacktrack = false;
         }
@@ -537,7 +622,7 @@ kernel void utf32GlyphMapLayout(
 //    threadgroup_barrier(mem_flags::mem_device);
     GlyphMapKernelOut out = utf32Buffer[id];
     
-    out.sourceRenderableStringIndex = currentCharacterOffset;
+
     out.foundLineStart = foundLineStart;
     out.LineBreaksAtRender = LineBreaksAtRender;
     if (out.codePoint == 10) {
@@ -548,12 +633,11 @@ kernel void utf32GlyphMapLayout(
     PageOffset pageOffsets = calculatePageOffsets(
           currentXOffset,
           currentYOffset,
-          PageWidth,
-          PageHeight
+          currentZOffset
     );
     currentXOffset = pageOffsets.x;
     currentYOffset = pageOffsets.y;
-    currentZOffset += pageOffsets.z;
+    currentZOffset = pageOffsets.z;
     
     out.positionOffset.x = currentXOffset;
     out.positionOffset.y = currentYOffset;
@@ -563,9 +647,7 @@ kernel void utf32GlyphMapLayout(
     ));
     
     out.rendered = 3;
-//    threadgroup_barrier(mem_flags::mem_device);
     utf32Buffer[id] = out;
-//    threadgroup_barrier(mem_flags::mem_device);
 }
 
 

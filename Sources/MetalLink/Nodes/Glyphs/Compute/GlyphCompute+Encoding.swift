@@ -99,7 +99,7 @@ public extension ConvertCompute {
         let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         
         // Dispatch the compute kernel
-        computeCommandEncoder.pushDebugGroup("[SG] - Dipsatch initial atlas map")
+        computeCommandEncoder.pushDebugGroup("[SG] - Dispatch initial atlas map")
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,
             threadsPerThreadgroup: threadGroupSize
@@ -107,11 +107,11 @@ public extension ConvertCompute {
         computeCommandEncoder.popDebugGroup()
         
         // MARK: -- Fire up layout. Oh boy.
-        let layoutPipelineState = try functions.makeLayoutRenderPipelineState()
+        let layoutPipelineState = try functions.makeFastLayoutRenderPipelineState()
         computeCommandEncoder.setComputePipelineState(layoutPipelineState)
         
         // I guess we can reuse the set bytes and buffers and thread groups.. let's just hope, heh.
-        computeCommandEncoder.pushDebugGroup("[SG] - Dispating layout")
+        computeCommandEncoder.pushDebugGroup("[SG] - Dispatching layout")
         computeCommandEncoder.dispatchThreadgroups(
             threadGroupsPerGrid,
             threadsPerThreadgroup: threadGroupSize
