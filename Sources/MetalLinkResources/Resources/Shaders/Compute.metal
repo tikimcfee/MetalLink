@@ -422,6 +422,7 @@ kernel void utf32GlyphMap_FastLayout(
     }
     
     int shouldContinueBacktrack = true;
+    int backtrackCount = 0;
     uint previousGlyphIndex = id;
     previousGlyphIndex = indexOfCharacterBefore(
         utf8Buffer,
@@ -438,24 +439,32 @@ kernel void utf32GlyphMap_FastLayout(
         }
         
         // --- Do the offset mathing
+//        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
+//        threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
         
         float previousX = previousGlyph.positionOffset.x;
         float previousY = previousGlyph.positionOffset.y;
         float previousZ = previousGlyph.positionOffset.z;
         float previousSizeX = previousGlyph.textureSize.x;
         float previousSizeY = previousGlyph.textureSize.y;
+        float previousBreaks = previousGlyph.LineBreaksAtRender;
         int previousRendered = previousGlyph.rendered;
         int previousFoundStart = previousGlyph.foundLineStart;
         
-        if (previousRendered == true && previousX > 0 && previousY < 0 && previousZ == -0.1) {
-            out.positionOffset.y += previousY;
-            
+        if (previousRendered == true && previousX > 0 && previousY < 0 && previousZ == -0.1 && backtrackCount > 128) {
             if (previousGlyph.codePoint == '\n') {
-                out.positionOffset.x = 0;
+                out.LineBreaksAtRender += 1;
+                
+                if (out.foundLineStart == false) {
+                    out.positionOffset.x = 0;
+                }
                 out.positionOffset.y -= previousSizeY;
                 out.foundLineStart = true;
             }
+            
+            out.LineBreaksAtRender += previousBreaks;
+            out.positionOffset.y += -1 * previousBreaks * previousSizeY;
             
             if (out.foundLineStart == false) {
                 out.positionOffset.x += previousX;
@@ -464,8 +473,10 @@ kernel void utf32GlyphMap_FastLayout(
             
             out.foundLineStart = previousFoundStart || out.foundLineStart;
             shouldContinueBacktrack = false;
-        } else {
+        }
+        else {
             if (previousGlyph.codePoint == '\n') {
+                out.LineBreaksAtRender += 1;
                 out.positionOffset.y -= previousSizeY;
                 out.foundLineStart = true;
             }
@@ -473,6 +484,8 @@ kernel void utf32GlyphMap_FastLayout(
                 out.positionOffset.x += previousSizeX;
             }
         }
+        
+        backtrackCount += 1;
         
         // --- Do the iterator backtracking
         // Grab the current index, and check the last one
@@ -499,8 +512,10 @@ kernel void utf32GlyphMap_FastLayout(
         out.positionOffset.z
     ));
     
+//    threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
     utf32Buffer[id] = out;
     utf32Buffer[id].rendered = true;
+//    threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
 }
 
 kernel void utf32GlyphMapLayout(
