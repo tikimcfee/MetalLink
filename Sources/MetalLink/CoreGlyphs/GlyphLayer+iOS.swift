@@ -9,6 +9,7 @@
 import Foundation
 import CoreServices
 import UIKit
+import UniformTypeIdentifiers
 
 public typealias BitmapImages = (
     requested: NSUIImage,
@@ -25,7 +26,7 @@ public extension CALayer {
         UIGraphicsBeginImageContextWithOptions(frame.size, isOpaque, 0)
         
         guard let context = UIGraphicsGetCurrentContext() else { return nil }
-        context.setFillColor(key.background.asColor.cgColor)
+        context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
         context.fill(frame)
         render(in: context)
         
@@ -36,7 +37,7 @@ public extension CALayer {
         
         let outputImage = UIGraphicsGetImageFromCurrentImageContext()!.cgImage!
         let mutableData = CFDataCreateMutable(nil, 0)!
-        let destination = CGImageDestinationCreateWithData(mutableData, kUTTypeJPEG, 1, nil)!
+        let destination = CGImageDestinationCreateWithData(mutableData, UTType.jpeg.identifier as CFString, 1, nil)!
         CGImageDestinationSetProperties(destination, options)
         CGImageDestinationAddImage(destination, outputImage, nil)
         CGImageDestinationFinalize(destination)
