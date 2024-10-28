@@ -229,10 +229,8 @@ open class  MetalLinkNode: Measures {
         child.parent = nil
     }
     
-    public func removeFromParent() {
-        if let parent {
-            parent.remove(child: self)
-        }
+    open func removeFromParent() {
+        parent?.remove(child: self)
     }
 }
 
