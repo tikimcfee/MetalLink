@@ -189,7 +189,7 @@ void accumulateGlyphHashKernel(
     uint64_t hash = out.unicodeHash;
     hash = (hash * hashPrime + data) % hashModulo;
     out.unicodeHash = hash;
-    out.unicodeCodePointLength += 1;
+//    out.unicodeCodePointLength += 1;
     
     utf32Buffer[index] = out;
     
@@ -220,16 +220,16 @@ void attemptUnicodeScalarSetLookahead(
     if (category == utf32GlyphSingle || category == utf32GlyphData) {
         accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
         
-        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
+//        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
     else if (category == utf32GlyphEmojiSingle) {
         accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
         
-        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
+//        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's a prefix, we do some work
@@ -253,16 +253,16 @@ void attemptUnicodeScalarSetLookahead(
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             accumulateGlyphHashKernel(utf32Buffer, id, nextCodePoint);
             
-            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-            const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
-            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount + nextSequenceCount;
+//            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+//            const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
+//            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount + nextSequenceCount;
         }
         
         // If it's a tag, we start doing some special lookahead magic...
         else if (lookaheadCategory == utf32GlyphTag) {
             accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
+//            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
+//            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
             
             // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
@@ -270,7 +270,7 @@ void attemptUnicodeScalarSetLookahead(
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
                 accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-                utf32Buffer[id].totalUnicodeSequenceCount += lookaheadSequenceCount;
+//                utf32Buffer[id].totalUnicodeSequenceCount += lookaheadSequenceCount;
                 
                 // Move to the next slot and lookahead start
                 writeSlot += 1;
@@ -395,7 +395,7 @@ PageOffset calculatePageOffsets(
     
     // Calculate z offset
     float zFromVertical = int(result.yPages / pagesWide) * 32.0;
-    float zFromHorizontal = result.xPages * -2.0;
+    float zFromHorizontal = result.xPages * -12.0;
 
     result.z = zPosition + zFromVertical + zFromHorizontal;
     
@@ -432,11 +432,11 @@ kernel void utf32GlyphMap_FastLayout_Paginate(
     out.positionOffset.y = pageOffsets.y;
     out.positionOffset.z = pageOffsets.z;
     
-    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-        out.positionOffset.x,
-        out.positionOffset.y,
-        out.positionOffset.z
-    ));
+//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+//        out.positionOffset.x,
+//        out.positionOffset.y,
+//        out.positionOffset.z
+//    ));
     
     utf32Buffer[id] = out;
 }
@@ -544,11 +544,11 @@ kernel void utf32GlyphMap_FastLayout(
     
     out.positionOffset.z = -0.1;
     
-    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-        out.positionOffset.x,
-        out.positionOffset.y,
-        out.positionOffset.z
-    ));
+//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+//        out.positionOffset.x,
+//        out.positionOffset.y,
+//        out.positionOffset.z
+//    ));
     
 //    threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
     utf32Buffer[id] = out;
@@ -695,9 +695,9 @@ kernel void utf32GlyphMapLayout(
     out.positionOffset.x = currentXOffset;
     out.positionOffset.y = currentYOffset;
     out.positionOffset.z = currentZOffset;
-    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-        currentXOffset, currentYOffset, currentZOffset
-    ));
+//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+//        currentXOffset, currentYOffset, currentZOffset
+//    ));
     
     out.rendered = 3;
     utf32Buffer[id] = out;
@@ -737,9 +737,9 @@ kernel void utf8ToUtf32Kernel(
     
     utf32Buffer[id].graphemeCategory = category;
     utf32Buffer[id].codePoint = codePoint;
-    utf32Buffer[id].codePointIndex = id;
-    utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-    utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
+//    utf32Buffer[id].codePointIndex = id;
+//    utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
+//    utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
     
     attemptUnicodeScalarSetLookahead(
        utf8Buffer,
@@ -864,12 +864,15 @@ kernel void blitGlyphsIntoConstants(
     out.multipliedColor = float4(1.0);
     out.useParentMatrix = 1;
     out.unicodeHash = glyphCopy.unicodeHash;
-    out.modelMatrix = glyphCopy.modelMatrix;
+    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+        glyphCopy.positionOffset.x,
+        glyphCopy.positionOffset.y,
+        glyphCopy.positionOffset.z
+    ));
     out.textureDescriptorU = glyphCopy.textureDescriptorU;
     out.textureDescriptorV = glyphCopy.textureDescriptorV;
     out.textureSize = glyphCopy.textureSize;
     out.positionOffset = glyphCopy.positionOffset;
-    
     targetConstants[targetBufferIndex] = out;
     
     atomicMin(minX, 0, glyphCopy.positionOffset.x - glyphCopy.textureSize.x / 2.0);
@@ -930,9 +933,9 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     
     out.graphemeCategory = category;
     out.codePoint = codePoint;
-    out.codePointIndex = id;
-    out.foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-    out.background = simd_float4(0.0, 0.0, 0.0, 0.0);
+//    out.codePointIndex = id;
+//    out.foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
+//    out.background = simd_float4(0.0, 0.0, 0.0, 0.0);
     
     utf32Buffer[id] = out;
     
@@ -954,7 +957,7 @@ kernel void utf8ToUtf32KernelAtlasMapped(
         GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
         GlyphMapKernelOut out = utf32Buffer[id];
         
-        out.sourceUtf8BufferIndex = id;
+//        out.sourceUtf8BufferIndex = id;
         out.textureSize = unitSize(atlasData.textureSize);
         out.textureDescriptorU = atlasData.textureDescriptorU;
         out.textureDescriptorV = atlasData.textureDescriptorV;

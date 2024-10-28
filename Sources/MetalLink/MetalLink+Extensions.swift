@@ -115,3 +115,12 @@ extension GraphemeCategory: @retroactive CustomStringConvertible {
     var isSingleEmoji: Bool { self == utf32GlyphEmojiSingle }
     var isData: Bool { self == utf32GlyphData }
 }
+
+public extension Int {
+    var megabytes: String {
+        String(
+            format: "[%0.3f MB]",
+            (Float(self) / 1024.0 / 1024.0)
+        )
+    }
+}

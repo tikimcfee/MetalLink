@@ -87,20 +87,20 @@ struct GlyphMapKernelAtlasIn {
 struct GlyphMapKernelOut {
     // --- faux-nicode data
     enum GraphemeCategory graphemeCategory;
-    int codePointIndex;
+//    int codePointIndex;
     uint32_t codePoint;
     uint64_t unicodeHash;
     
-    int unicodeCodePointLength;
-    int totalUnicodeSequenceCount;
+//    int unicodeCodePointLength;
+//    int totalUnicodeSequenceCount;
     
     // --- buffer indexing
-    int sourceUtf8BufferIndex;       // the previous character's index
+//    int sourceUtf8BufferIndex;       // the previous character's index
     int sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
     
     // --- texture
-    simd_float4 foreground;
-    simd_float4 background;
+//    simd_float4 foreground;
+//    simd_float4 background;
     
     simd_float2 textureSize;
     simd_float4 textureDescriptorU;
@@ -108,7 +108,7 @@ struct GlyphMapKernelOut {
     
     // --- layout
     simd_float4 positionOffset;
-    simd_float4x4 modelMatrix;
+//    simd_float4x4 modelMatrix;
     
     int rendered;
     int foundLineStart;

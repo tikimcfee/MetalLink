@@ -62,9 +62,20 @@ extension ConvertCompute {
     }
     
     // Create an output buffer matching the GlyphMapKernelOut structure
+    // TODO: --- Memory explosion, the big one
+    // We take every 8-bit run and explode into by many hundreds for the `GlyphMapKernelOut`.
+    // That's gross. Instead, we should make a buffer for just the hashes of the file length,
+    // and use it as an intermediary before getting to the kernel out.
+    // --------------------------------------------------
+    // [From STTextView]
+    // <Making output buffer: [6.268 MB] -> [1404.053 MB]>
+    // [After removing some fields from KernelOut]
+    // <Making output buffer: [6.268 MB] -> [1002.895 MB]>
+    // --------------------------------------------------
     func makeRawOutputBuffer(from inputBuffer: MTLBuffer) throws -> MTLBuffer {
         let safeSize = max(1, inputBuffer.length)
         let safeOutputBufferSize = safeSize * MemoryLayout<GlyphMapKernelOut>.stride
+        print("<Making output buffer: \(inputBuffer.length.megabytes) -> \(safeOutputBufferSize.megabytes)>")
         guard let outputBuffer = device.makeBuffer(
             length: safeOutputBufferSize,
             options: [.storageModeShared]

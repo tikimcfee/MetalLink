@@ -228,6 +228,12 @@ open class  MetalLinkNode: Measures {
         children.removeAll(where: { $0.nodeId == child.nodeId })
         child.parent = nil
     }
+    
+    public func removeFromParent() {
+        if let parent {
+            parent.remove(child: self)
+        }
+    }
 }
 
 public extension MetalLinkNode {

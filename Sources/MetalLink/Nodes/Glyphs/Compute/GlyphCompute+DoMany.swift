@@ -77,12 +77,13 @@ public extension ConvertCompute {
                         contentsOf: source,
                         options: [.alwaysMapped]
                     )
+                    
                     if data.count == 0 {
                         data = String("<empty-file>").data(using: .utf8)!
                     }
                     
                     let buffer = try makeInputBuffer(data)
-                    buffer.label = "Input grapheme \(source.lastPathComponent)"
+                    buffer.label = "Input graphemes \(source.lastPathComponent)"
                     loadedData.append((source, buffer))
                     
                     onEvent(.bufferMapped(source.lastPathComponent))
