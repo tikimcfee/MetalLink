@@ -9,6 +9,10 @@ import BitHandling
 import Combine
 import Foundation
 
+#if os(macOS)
+import AppKit
+#endif
+
 public typealias FileOperationReceiver = (FileOperation) -> Void
 public enum FileOperation {
     case openDirectory
@@ -18,24 +22,24 @@ public typealias FocusChangeReceiver = (SelfRelativeDirection) -> Void
 
 public extension KeyboardInterceptor {
     class State: ObservableObject {
-        @Published var directions: Set<SelfRelativeDirection> = []
+        @Published public var directions: Set<SelfRelativeDirection> = []
 #if os(iOS)
-        @Published var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags.none
+        @Published public var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags.none
 #else
-        @Published var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags()
+        @Published public var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags()
 #endif
         
         // TODO: Track all focus directions and provide a trail?
-        @Published var focusPath: [SelfRelativeDirection] = []
+        @Published public var focusPath: [SelfRelativeDirection] = []
     }
     
     class Positions: ObservableObject {
-        @Published var totalOffset: LFloat3 = .zero
-        @Published var travelOffset: LFloat3 = .zero
-        @Published var rotationOffset: LFloat3 = .zero
-        @Published var rotationDelta: LFloat3 = .zero
+        @Published public var totalOffset: LFloat3 = .zero
+        @Published public var travelOffset: LFloat3 = .zero
+        @Published public var rotationOffset: LFloat3 = .zero
+        @Published public var rotationDelta: LFloat3 = .zero
         
-        func reset() {
+        public func reset() {
             totalOffset = .zero
             travelOffset = .zero
             rotationOffset = .zero
@@ -53,8 +57,8 @@ public protocol KeyboardPositionSource {
 
 public class KeyboardInterceptor {
     
-    private(set) var state = State()
-    private(set) var positions = Positions()
+    public private(set) var state = State()
+    public private(set) var positions = Positions()
     
     public var onNewFileOperation: FileOperationReceiver?
     public var onNewFocusChange: FocusChangeReceiver?
