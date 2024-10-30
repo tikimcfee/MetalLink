@@ -115,7 +115,8 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     
     rasterizerData.totalGameTime = sceneConstants.totalGameTime;
     rasterizerData.vertexPosition = vertexIn.position;
-    rasterizerData.modelInstanceID = constants.instanceID;
+//    rasterizerData.modelInstanceID = constants.instanceID;
+    rasterizerData.modelInstanceID = constants.bufferIndex;
     rasterizerData.addedColor = constants.addedColor;
     rasterizerData.multipliedColor = constants.multipliedColor;
     

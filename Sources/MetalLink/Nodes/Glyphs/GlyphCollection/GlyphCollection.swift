@@ -108,34 +108,65 @@ public extension GlyphCollection {
 }
 
 public extension GlyphCollection {
-    func createWrappedNode(for glyphID: InstanceIDType) -> MetalLinkGlyphNode? {
-        let (count, pointer) = instancePointerPair
-        
-        for index in (0..<count) {
-            let instance = pointer[index]
-            guard instance.instanceID == glyphID else { continue }
-            
-            let key = linkAtlas.builder.cacheRef.safeReadUnicodeHash(hash: instance.unicodeHash)
-            guard let key else { return nil }
-            
-            let node = GlyphNode(link, key: key, quad: .init(link))
-            node.position = LFloat3(
-                instance.positionOffset.x,
-                instance.positionOffset.y,
-                instance.positionOffset.z
-            )
-            node.quadSize = instance.textureSize
-            node.instanceConstants = instance
-            node.instanceUpdate = instanceState.updateBufferOnChange
-            node.instanceFetch = {
-                let index = instance.arrayIndex
-                guard self.instanceState.indexValid(index) else { return nil }
-                return self.instanceState.rawPointer[index]
-            }
-            
-            return node
+    func createWrappedNode(for glyphID: PickingTextureOutputWrapper) -> MetalLinkGlyphNode? {
+        guard glyphID.id >= 0 else {
+            // Clear color sets red to `Double.infinity` which comes back to us as a -1.
+            // I'm sure there's a perfectly valid and logical reason for that and I have
+            // no idea why and I'm too tired to care right now, but I certainly appreciate
+            // the fact it works that way. Hooray, we finally have a reasonable 'ignore this'
+            // value.
+            return nil
         }
-        return nil
+        
+        let (count, pointer) = instancePointerPair
+        guard glyphID.id < count else { return nil }
+        
+        let instance = pointer[Int(glyphID.id)]
+        let key = linkAtlas.builder.cacheRef.safeReadUnicodeHash(hash: instance.unicodeHash)
+        guard let key else { return nil }
+
+        let node = GlyphNode(link, key: key, quad: .init(link))
+        node.position = LFloat3(
+            instance.positionOffset.x,
+            instance.positionOffset.y,
+            instance.positionOffset.z
+        )
+        node.quadSize = instance.textureSize
+        node.instanceConstants = instance
+        node.instanceUpdate = instanceState.updateBufferOnChange
+        node.instanceFetch = {
+            let index = instance.arrayIndex
+            guard self.instanceState.indexValid(index) else { return nil }
+            return self.instanceState.rawPointer[index]
+        }
+
+        return node
+        
+//        for index in (0..<count) {
+//            let instance = pointer[index]
+//            guard instance.instanceID == glyphID else { continue }
+//            
+//            let key = linkAtlas.builder.cacheRef.safeReadUnicodeHash(hash: instance.unicodeHash)
+//            guard let key else { return nil }
+//            
+//            let node = GlyphNode(link, key: key, quad: .init(link))
+//            node.position = LFloat3(
+//                instance.positionOffset.x,
+//                instance.positionOffset.y,
+//                instance.positionOffset.z
+//            )
+//            node.quadSize = instance.textureSize
+//            node.instanceConstants = instance
+//            node.instanceUpdate = instanceState.updateBufferOnChange
+//            node.instanceFetch = {
+//                let index = instance.arrayIndex
+//                guard self.instanceState.indexValid(index) else { return nil }
+//                return self.instanceState.rawPointer[index]
+//            }
+//            
+//            return node
+//        }
+//        return nil
     }
 }
 

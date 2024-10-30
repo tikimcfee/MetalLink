@@ -17,11 +17,23 @@ extension MetalLinkPickingTexture {
         private init() { }
 
         static let pixelFormat: MTLPixelFormat = .r32Uint
+//        static let clearColor: MTLClearColor = MTLClearColor(
+//            red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0
+//        )
         static let clearColor: MTLClearColor = MTLClearColor(
-            red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0
+            red: Double.infinity, green: 13, blue: 14, alpha: 0.0
         )
     }
 }
+
+public struct PickingTextureOutputWrapper {
+    public let id: InstanceIDType
+    public let origin: MTLOrigin
+    
+    public static let zero = PickingTextureOutputWrapper(id: 0, origin: .init(x: 0, y: 0, z: 0))
+}
+public typealias PickingTextureOutput = PickingTextureOutputWrapper
+//public typealias PickingTextureOutput = InstanceIDType
 
 public class MetalLinkPickingTexture: MetalLinkReader {
     public let link: MetalLink
@@ -30,10 +42,10 @@ public class MetalLinkPickingTexture: MetalLinkReader {
     public var generateNewTexture: Bool = false
     public var pickingPaused: Bool = false
     
-    public var currentHover: InstanceIDType = .zero {
+    public var currentHover: PickingTextureOutput = .zero {
         didSet { pickingHover.send(currentHover) }
     }
-    private let pickingHover = PassthroughSubject<InstanceIDType, Never>()
+    private let pickingHover = PassthroughSubject<PickingTextureOutput, Never>()
     public lazy var sharedPickingHover = pickingHover.share()
     
     private var bag = Set<AnyCancellable>()
@@ -108,7 +120,7 @@ private extension MetalLinkPickingTexture {
         commandBuffer.label = "PickingBuffer:\(sourceOrigin.x):\(sourceOrigin.y)"
         blitEncoder.label = "PickingEncoder:\(sourceOrigin.x):\(sourceOrigin.y)"
         commandBuffer.addCompletedHandler { buffer in
-            self.onPickBlitComplete(pickBuffer)
+            self.onPickBlitComplete(pickBuffer, sourceOrigin)
         }
         
         let sourceSize = MTLSize(width: 1, height: 1, depth: 1)
@@ -126,13 +138,22 @@ private extension MetalLinkPickingTexture {
         )
     }
     
-    func onPickBlitComplete(_ pickBuffer: MTLBuffer) {
+    func onPickBlitComplete(
+        _ pickBuffer: MTLBuffer,
+        _ origin: MTLOrigin
+    ) {
         let pointer = pickBuffer.boundPointer(as: InstanceIDType.self, count: 1)
 
-        guard pointer.pointee >= InstanceCounter.startingGeneratedID else {
-            return currentHover = .zero
-        }
-        currentHover = pointer.pointee
+//        guard pointer.pointee >= InstanceCounter.startingGeneratedID else {
+//            currentHover = .zero
+//            return
+//        }
+
+//        currentHover = pointer.pointee
+        currentHover = PickingTextureOutputWrapper(
+            id: pointer.pointee,
+            origin: origin
+        )
     }
 }
 
