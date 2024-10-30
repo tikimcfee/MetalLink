@@ -82,6 +82,12 @@ public extension ConvertCompute {
                         data = String("<empty-file>").data(using: .utf8)!
                     }
                     
+//                    let maxSize = 1024 * 1024 * 8
+//                    if data.count > maxSize {
+//                        print("Skipping large file in full render: \(source.pathComponents.suffix(2)) \(data.count.megabytes)")
+//                        continue
+//                    }
+                    
                     let buffer = try makeInputBuffer(data)
                     buffer.label = "Input graphemes \(source.lastPathComponent)"
                     loadedData.append((source, buffer))

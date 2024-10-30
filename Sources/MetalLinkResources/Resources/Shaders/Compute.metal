@@ -189,7 +189,6 @@ void accumulateGlyphHashKernel(
     uint64_t hash = out.unicodeHash;
     hash = (hash * hashPrime + data) % hashModulo;
     out.unicodeHash = hash;
-//    out.unicodeCodePointLength += 1;
     
     utf32Buffer[index] = out;
     
@@ -219,17 +218,11 @@ void attemptUnicodeScalarSetLookahead(
     // this particular lookahead is done.
     if (category == utf32GlyphSingle || category == utf32GlyphData) {
         accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-        
-//        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's an emoji-single, then we just need to set the first 4 bytes, we're done
     else if (category == utf32GlyphEmojiSingle) {
         accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-        
-//        const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-//        utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
     }
     
     // If it's a prefix, we do some work
@@ -252,17 +245,11 @@ void attemptUnicodeScalarSetLookahead(
             
             uint32_t nextCodePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             accumulateGlyphHashKernel(utf32Buffer, id, nextCodePoint);
-            
-//            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-//            const int nextSequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id + mySequenceCount, *utf8BufferSize);
-//            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount + nextSequenceCount;
         }
         
         // If it's a tag, we start doing some special lookahead magic...
         else if (lookaheadCategory == utf32GlyphTag) {
             accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-//            const int mySequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
-//            utf32Buffer[id].totalUnicodeSequenceCount = mySequenceCount;
             
             // Start at the next slot and begin writing for each tag
             int writeSlot = 2;
@@ -270,7 +257,6 @@ void attemptUnicodeScalarSetLookahead(
             uint32_t codePoint = codePointForSequence(lookahead1, lookahead2, lookahead3, lookahead4, 4);
             while (lookaheadCategory == utf32GlyphTag && writeSlot <= 10) {
                 accumulateGlyphHashKernel(utf32Buffer, id, codePoint);
-//                utf32Buffer[id].totalUnicodeSequenceCount += lookaheadSequenceCount;
                 
                 // Move to the next slot and lookahead start
                 writeSlot += 1;
@@ -376,9 +362,10 @@ PageOffset calculatePageOffsets(
     float xPosition,
     float yPosition,
     float zPosition,
-    float pageWidth  = 100,
-    float pageHeight = -300,
-    int pagesWide    = 5
+    float pageWidth     = 88,
+    float pageWidthPad  = 10,
+    float pageHeight    = -150,
+    int pagesWide       = 10
 ) {
     PageOffset result;
     
@@ -391,11 +378,12 @@ PageOffset calculatePageOffsets(
     result.x = fmod(xPosition, pageWidth);
     
     // Mod the position above, and then offset it by the page.
-    result.x -= (pageWidth + 20) * fmod(float(result.yPages), pagesWide);
+    result.x -= (pageWidth + pageWidthPad) * fmod(float(result.yPages), pagesWide);
     
     // Calculate z offset
     float zFromVertical = int(result.yPages / pagesWide) * 32.0;
-    float zFromHorizontal = result.xPages * -12.0;
+    float zFromHorizontal = result.xPages * -4.0;
+    
 
     result.z = zPosition + zFromVertical + zFromHorizontal;
     
@@ -431,12 +419,6 @@ kernel void utf32GlyphMap_FastLayout_Paginate(
     out.positionOffset.x = pageOffsets.x;
     out.positionOffset.y = pageOffsets.y;
     out.positionOffset.z = pageOffsets.z;
-    
-//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-//        out.positionOffset.x,
-//        out.positionOffset.y,
-//        out.positionOffset.z
-//    ));
     
     utf32Buffer[id] = out;
 }
@@ -490,7 +472,13 @@ kernel void utf32GlyphMap_FastLayout(
         int previousRendered = previousGlyph.rendered;
         int previousFoundStart = previousGlyph.foundLineStart;
         
-        if (previousRendered == true && previousX > 0 && previousY < 0 && previousZ == -0.1 && backtrackCount > 128) {
+        if (
+            previousRendered == true
+            && previousX > 0
+            && previousY < 0
+            && previousZ == -0.1
+            && backtrackCount > 128
+        ) {
             if (previousGlyph.codePoint == '\n') {
                 out.LineBreaksAtRender += 1;
                 
@@ -543,164 +531,8 @@ kernel void utf32GlyphMap_FastLayout(
     }
     
     out.positionOffset.z = -0.1;
-    
-//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-//        out.positionOffset.x,
-//        out.positionOffset.y,
-//        out.positionOffset.z
-//    ));
-    
-//    threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
     utf32Buffer[id] = out;
     utf32Buffer[id].rendered = true;
-//    threadgroup_barrier(mem_flags::mem_threadgroup | mem_flags::mem_device);
-}
-
-kernel void utf32GlyphMapLayout(
-    const device uint8_t* utf8Buffer                [[buffer(0)]],
-    device       GlyphMapKernelOut* utf32Buffer     [[buffer(1)]],
-    device       GlyphMapKernelAtlasIn* atlasBuffer [[buffer(2)]],
-                 uint id                            [[thread_position_in_grid]],
-    constant     uint* utf8BufferSize               [[buffer(3)]],
-    constant     uint* atlasBufferSize              [[buffer(4)]],
-    constant     uint* utf32BufferSize              [[buffer(5)]]
-) {
-    uint localSize = *utf32BufferSize;
-    uint offsetMax = localSize - 1;
-    if (id < 0 || id > offsetMax) {
-        return;
-    }
-    
-    if (utf32Buffer[id].unicodeHash == 0) {
-        return;
-    }
-
-    float currentXOffset = 0;
-    float currentYOffset = 0;
-    float currentZOffset = 0;
-    int LineBreaksAtRender = 0;
-    
-    int foundLineStart = false;
-    int shouldContinueBacktrack = true;
-    
-    uint previousGlyphIndex = id;
-    previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
-                                                utf32Buffer,
-                                                previousGlyphIndex,
-                                                utf8BufferSize);
-    
-    // --------------------------------------------------------------------------
-    /*
-     We should basically 'prefix' the last glyph's state
-     onto ours, which is hard, lol. Offsetting y is kinda easy - we just
-     add the last offset to ours. It's always additive and only resets at
-     a page limit, not a line limit. Z is also only additive, for now. So
-     X is the problem since it has the weird x/y interaction.
-
-     If the glyph was rendered, it means it knows it's exact x/y/z position
-     in space. And, importantly, it knows whether or not it found a '\n' line-
-     break ahead of it so it would stop iterating the x offset. That interacts
-     with the main loop's work.
-     */
-    while (shouldContinueBacktrack) {
-        // Early return; no previous, no previous to read.
-        if (previousGlyphIndex == id) {
-            shouldContinueBacktrack = false;
-            continue;
-        }
-        
-        // --- Do the offset mathing
-        GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
-        
-        /*
-        // This localSize check works alright to reduce time but it's still not safe.
-        // Seems that the issue is at the start and end of the buffer, which means I'm
-        // either iterating incorrectly around there, or I'm assuming something
-        // faulty about ordering or something for this algorithm. We're sticking
-        // with the one that guesses the vertical size on line count.
-//        if (previousGlyph.rendered == 3 && (id > 500) && (id < (localSize - 1000))) {
-        */
-        if (previousGlyph.rendered == 3) {
-            if (foundLineStart == false && previousGlyph.codePoint != 10) {
-                currentXOffset += previousGlyph.positionOffset.x;
-            }
-            
-            if (previousGlyph.foundLineStart == false) {
-                currentZOffset += previousGlyph.positionOffset.z;
-            }
-
-            foundLineStart = foundLineStart || previousGlyph.foundLineStart;
-            
-            LineBreaksAtRender += previousGlyph.LineBreaksAtRender;
-            if (previousGlyph.codePoint == 10) {
-                LineBreaksAtRender -= 1;
-                currentYOffset += previousGlyph.textureSize.y;
-            }
-            currentYOffset += -1 * previousGlyph.LineBreaksAtRender * previousGlyph.textureSize.y;
-            
-            shouldContinueBacktrack = false;
-        }
-        // --------------------------------------------------------------------------
-
-        // If we found a new line, add to the current y offset..
-        if (previousGlyph.codePoint == 10) {
-            currentYOffset -= previousGlyph.textureSize.y;
-            foundLineStart = true;
-            LineBreaksAtRender += 1;
-        }
-        // And if we're still iterating backward in the same line, accumulate some width
-        if (foundLineStart == false) {
-            currentXOffset += previousGlyph.textureSize.x;
-        }
-        // ---
-        
-        // --- Do the iterator backtracking
-        // Grab the current index, and check the last one
-        if (shouldContinueBacktrack) {
-            uint currentIndex = previousGlyphIndex;
-            previousGlyphIndex = indexOfCharacterBefore(utf8Buffer,
-                                                        utf32Buffer,
-                                                        previousGlyphIndex,
-                                                        utf8BufferSize);
-            
-            // Stop backtracking if the index we get back as 'before' is us, which means we're done.
-            // Also said, you should keep going iff the previous index is not the current index.
-            shouldContinueBacktrack = previousGlyphIndex != currentIndex
-                                   && previousGlyphIndex >= 0
-                                   && previousGlyphIndex <* utf8BufferSize;
-        }
-    }
-    
-    // --- Set the final values all safe like because we're the only writer.. lol.
-//    threadgroup_barrier(mem_flags::mem_device);
-    GlyphMapKernelOut out = utf32Buffer[id];
-    
-
-    out.foundLineStart = foundLineStart;
-    out.LineBreaksAtRender = LineBreaksAtRender;
-    if (out.codePoint == 10) {
-        out.LineBreaksAtRender += 1;
-    }
-    
-    // Before setting final values, adjust for pagination
-    PageOffset pageOffsets = calculatePageOffsets(
-          currentXOffset,
-          currentYOffset,
-          currentZOffset
-    );
-    currentXOffset = pageOffsets.x;
-    currentYOffset = pageOffsets.y;
-    currentZOffset = pageOffsets.z;
-    
-    out.positionOffset.x = currentXOffset;
-    out.positionOffset.y = currentYOffset;
-    out.positionOffset.z = currentZOffset;
-//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-//        currentXOffset, currentYOffset, currentZOffset
-//    ));
-    
-    out.rendered = 3;
-    utf32Buffer[id] = out;
 }
 
 
@@ -737,9 +569,6 @@ kernel void utf8ToUtf32Kernel(
     
     utf32Buffer[id].graphemeCategory = category;
     utf32Buffer[id].codePoint = codePoint;
-//    utf32Buffer[id].codePointIndex = id;
-//    utf32Buffer[id].foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-//    utf32Buffer[id].background = simd_float4(0.0, 0.0, 0.0, 0.0);
     
     attemptUnicodeScalarSetLookahead(
        utf8Buffer,
@@ -933,9 +762,6 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     
     out.graphemeCategory = category;
     out.codePoint = codePoint;
-//    out.codePointIndex = id;
-//    out.foreground = simd_float4(1.0, 1.0, 1.0, 1.0);
-//    out.background = simd_float4(0.0, 0.0, 0.0, 0.0);
     
     utf32Buffer[id] = out;
     
@@ -957,7 +783,6 @@ kernel void utf8ToUtf32KernelAtlasMapped(
         GlyphMapKernelAtlasIn atlasData = atlasBuffer[hash];
         GlyphMapKernelOut out = utf32Buffer[id];
         
-//        out.sourceUtf8BufferIndex = id;
         out.textureSize = unitSize(atlasData.textureSize);
         out.textureDescriptorU = atlasData.textureDescriptorU;
         out.textureDescriptorV = atlasData.textureDescriptorV;

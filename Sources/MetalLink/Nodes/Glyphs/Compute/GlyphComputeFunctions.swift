@@ -18,9 +18,6 @@ internal class ConvertComputeFunctions: MetalLinkReader {
     let atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
     lazy var atlasRenderKernelFunction = library.makeFunction(name: atlasRenderName)
     
-    let layoutKernelName = "utf32GlyphMapLayout"
-    lazy var layoutKernelFunction = library.makeFunction(name: layoutKernelName)
-    
     let fastLayoutKernelName = "utf32GlyphMap_FastLayout"
     lazy var fastLayoutKernelFunction = library.makeFunction(name: fastLayoutKernelName)
     
@@ -43,12 +40,6 @@ internal class ConvertComputeFunctions: MetalLinkReader {
         guard let atlasRenderKernelFunction
         else { throw ComputeError.missingFunction(atlasRenderName) }
         return try device.makeComputePipelineState(function: atlasRenderKernelFunction)
-    }
-    
-    func makeLayoutRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let layoutKernelFunction
-        else { throw ComputeError.missingFunction(layoutKernelName) }
-        return try device.makeComputePipelineState(function: layoutKernelFunction)
     }
     
     func makeFastLayoutRenderPipelineState() throws -> MTLComputePipelineState {
