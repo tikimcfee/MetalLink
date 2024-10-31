@@ -30,15 +30,10 @@ public extension GlyphCollection {
     class Renderer {
         let pointer = Pointer()
         var pointerOffset = LFloat3.zero
-        let targetCollection: GlyphCollection
         var lineCount = 0
         var charactersInLines = 0
         private var currentPosition: LFloat3 { pointer.position }
-        
-        init(collection: GlyphCollection) {
-            self.targetCollection = collection
-        }
-        
+                
         public func insert(
             _ letterNode: MetalLinkGlyphNode
         ) {

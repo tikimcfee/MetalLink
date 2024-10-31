@@ -20,11 +20,11 @@ open class  MetalLinkNode: Measures {
     public var pausedInvalidate: Bool = false
     public var pausedRender: Bool = false
     
-    public lazy var cachedSize = CachedValue(update: computeLocalSize)
-    public lazy var cachedBounds = CachedValue(update: computeLocalBounds)
-    public lazy var currentModel = CachedValue(update: buildModelMatrix)
-    public lazy var cachedWorldPosition = CachedValue(update: computeWorldPosition)
-    public lazy var cachedWorldBounds = CachedValue(update: computeWorldBounds)
+    public lazy var cachedSize              = CachedValue(update: { [weak self] in self?.computeLocalSize() ?? .zero })
+    public lazy var cachedBounds            = CachedValue(update: { [weak self] in self?.computeLocalBounds() ?? .zero })
+    public lazy var currentModel            = CachedValue(update: { [weak self] in self?.buildModelMatrix() ?? matrix_identity_float4x4 })
+    public lazy var cachedWorldPosition     = CachedValue(update: { [weak self] in self?.computeWorldPosition() ?? .zero })
+    public lazy var cachedWorldBounds       = CachedValue(update: { [weak self] in self?.computeWorldBounds() ?? .zero })
     
     // Whatever just instance everything lolol
     public var localConstants: InstancedConstants = InstancedConstants()
@@ -50,7 +50,7 @@ open class  MetalLinkNode: Measures {
     
     open var asNode: MetalLinkNode { self }
     
-    open var parent: MetalLinkNode?
+    weak open var parent: MetalLinkNode?
     { didSet {
         rebuildTreeState()
     } }
@@ -214,6 +214,15 @@ open class  MetalLinkNode: Measures {
         
         // Return full collection
         return myChildren
+    }
+    
+    public func clearChildren() {
+        // No children, skip out
+        let toRemove = children
+        children = []
+        for child in toRemove {
+            child.clearChildren()
+        }
     }
     
     public func add(child: MetalLinkNode) {

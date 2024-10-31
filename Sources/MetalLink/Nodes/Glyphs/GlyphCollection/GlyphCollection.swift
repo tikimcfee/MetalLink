@@ -18,9 +18,9 @@ final public class GlyphCollection: MetalLinkInstancedObject<
     MetalLinkGlyphNode
 > {
     public var linkAtlas: MetalLinkAtlas
-    public lazy var renderer = Renderer(collection: self)
+    public lazy var renderer = Renderer()
     
-    public lazy var cachedPointerBounds = CachedValue(update: pointerBounds)
+    public lazy var cachedPointerBounds        = CachedValue(update: { [weak self] in self?.pointerBounds() ?? .zero })
     public override var hasIntrinsicSize: Bool { pointerHasIntrinsicSize() }
     public override var contentBounds: Bounds  { cachedPointerBounds.get() }
     public func setRootMesh()                  { setRootMeshPointer() }
