@@ -234,6 +234,67 @@ public extension Measures {
     }
 }
 
+// MARK: - Delegating Measures Wrapper
+
+public protocol MeasuresDelegating: Measures {
+    var delegateTarget: Measures { get }
+    
+    var rotation: LFloat3 { get set }
+}
+
+public extension MeasuresDelegating {
+    var position: LFloat3 {
+        get { delegateTarget.position }
+        set { delegateTarget.position = newValue }
+    }
+    
+    var rotation: LFloat3 {
+        get { delegateTarget.asNode.rotation }
+        set { delegateTarget.asNode.rotation = newValue }
+    }
+    
+    var lengthX: Float {
+        asNode.lengthX
+    }
+    
+    var lengthY: Float {
+        asNode.lengthY
+    }
+    
+    var lengthZ: Float {
+        asNode.lengthZ
+    }
+    
+    var nodeId: String { delegateTarget.nodeId }
+    
+    var worldPosition: LFloat3 { delegateTarget.worldPosition }
+    
+    var sizeBounds: Bounds { delegateTarget.sizeBounds }
+    
+    var bounds: Bounds { delegateTarget.bounds }
+    
+    var worldBounds: Bounds { delegateTarget.worldBounds }
+    
+    var hasIntrinsicSize: Bool { delegateTarget.hasIntrinsicSize }
+    
+    var contentBounds: Bounds { delegateTarget.contentBounds }
+    
+    var asNode: MetalLinkNode { delegateTarget.asNode }
+    
+    var parent: MetalLinkNode? {
+        get { delegateTarget.parent }
+        set { delegateTarget.parent = newValue }
+    }
+    
+    func convertPosition(_ position: LFloat3, to: MetalLinkNode?) -> LFloat3 {
+        delegateTarget.convertPosition(position, to: to)
+    }
+    
+    func add(child: MetalLinkNode) {
+        asNode.add(child: child)
+    }
+}
+
 public extension Measures {
     var dumpstats: String {
         """
