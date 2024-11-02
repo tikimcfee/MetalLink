@@ -380,6 +380,7 @@ PageOffset calculatePageOffsets(
     float pageWidth     = 88,
     float pageWidthPad  = 10,
     float pageHeight    = -150,
+    float pageHeightPad = 20,
     int pagesWide       = 10
 ) {
     PageOffset result;
@@ -387,6 +388,8 @@ PageOffset calculatePageOffsets(
     // Calculate vertical page and offset
     result.yPages = int(abs(yPosition) / pageHeight);
     result.y = yPosition + (pageHeight * result.yPages);
+    // This lets the pages stack vertically as well
+//    result.y = result.y + (pageHeight - pageHeightPad) * abs(int(result.yPages / pagesWide));
     
     // Calculate horizontal page and offset
     result.xPages = int(xPosition / pageWidth);
@@ -399,7 +402,6 @@ PageOffset calculatePageOffsets(
     float zFromVertical = int(result.yPages / pagesWide) * 32.0;
     float zFromHorizontal = result.xPages * -4.0;
     
-
     result.z = zPosition + zFromVertical + zFromHorizontal;
     
     return result;
