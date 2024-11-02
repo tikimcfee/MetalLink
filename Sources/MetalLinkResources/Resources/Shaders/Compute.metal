@@ -21,6 +21,21 @@ float2 unitSize(float2 source) {
                   min(source.y * unitWidth, 1.0));
 }
 
+bool getNthBit(int8_t value, uint8_t bitPosition) {
+    // Check if the bit at the given position is set (1) or not (0)
+    return (value & (1 << bitPosition)) != 0;
+}
+
+int8_t modifyNthBit(int8_t value, uint8_t bitPosition, bool set) {
+    if (set) {
+        // Set the bit if 'set' is true
+        return value | (1 << bitPosition);
+    } else {
+        // Clear the bit if 'set' is false
+        return value & ~(1 << bitPosition);
+    }
+}
+
 // Safely get byte at index, handling bounds check
 uint8_t getByte(
     const device uint8_t* bytes,
@@ -554,7 +569,6 @@ kernel void utf8ToUtf32Kernel(
     int sequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
     if (sequenceCount < 1 || sequenceCount > 4) {
         // If it has a weird sequence length, it's glyph data, break early
-        utf32Buffer[id].graphemeCategory = utf32GlyphData;
         return;
     }
     
@@ -567,7 +581,6 @@ kernel void utf8ToUtf32Kernel(
     uint32_t codePoint = codePointForSequence(firstByte, secondByte, thirdByte, fourthByte, sequenceCount);
     GraphemeCategory category = categoryForGraphemeBytes(firstByte, secondByte, thirdByte, fourthByte);
     
-    utf32Buffer[id].graphemeCategory = category;
     utf32Buffer[id].codePoint = codePoint;
     
     attemptUnicodeScalarSetLookahead(
@@ -687,11 +700,15 @@ kernel void blitGlyphsIntoConstants(
 //    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
     InstancedConstants out = targetConstants[targetBufferIndex];
     
-    out.instanceID = id + 10;
     out.bufferIndex = targetBufferIndex;
-    out.addedColor = float4(0.0);
-    out.multipliedColor = float4(1.0);
-    out.useParentMatrix = 1;
+    out.addedColorR = 0;
+    out.addedColorG = 0;
+    out.addedColorB = 0;
+    out.multipliedColorR = 255;
+    out.multipliedColorG = 255;
+    out.multipliedColorB = 255;
+    
+    out.flags = modifyNthBit(out.flags, 0, true);
     out.unicodeHash = glyphCopy.unicodeHash;
     out.modelMatrix = float4x4(1.0) * translationOf(float3(
         glyphCopy.positionOffset.x,
@@ -723,8 +740,9 @@ kernel void blitColorsIntoConstants(
         return;
     }
     // TODO: Multiple color values
-//    targetConstants[id].addedColor = colors[id];
-    targetConstants[id].multipliedColor = colors[id];
+    targetConstants[id].multipliedColorR = colors[id].x * 255.0;
+    targetConstants[id].multipliedColorG = colors[id].y * 255.0;
+    targetConstants[id].multipliedColorB = colors[id].z * 255.0;
 }
 
 kernel void utf8ToUtf32KernelAtlasMapped(
@@ -745,7 +763,6 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     int sequenceCount = sequenceCountForByteAtIndex(utf8Buffer, id, *utf8BufferSize);
     if (sequenceCount < 1 || sequenceCount > 4) {
         // If it has a weird sequence length, it's glyph data, break early
-        utf32Buffer[id].graphemeCategory = utf32GlyphData;
         return;
     }
     
@@ -760,7 +777,6 @@ kernel void utf8ToUtf32KernelAtlasMapped(
     
     GlyphMapKernelOut out = utf32Buffer[id];
     
-    out.graphemeCategory = category;
     out.codePoint = codePoint;
     
     utf32Buffer[id] = out;

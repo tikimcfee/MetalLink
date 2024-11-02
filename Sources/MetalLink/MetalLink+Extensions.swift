@@ -80,47 +80,16 @@ public extension MetalLink {
     }
 }
 
-extension GraphemeStatus: @retroactive CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case SINGLE: return "single"
-        case START: return "start"
-        case MIDDLE: return "middle"
-        case END: return "end"
-        default: return "unknown"
-        }
-    }
-    
-    var isSingle: Bool { self == SINGLE }
-    var isStart: Bool { self == START }
-    var isMiddle: Bool { self == MIDDLE }
-    var isEnd: Bool { self == END }
-}
-
-extension GraphemeCategory: @retroactive CustomStringConvertible {
-    public var description: String {
-        switch self {
-        case utf32GlyphSingle: return "single character"
-        case utf32GlyphEmojiPrefix: return "emoji group prefix"
-        case utf32GlyphTag: return "glyph tag"
-        case utf32GlyphEmojiSingle: return "emoji single prefix"
-        case utf32GlyphData: return "_data"
-        default: return "unknown"
-        }
-    }
-    
-    var isSingleGlyph: Bool { self == utf32GlyphSingle }
-    var isGlyphPrefix: Bool { self == utf32GlyphEmojiPrefix }
-    var isGlyphTag: Bool { self == utf32GlyphTag }
-    var isSingleEmoji: Bool { self == utf32GlyphEmojiSingle }
-    var isData: Bool { self == utf32GlyphData }
-}
 
 public extension Int {
     var megabytes: String {
         String(
-            format: "[%0.3f MB]",
+            format: "[%0.5f MB]",
             (Float(self) / 1024.0 / 1024.0)
         )
+    }
+    
+    var megabytesCount: Float {
+        Float(self) / 1024.0 / 1024.0
     }
 }

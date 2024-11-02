@@ -28,7 +28,7 @@ open class  MetalLinkNode: Measures {
     
     // Whatever just instance everything lolol
     public var localConstants: InstancedConstants = InstancedConstants()
-    public var instanceID: InstanceIDType? { instanceConstants?.instanceID }
+    public var instanceID: InstanceIDType? { instanceConstants?.bufferIndex }
     public var instanceBufferIndex: Int? { instanceConstants?.arrayIndex }
     public var instanceUpdate: ((InstancedConstants, MetalLinkNode) -> Void)?
     public var instanceFetch: (() -> InstancedConstants?)?

@@ -117,9 +117,9 @@ public class InstanceState<
     }
     
     private func makeNewConstants() throws -> InstancedConstants {
-        let newConstants = try constants.createNext {
-            // TODO: generic is bad, be specific or change enum thing
-            $0.instanceID = InstanceCounter.shared.nextGlyphId()
+        let newConstants = try constants.createNext { _ in
+            // Now that everything is using 'bufferIndex', we don't need a separated
+            // `id` anymore... gulp...
         }
         
         rawPointer[newConstants.arrayIndex] = newConstants

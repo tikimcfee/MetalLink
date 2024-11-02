@@ -27,15 +27,63 @@ struct InstancedConstants {
     simd_float4 positionOffset;
     uint64_t unicodeHash;
     
-    int instanceID;
-    simd_float4 addedColor;
-    simd_float4 multipliedColor;
+    uint8_t addedColorR;
+    uint8_t addedColorG;
+    uint8_t addedColorB;
+    uint8_t multipliedColorR;
+    uint8_t multipliedColorG;
+    uint8_t multipliedColorB;
+    
+    /*
+     MetalLinkGPUTypes.swift
+     public enum Flag: UInt8 {
+         case useParent
+         case ignoreHover
+     }
+     */
+    int8_t flags;
     int bufferIndex; // index of self in cpu mtlbuffer
-    int useParentMatrix; // 0 == no, 1 == yes, other == undefined
-    int ignoreHover;     // 0 == no, 1 == yes, other == undefined
 };
 
-// Glyphees
+// MARK: - Glyphees
+
+struct GlyphMapKernelAtlasIn {
+    uint64_t unicodeHash;
+    
+    simd_float2 textureSize;
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+};
+
+// MARK: -- GlyphMapKernel Outputs and Structs
+
+struct GlyphMapKernelOut {
+    uint32_t codePoint;
+    uint64_t unicodeHash;
+
+    // --- buffer indexing
+    int sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
+    
+    // --- texture
+    simd_float2 textureSize;
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+    
+    // --- layout
+    simd_float4 positionOffset;
+    
+    int rendered;
+    int foundLineStart;
+    int LineBreaksAtRender;
+};
+
+struct SceneConstants {
+    float totalGameTime;
+    simd_float4x4 viewMatrix;
+    simd_float4x4 projectionMatrix;
+    simd_float4x4 pointerMatrix;
+};
+
 enum GraphemeStatus {
     SINGLE = 0,
     START,
@@ -74,57 +122,4 @@ enum GraphemeCategory {
     utf32GlyphData
 };
 
-struct GlyphMapKernelAtlasIn {
-    uint64_t unicodeHash;
-    
-    simd_float2 textureSize;
-    simd_float4 textureDescriptorU;
-    simd_float4 textureDescriptorV;
-};
-
-// MARK: -- GlyphMapKernel Outputs and Structs
-
-struct GlyphMapKernelOut {
-    // --- faux-nicode data
-    enum GraphemeCategory graphemeCategory;
-//    int codePointIndex;
-    uint32_t codePoint;
-    uint64_t unicodeHash;
-    
-//    int unicodeCodePointLength;
-//    int totalUnicodeSequenceCount;
-    
-    // --- buffer indexing
-//    int sourceUtf8BufferIndex;       // the previous character's index
-    int sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
-    
-    // --- texture
-//    simd_float4 foreground;
-//    simd_float4 background;
-    
-    simd_float2 textureSize;
-    simd_float4 textureDescriptorU;
-    simd_float4 textureDescriptorV;
-    
-    // --- layout
-    simd_float4 positionOffset;
-//    simd_float4x4 modelMatrix;
-    
-    int rendered;
-    int foundLineStart;
-    int LineBreaksAtRender;
-};
-
-struct SceneConstants {
-    float totalGameTime;
-    simd_float4x4 viewMatrix;
-    simd_float4x4 projectionMatrix;
-    simd_float4x4 pointerMatrix;
-};
-
-
 #endif /* MetalLinkBridgingType_h */
-
-
-
-

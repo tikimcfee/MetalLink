@@ -78,6 +78,12 @@ float4 colorBlend_Multiply(float4 bottom, float4 top) {
 
 // MARK: - Instances
 
+bool getNthBit_I(int8_t value, uint8_t bitPosition) {
+    // Check if the bit at the given position is set (1) or not (0)
+    return (value & (1 << bitPosition)) != 0;
+}
+
+
 // recall buffer(x) is the Swift-defined buffer position for these vertices
 vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage_in ]],
                                                 constant SceneConstants &sceneConstants [[ buffer(1) ]],
@@ -90,7 +96,8 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     // Static matrix
     float4x4 instanceModel = constants.modelMatrix;
     float4x4 parentMatrix = identityMatrix;
-    if (constants.useParentMatrix == 1) {
+    bool useParent = getNthBit_I(constants.flags, 0);
+    if (useParent) {
         parentMatrix = parentConstants.modelMatrix;
     }
     
@@ -115,10 +122,10 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     
     rasterizerData.totalGameTime = sceneConstants.totalGameTime;
     rasterizerData.vertexPosition = vertexIn.position;
-//    rasterizerData.modelInstanceID = constants.instanceID;
     rasterizerData.modelInstanceID = constants.bufferIndex;
-    rasterizerData.addedColor = constants.addedColor;
-    rasterizerData.multipliedColor = constants.multipliedColor;
+    
+    rasterizerData.addedColor = float4(constants.addedColorR / 255.0, constants.addedColorG / 255.0, constants.addedColorB / 255.0, 1.0);
+    rasterizerData.multipliedColor = float4(constants.multipliedColorR / 255.0, constants.multipliedColorG / 255.0, constants.multipliedColorB / 255.0, 1.0);
     
     return rasterizerData;
 }

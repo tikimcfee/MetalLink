@@ -27,22 +27,72 @@ public struct Vertex {
 extension SceneConstants: MemoryLayoutSizable { }
 extension BasicModelConstants: MemoryLayoutSizable { }
 
+func getNthBit(_ value: Int8, bitPosition: UInt8) -> Bool {
+    return (value & (1 << bitPosition)) != 0
+}
+
+func modifyNthBit(_ value: Int8, bitPosition: UInt8, set: Bool) -> Int8 {
+    if set {
+        // Set the bit if 'set' is true
+        return value | (1 << bitPosition)
+    } else {
+        // Clear the bit if 'set' is false
+        return value & ~(1 << bitPosition)
+    }
+}
+
+public extension LFloat4 {
+    func setAddedColor(
+        on instance: inout InstancedConstants?
+    ) {
+        instance?.addedColorR = UInt8(x * 255)
+        instance?.addedColorG = UInt8(y * 255)
+        instance?.addedColorB = UInt8(z * 255)
+    }
+    
+    func setMultipliedColor(
+        on instance: inout InstancedConstants?
+    ) {
+        instance?.multipliedColorR = UInt8(x * 255)
+        instance?.multipliedColorG = UInt8(y * 255)
+        instance?.multipliedColorB = UInt8(z * 255)
+    }
+}
+
 extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
+    public enum Flag: UInt8 {
+        case useParent
+        case ignoreHover
+    }
+    
+    public func getFlag(_ queryFlag: Flag) -> Bool {
+        getNthBit(flags, bitPosition: queryFlag.rawValue)
+    }
+    
+    mutating public func setFlag(_ queryFlag: Flag, _ bit: Bool) {
+        flags = modifyNthBit(flags, bitPosition: queryFlag.rawValue, set: bit)
+    }
+    
     public mutating func reset() {
         modelMatrix = matrix_identity_float4x4
         textureDescriptorU = .zero
         textureDescriptorV = .zero
         textureSize = .zero
+        
         positionOffset = .zero
         
         unicodeHash = .zero
         
-        instanceID = .zero
-        addedColor = .zero
-        multipliedColor = .one
+        addedColorR = .zero
+        addedColorG = .zero
+        addedColorB = .zero
+        multipliedColorR = UInt8.max
+        multipliedColorG = UInt8.max
+        multipliedColorB = UInt8.max
+        
         bufferIndex = .zero
-        useParentMatrix = 1
-        ignoreHover = 0
+        setFlag(.useParent, true)
+        setFlag(.ignoreHover, false)
     }
 }
 
