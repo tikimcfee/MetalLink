@@ -6,50 +6,132 @@
 //
 
 import MetalKit
+import BitHandling
 
 public enum LinkAtlasError: Error {
     case noTargetAtlasTexture
     case noStateBuilder
+    case deserializationError
+    case deserializationErrorBuffer
 }
 
 public class MetalLinkAtlas {
     private let link: MetalLink
-    private let builder: AtlasBuilder
-    public let nodeCache: MetalLinkGlyphNodeCache
-    public var uvPairCache: TextureUVCache
-    public var currentAtlas: MTLTexture { builder.atlasTexture }
-    private var insertionLock = DispatchSemaphore(value: 1)
+    private let rwLock = LockWrapper()
     
-    public init(_ link: MetalLink) throws {
+    public private(set) var builder: AtlasBuilder
+    public private(set) var nodeCache: MetalLinkGlyphNodeCache
+    
+    public var currentAtlas: MTLTexture { builder.atlasTexture }
+    public var currentBuffer: MTLBuffer {
+        get { builder.currentGraphemeHashBuffer }
+        set { builder.currentGraphemeHashBuffer = newValue }
+    }
+    
+    public init(
+        _ link: MetalLink,
+        compute: ConvertCompute
+    ) throws {
         self.link = link
-        self.uvPairCache = TextureUVCache()
         self.nodeCache = MetalLinkGlyphNodeCache(link: link)
         self.builder = try AtlasBuilder(
             link,
-            textureCache: nodeCache.textureCache,
-            meshCache: nodeCache.meshCache
+            compute: compute
         )
+    }
+    
+    public func reset(_ compute: ConvertCompute) {
+        do {
+            print("Reset atlas...")
+            self.builder.clear()
+            self.builder = try AtlasBuilder(
+                link,
+                compute: compute
+            )
+            self.nodeCache = MetalLinkGlyphNodeCache(link: link)
+            print("Reset atlas done. Go check your buffers and such.")
+        } catch {
+            print("Reset failed: \(error)")
+        }
+    }
+    
+    public func save() {
+        builder.save()
+    }
+    
+    public func load() {
+        builder.load()
+    }
+    
+    public func preload() {
+        do {
+            try prepareWithGiantRawString()
+        } catch {
+            print("--- preload failed ---\n", error)
+        }
     }
 }
 
-public extension MetalLinkAtlas {
-    func newGlyph(_ key: GlyphCacheKey) -> MetalLinkGlyphNode? {
-        // TODO: Can't I just reuse the constants on the nodes themselves?
-        addGlyphToAtlasIfMissing(key)
-        let newNode = nodeCache.create(key)
-        return newNode
-    }
+extension MetalLinkAtlas {
     
-    private func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
-        guard uvPairCache[key] == nil else { return }
-//        print("Adding glyph to Atlas: [\(key.glyph)]")
-//        insertionLock.wait(); defer { insertionLock.signal() }
+    private func prepareWithGiantRawString() throws {
+        print("< ~ > Starting atlas save...")
+        
+        let sourceString = BIG_CHARACTER_WALL
+        let uniqueString = sourceString.joined()
+        let uniqueData = uniqueString.data(using: .utf8)!
+        let reverseMap = uniqueString.reduce(
+            into: [UInt64: Character]()
+        ) { map, character in
+            map[character.glyphComputeHash] = character
+        }
+        
+        print("< ~ > Preloading \(uniqueString.count) characters (from \(sourceString.count)), \(uniqueData.count) bytes.")
+        
+        let compute = builder.compute
+        let output = try compute.execute(inputData: uniqueData)
+        let (pointer, count) = compute.cast(output)
+        
+        print("< ~ > Compute complete, starting da loop")
+        
+        for index in (0..<count) {
+            let pointee = pointer[index]
+            let hash = pointee.unicodeHash
+            guard hash > 0 else { continue }
+            guard let key = reverseMap[hash] else { continue }
+            addGlyphToAtlasIfMissing(key)
+        }
+        
+        print("< ~ > looped da loop, da save")
+        
+        save()
+        
+        print("< ~ > Saved. Cool.")
+    }
+}
+    
+public extension MetalLinkAtlas {
+    func addGlyphToAtlasIfMissing(_ key: GlyphCacheKey) {
+        rwLock.readLock()
+        guard builder.cacheRef[key] == nil 
+        else {
+            rwLock.unlock()
+            return
+        }
+        rwLock.unlock()
+        
         do {
+            rwLock.writeLock()
+
             let block = try builder.startAtlasUpdate()
             builder.addGlyph(key, block)
-            (_, uvPairCache) = builder.finishAtlasUpdate(from: block)
+            builder.finishAtlasUpdate(from: block)
+            
+            rwLock.unlock()
         } catch {
             print(error)
+            
+            rwLock.unlock()
         }
     }
 }

@@ -17,7 +17,7 @@ public extension MetalLinkReader {
     var view: CustomMTKView { link.view }
     var device: MTLDevice { link.device }
     var library: MTLLibrary { link.defaultLibrary }
-    var commandQueue: MTLCommandQueue { link.commandQueue }
+    var defaultCommandQueue: MTLCommandQueue { link.defaultCommandQueue }
     var currentDrawable: CAMetalDrawable? { view.currentDrawable }
     
     var input: DefaultInputReceiver { link.input }
@@ -26,6 +26,9 @@ public extension MetalLinkReader {
 public extension MetalLinkReader {
     func convertToDrawablePosition(windowX x: Float, windowY y: Float) -> LFloat2 {
         let drawableSize = link.viewDrawableFloatSize
+        #if os(iOS)
+        let y = viewBounds.y - y
+        #endif
         let viewSize = link.viewPercentagePosition(x: x, y: y)
         return LFloat2(
             viewSize.x * drawableSize.x,

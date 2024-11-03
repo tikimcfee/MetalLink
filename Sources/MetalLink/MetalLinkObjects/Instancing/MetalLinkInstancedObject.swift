@@ -9,7 +9,10 @@ import MetalKit
 import MetalLinkHeaders
 //import Algorithms
 
-open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLinkNode {
+open class MetalLinkInstancedObject<
+    InstanceKey,
+    InstancedNodeType: MetalLinkNode
+>: MetalLinkNode {
     public let link: MetalLink
     public var mesh: any MetalLinkMesh
     
@@ -23,44 +26,55 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
     
     // TODO: Use regular constants for root, not instanced
     public var rootConstants = BasicModelConstants() {
-        didSet { rebuildSelf = true }
+        didSet {
+            rebuildSelf = true
+        }
     }
     
     public var rebuildSelf: Bool = true
     public var rebuildInstances: Bool = false
-    public var rootState = State()
-    public let instanceState: InstanceState<InstancedNodeType>
+    public let instanceState: InstanceState<InstanceKey, InstancedNodeType>
 
     public init(
         _ link: MetalLink,
         mesh: any MetalLinkMesh,
-        bufferSize: Int = BackingBufferDefaultSize
+        bufferSize: Int = BackingBufferDefaultSize,
+        instanceBuilder: @escaping (InstanceKey) -> InstancedNodeType?
     ) throws {
         self.link = link
         self.mesh = mesh
         self.instanceState = try InstanceState(
             link: link,
-            bufferSize: bufferSize
+            bufferSize: bufferSize,
+            instanceBuilder: instanceBuilder
         )
         super.init()
     }
     
+    public init(
+        _ link: MetalLink,
+        mesh: any MetalLinkMesh,
+        instanceState: InstanceState<InstanceKey, InstancedNodeType>
+    ) throws {
+        self.link = link
+        self.mesh = mesh
+        self.instanceState = instanceState
+        super.init()
+    }
+    
+    open func generateInstance(
+        _ key: InstanceKey
+    ) -> InstancedNodeType? {
+        instanceState.makeNewInstance(key)
+    }
+    
     open override func update(deltaTime: Float) {
-        rootState.time += deltaTime
         updateModelConstants()
         super.update(deltaTime: deltaTime)
     }
     
-    open override func enumerateChildren(_ action: (MetalLinkNode) -> Void) {
-        
-    }
-    
-    open func performJITInstanceBufferUpdate(_ node: MetalLinkNode) {
-        // override to do stuff right before instance buffer updates
-    }
-    
-    override public func doRender(in sdp: inout SafeDrawPass) {
-        guard !instanceState.nodes.isEmpty,
+    override public func doRender(in sdp: SafeDrawPass) {
+        guard instanceState.instanceBufferCount > 0,
               let meshVertexBuffer = mesh.getVertexBuffer()
         else { return }
         
@@ -73,6 +87,9 @@ open class MetalLinkInstancedObject<InstancedNodeType: MetalLinkNode>: MetalLink
         // Set small buffered constants and main mesh buffer
         sdp.setCurrentVertexBuffer(meshVertexBuffer, 0, 0)
         sdp.setCurrentVertexBuffer(constantsBuffer, 0, 2)
+        
+        // Set our constants so the instancing shader can do the multiplication itself so we don't have to.
+        sdp.setCurrentVertexBytes(&rootConstants, BasicModelConstants.memStride, 9)
                 
         // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
         // Constants need to capture vertex transforms for emoji/nonstandard.
@@ -95,9 +112,10 @@ extension MetalLinkInstancedObject {
 
 extension MetalLinkInstancedObject {
     func updateModelConstants() {
-        if rebuildSelf {
+        // TODO: Warning! We need to set the rootConstants matrix so the instances get a fresh update...
+        // override rebuild and set there instead? How expensive is it to keep setting the same value?
+        if currentModel.willUpdate {
             rootConstants.modelMatrix = modelMatrix
-            rebuildSelf = false
         }
     }
 }

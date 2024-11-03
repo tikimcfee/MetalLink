@@ -1,10 +1,9 @@
 import Foundation
 import SwiftUI
-import SceneKit
 
-typealias PanReceiver = (PanEvent) -> Void
-typealias MagnificationReceiver = (MagnificationEvent) -> Void
-typealias TapReceiver = (GestureEvent) -> Void
+public typealias PanReceiver = (PanEvent) -> Void
+public typealias MagnificationReceiver = (MagnificationEvent) -> Void
+public typealias TapReceiver = (GestureEvent) -> Void
 
 #if os(OSX)
 
@@ -21,9 +20,9 @@ public class GestureShim {
         TapGestureRecognizer(target: self, action: #selector(tap))
     var onTap: TapReceiver
 
-    init(_ onPan: @escaping PanReceiver,
-         _ onMagnify: @escaping MagnificationReceiver,
-         _ onTap: @escaping TapReceiver) {
+    init(shimPan onPan: @escaping PanReceiver,
+         shimMagnify onMagnify: @escaping MagnificationReceiver,
+         shimTap onTap: @escaping TapReceiver) {
         self.onPan = onPan
         self.onMagnify = onMagnify
         self.onTap = onTap
@@ -47,21 +46,28 @@ public class GestureShim {
 #elseif os(iOS)
 
 public class GestureShim {
-    lazy var panRecognizer =
-        PanGestureRecognizer(target: self, action: #selector(pan))
-    var onPan: PanReceiver
-
-    lazy var magnificationRecognizer =
-        MagnificationGestureRecognizer(target: self, action: #selector(magnify))
-    var onMagnify: MagnificationReceiver
+    public private(set) lazy var panRecognizer = PanGestureRecognizer(
+        target: self,
+        action: #selector(pan)
+    )
     
-    lazy var tapGestureRecognizer =
-        TapGestureRecognizer(target: self, action: #selector(tap))
-    var onTap: TapReceiver
-
-    init(_ onPan: @escaping PanReceiver,
-         _ onMagnify: @escaping MagnificationReceiver,
-         _ onTap: @escaping TapReceiver) {
+    public private(set) lazy var magnificationRecognizer = MagnificationGestureRecognizer(
+        target: self,
+        action: #selector(magnify)
+    )
+    
+    public private(set) lazy var tapGestureRecognizer = TapGestureRecognizer(
+        target: self,
+        action: #selector(tap)
+    )
+    
+    public var onPan: PanReceiver
+    public var onMagnify: MagnificationReceiver
+    public var onTap: TapReceiver
+    
+    init(shimPan onPan: @escaping PanReceiver,
+         shimMagnify onMagnify: @escaping MagnificationReceiver,
+         shimTap onTap: @escaping TapReceiver) {
         self.onPan = onPan
         self.onMagnify = onMagnify
         self.onTap = onTap
@@ -70,13 +76,14 @@ public class GestureShim {
     @objc func tap(_ receiver: TapGestureRecognizer) {
         onTap(receiver.makeGestureEvent)
     }
-
+    
     @objc func pan(_ receiver: PanGestureRecognizer) {
         onPan(receiver.makePanEvent)
     }
-
+    
     @objc func magnify(_ receiver: MagnificationGestureRecognizer) {
         onMagnify(receiver.makeMagnificationEvent)
+        receiver.scale = 1
     }
 }
 
@@ -84,34 +91,14 @@ public class GestureShim {
 
 public extension CGPoint {
     func distance(to point: CGPoint) -> CGFloat {
-        return sqrt(pow(point.x - x, 2) + pow(point.y - y, 2))
+        sqrt(pow(point.x - x, 2) + pow(point.y - y, 2))
     }
 
     func scaled(_ factor: CGFloat) -> CGPoint {
-        return CGPoint(x: x * factor, y: y * factor)
+        CGPoint(x: x * factor, y: y * factor)
     }
     
-    var asSimd: LFloat2 { LFloat2(x.float, y.float) }
-}
-
-public class TouchState {
-    public var magnify: MagnifyStart
-    public var mouse: Mouse
-    
-    init(
-        magnify: MagnifyStart = MagnifyStart(),
-        mouse: Mouse = Mouse()
-    ) {
-        self.magnify = magnify
-        self.mouse = mouse
+    var asSimd: LFloat2 {
+        LFloat2(x.float, y.float)
     }
 }
-
-public class Mouse {
-    public var currentPosition = CGPoint()
-}
-
-public class MagnifyStart {
-    public var lastScaleZ = CGFloat(1.0)
-}
-

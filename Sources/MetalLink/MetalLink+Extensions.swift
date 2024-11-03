@@ -6,7 +6,7 @@
 //
 
 import MetalKit
-import System
+import MetalLinkHeaders
 
 public extension MTLTexture {
     var simdSize: LFloat2 {
@@ -30,6 +30,10 @@ public extension LFloat2 {
 public extension MTLBuffer {
     func boundPointer<T>(as type: T.Type, count: Int) -> UnsafeMutablePointer<T> {
         contents().bindMemory(to: type.self, capacity: count)
+    }
+    
+    func boundPointer<T>(as type: T.Type, count: UInt32) -> UnsafeMutablePointer<T> {
+        contents().bindMemory(to: type.self, capacity: Int(count))
     }
 }
 
@@ -73,5 +77,19 @@ public extension MetalLink {
         
         newBuffer.label = String(describing: T.self)
         return newBuffer
+    }
+}
+
+
+public extension Int {
+    var megabytes: String {
+        String(
+            format: "[%0.5f MB]",
+            (Float(self) / 1024.0 / 1024.0)
+        )
+    }
+    
+    var megabytesCount: Float {
+        Float(self) / 1024.0 / 1024.0
     }
 }

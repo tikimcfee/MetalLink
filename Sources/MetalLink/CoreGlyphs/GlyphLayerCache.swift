@@ -8,21 +8,18 @@ import UIKit
 #elseif os(macOS)
 import AppKit
 #endif
+import BitHandling
 
-public struct GlyphCacheKey: Hashable, Equatable {
-    public let source: Character
-    public let glyph: String
-    public let foreground: NSUIColor
-    public let background: NSUIColor
+public typealias GlyphCacheKey = Character
+
+extension GlyphCacheKey: Codable {
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(String(self))
+    }
     
-    public init(
-        source: Character,
-        _ foreground: NSUIColor,
-        _ background: NSUIColor = NSUIColor.black
-    ) {
-        self.source = source
-        self.glyph = String(source)
-        self.foreground = foreground
-        self.background = background
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self = (try container.decode(String.self)).first!
     }
 }

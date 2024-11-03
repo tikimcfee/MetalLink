@@ -11,7 +11,7 @@
 import Foundation
 
 public protocol AtlasPackable: AnyObject {
-    associatedtype Number: AdditiveArithmetic & Comparable
+    associatedtype Number: AdditiveArithmetic & Comparable & Codable
     var x: Number { get set }
     var y: Number { get set }
     var width: Number { get set }
@@ -25,7 +25,6 @@ public class UVRect: AtlasPackable {
     public var width: Float = .zero
     public var height: Float = .zero
     public var wasPacked = false
-    
     public init() { }
 }
 
@@ -35,27 +34,56 @@ public class VertexRect: AtlasPackable {
     public var width: Int = .zero
     public var height: Int = .zero
     public var wasPacked = false
-    
     public init() { }
 }
 
-public class AtlasPacking<T: AtlasPackable> {
-    let canvasWidth: T.Number
-    let canvasHeight: T.Number
-    
-    private(set) var currentX: T.Number = .zero
-    private(set) var currentY: T.Number = .zero
-    private var largestHeightThisRow: T.Number = .zero
+public protocol AtlasContainer {
+    associatedtype Packable: AtlasPackable
+    var canvasWidth: Packable.Number { get }
+    var canvasHeight: Packable.Number { get }
+    var currentX: Packable.Number { get set }
+    var currentY: Packable.Number { get set }
+    var largestHeightThisRow: Packable.Number { get set }
+}
+
+public struct AtlasContainerVertex: AtlasContainer, Codable {
+    public typealias Packable = VertexRect
+    public var canvasWidth: Int
+    public var canvasHeight: Int
+    public var currentX: Int = .zero
+    public var currentY: Int = .zero
+    public var largestHeightThisRow: Int = .zero
     
     public init(
-        width: T.Number,
-        height: T.Number
+        canvasWidth: Int,
+        canvasHeight: Int
     ) {
-        self.canvasWidth = width
-        self.canvasHeight = height
+        self.canvasWidth = canvasWidth
+        self.canvasHeight = canvasHeight
     }
+}
+
+public struct AtlasContainerUV: AtlasContainer, Codable {
+    public typealias Packable = UVRect
+    public var canvasWidth: Float
+    public var canvasHeight: Float
+    public var currentX: Float = .zero
+    public var currentY: Float = .zero
+    public var largestHeightThisRow: Float = .zero
     
-    public func packNextRect(_ rect: T) {
+    public init(
+        canvasWidth: Float,
+        canvasHeight: Float
+    ) {
+        self.canvasWidth = canvasWidth
+        self.canvasHeight = canvasHeight
+    }
+}
+
+public extension AtlasContainer {
+    mutating func packNextRect(
+        _ rect: Packable
+    ) {
         // If this rectangle will go past the width of the image
         // Then loop around to next row, using the largest height from the previous row
         if (currentX + rect.width) > canvasWidth {
@@ -83,6 +111,6 @@ public class AtlasPacking<T: AtlasPackable> {
         }
         
         // Success!
-        rect.wasPacked = true;
+        rect.wasPacked = true
     }
 }

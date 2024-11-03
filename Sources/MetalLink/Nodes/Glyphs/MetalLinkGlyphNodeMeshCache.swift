@@ -8,6 +8,7 @@
 import Foundation
 import BitHandling
 
+// TODO: This might go the way of the way of things that go, go
 public class MetalLinkGlyphNodeMeshCache: LockingCache<GlyphCacheKey, MetalLinkQuadMesh> {
     let link: MetalLink
     
@@ -15,7 +16,8 @@ public class MetalLinkGlyphNodeMeshCache: LockingCache<GlyphCacheKey, MetalLinkQ
         self.link = link
     }
     
-    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
-        MetalLinkQuadMesh(link)
+    public override func make(_ key: Key) -> Value {
+        let newMesh = MetalLinkQuadMesh(link)
+        return newMesh
     }
 }

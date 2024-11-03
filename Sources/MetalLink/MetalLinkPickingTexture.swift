@@ -17,21 +17,35 @@ extension MetalLinkPickingTexture {
         private init() { }
 
         static let pixelFormat: MTLPixelFormat = .r32Uint
+//        static let clearColor: MTLClearColor = MTLClearColor(
+//            red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0
+//        )
         static let clearColor: MTLClearColor = MTLClearColor(
-            red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0
+            red: Double.infinity, green: 13, blue: 14, alpha: 0.0
         )
     }
 }
 
+public struct PickingTextureOutputWrapper {
+    public let id: InstanceIDType
+    public let origin: MTLOrigin
+    
+    public static let zero = PickingTextureOutputWrapper(id: 0, origin: .init(x: 0, y: 0, z: 0))
+}
+public typealias PickingTextureOutput = PickingTextureOutputWrapper
+//public typealias PickingTextureOutput = InstanceIDType
+
 public class MetalLinkPickingTexture: MetalLinkReader {
     public let link: MetalLink
+    public let commandQueue: MTLCommandQueue
     public var pickingTexture: MTLTexture?
     public var generateNewTexture: Bool = false
+    public var pickingPaused: Bool = false
     
-    public var currentHover: InstanceIDType = .zero {
+    public var currentHover: PickingTextureOutput = .zero {
         didSet { pickingHover.send(currentHover) }
     }
-    private let pickingHover = PassthroughSubject<InstanceIDType, Never>()
+    private let pickingHover = PassthroughSubject<PickingTextureOutput, Never>()
     public lazy var sharedPickingHover = pickingHover.share()
     
     private var bag = Set<AnyCancellable>()
@@ -39,6 +53,7 @@ public class MetalLinkPickingTexture: MetalLinkReader {
 
     public init(link: MetalLink, colorIndex: Int) {
         self.link = link
+        self.commandQueue = link.device.makeCommandQueue()!
         self.pickingTexture = MetalLinkPickingTexture.generatePickingTexture(for: link)
         self.colorIndex = colorIndex
         
@@ -70,9 +85,13 @@ public class MetalLinkPickingTexture: MetalLinkReader {
 
 private extension MetalLinkPickingTexture {
     func onMouseMove(_ mouseMove: OSEvent) {
+        guard !pickingPaused else { return }
+        
         let (x, y) = (mouseMove.locationInWindow.x.float,
                       mouseMove.locationInWindow.y.float)
         let position = convertToDrawablePosition(windowX: x, windowY: y)
+        guard !(position.x.isNaN || position.y.isNaN) else { return }
+        
         let origin = MTLOrigin(x: Int(position.x), y: Int(position.y), z: 0)
         doPickingTextureBlitRead(at: origin)
     }
@@ -81,11 +100,12 @@ private extension MetalLinkPickingTexture {
         guard sourceOrigin.x >= 0 && sourceOrigin.y >= 0 else { return }
         
         guard let pickingTexture = pickingTexture,
-              let commandBuffer = link.commandQueue.makeCommandBuffer(),
+              let commandBuffer = commandQueue.makeCommandBuffer(),
               let blitEncoder = commandBuffer.makeBlitCommandEncoder(),
               let pickBuffer = link.device.makeBuffer(length: InstanceIDType.memStride) else {
             return
         }
+        pickBuffer.label = "Temp picking buffer: \(sourceOrigin.x), \(sourceOrigin.y)"
         
         defer {
             blitEncoder.endEncoding()
@@ -100,7 +120,7 @@ private extension MetalLinkPickingTexture {
         commandBuffer.label = "PickingBuffer:\(sourceOrigin.x):\(sourceOrigin.y)"
         blitEncoder.label = "PickingEncoder:\(sourceOrigin.x):\(sourceOrigin.y)"
         commandBuffer.addCompletedHandler { buffer in
-            self.onPickBlitComplete(pickBuffer)
+            self.onPickBlitComplete(pickBuffer, sourceOrigin)
         }
         
         let sourceSize = MTLSize(width: 1, height: 1, depth: 1)
@@ -118,13 +138,22 @@ private extension MetalLinkPickingTexture {
         )
     }
     
-    func onPickBlitComplete(_ pickBuffer: MTLBuffer) {
+    func onPickBlitComplete(
+        _ pickBuffer: MTLBuffer,
+        _ origin: MTLOrigin
+    ) {
         let pointer = pickBuffer.boundPointer(as: InstanceIDType.self, count: 1)
-//        print("--------------------------------------\n")
-//        print("\nPick complete, found: \(pointer.pointee)")
-//        print("--------------------------------------\n")
-        guard pointer.pointee >= InstanceCounter.startingGeneratedID else { return }
-        currentHover = pointer.pointee
+
+//        guard pointer.pointee >= InstanceCounter.startingGeneratedID else {
+//            currentHover = .zero
+//            return
+//        }
+
+//        currentHover = pointer.pointee
+        currentHover = PickingTextureOutputWrapper(
+            id: pointer.pointee,
+            origin: origin
+        )
     }
 }
 
@@ -182,7 +211,7 @@ extension MetalLinkPickingTexture {
     }
 }
 
-extension LFloat2: Comparable {
+extension LFloat2: @retroactive Comparable {
     public static func < (lhs: SIMD2<Scalar>, rhs: SIMD2<Scalar>) -> Bool {
         return lhs.x < rhs.x
             && lhs.y < rhs.y

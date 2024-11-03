@@ -11,7 +11,7 @@ import BitHandling
 public class MetalLinkGlyphNodeBitmapCache: LockingCache<GlyphCacheKey, BitmapImages?> {
     let builder = GlyphBuilder()
     
-    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         builder.makeBitmaps(key)
     }
 }

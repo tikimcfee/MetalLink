@@ -11,63 +11,99 @@ import MetalLinkHeaders
 
 public extension GlyphCollection {
     class Pointer {
-        var position: LFloat3 = .zero
+        public var position: LFloat3 = .zero
         
-        func right(_ dX: Float) { position.x += dX }
-        func left(_ dX: Float) { position.x -= dX }
-        func up(_ dY: Float) { position.y += dY }
-        func down(_ dY: Float) { position.y -= dY }
-        func away(_ dZ: Float) { position.z -= dZ }
-        func toward(_ dZ: Float) { position.z += dZ }
+        public func right(_ dX: Float) { position.x += dX }
+        public func left(_ dX: Float) { position.x -= dX }
+        public func up(_ dY: Float) { position.y += dY }
+        public func down(_ dY: Float) { position.y -= dY }
+        public func away(_ dZ: Float) { position.z -= dZ }
+        public func toward(_ dZ: Float) { position.z += dZ }
         
-        func reset() { position = .zero }
+        public func reset() { position = .zero }
+    }
+    
+    class RenderState {
+        var lines: [[MetalLinkGlyphNode]] = []
     }
     
     class Renderer {
-        struct Config {
-            static let newLineSizeRatio: Float = 1.10
-        }
-        
         let pointer = Pointer()
-        let targetCollection: GlyphCollection
+        var pointerOffset = LFloat3.zero
         var lineCount = 0
+        var charactersInLines = 0
         private var currentPosition: LFloat3 { pointer.position }
-        
-        init(collection: GlyphCollection) {
-            self.targetCollection = collection
-        }
-        
-        func insert(
-            _ letterNode: MetalLinkGlyphNode,
-            _ constants: inout InstancedConstants
+                
+        public func insert(
+            _ letterNode: MetalLinkGlyphNode
         ) {
-            let size = LFloat2(
-                letterNode.quadWidth,
-                letterNode.quadHeight
-            )
-            
-            // *Must set initial model matrix on constants*.
-            // Nothing directly updates this in the normal render flow.
-            // Give them an initial based on the faux-node's position.
-            // TODO: Is this obsoleted with BackingBuffer and node updates?
+            let size = letterNode.quadSize
             letterNode.position = currentPosition
-            constants.modelMatrix = matrix_multiply(
-                targetCollection.modelMatrix,
-                letterNode.modelMatrix
-            )
-            
+            letterNode.rebuildNow()
             pointer.right(size.x)
             
-            if letterNode.key.source.isNewline {
+            charactersInLines += 1
+            
+            struct Config {
+                static let maxCharactersInLine: Int = 120
+                static let fileOffsetMinimum: Float = -300
+            }
+            
+            if letterNode.key.isNewline {
+                newLine(size)
+                
+                // lol 3d yo, if you have too many lines, we push you somewhere else
+                if pointer.position.y <= Config.fileOffsetMinimum {
+                    pointerOffset.x += Config.maxCharactersInLine.float
+                    pointer.position.x = pointerOffset.x
+                    pointer.position.y = 0
+                }
+            }
+
+            // Break on really long run-on lines
+            if charactersInLines >= Config.maxCharactersInLine {
                 newLine(size)
             }
         }
         
-        func newLine(_ size: LFloat2) {
-//            pointer.down(size.y * Config.newLineSizeRatio)
+        public func insertLineRaw(
+            line: String,
+            lineOffset: Int,
+            lineOffsetSize: LFloat2,
+            writer: GlyphCollectionWriter,
+            rawId: String
+        ) -> [GlyphNode] {
+            let pointer = Pointer()
+            pointer.down(lineOffsetSize.y * lineOffset.float)
+            
+            var nodes = [GlyphNode]()
+            for glyphKey in line {
+                guard let glyph = writer.writeGlyphToState(glyphKey) else {
+                    print("nooooooooooooooooooooo!")
+                    continue
+                }
+                
+                glyph.meta.syntaxID = rawId
+                glyph.position = pointer.position
+                glyph.rebuildNow()
+                
+                let size = glyph.quadSize
+                pointer.right(size.x)
+                
+                nodes.append(glyph)
+            }
+            
+            return nodes
+        }
+        
+        public func newLine(_ size: LFloat2) {
             pointer.down(size.y)
-            pointer.left(currentPosition.x)
+            pointer.position.x = pointerOffset.x
+            
             lineCount += 1
+            charactersInLines = 0
         }
     }
 }
+
+

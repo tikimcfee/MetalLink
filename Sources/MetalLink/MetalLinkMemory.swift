@@ -7,6 +7,9 @@
 //
 
 import simd
+import MetalLinkHeaders
+import MetalKit
+import Foundation
 
 public protocol MemoryLayoutSizable {
     static func memSize(of count: Int) -> Int
@@ -40,4 +43,10 @@ extension LFloat3: MemoryLayoutSizable { }
 extension LFloat4: MemoryLayoutSizable { }
 extension Float: MemoryLayoutSizable { }
 extension Int: MemoryLayoutSizable { }
+extension Int32: MemoryLayoutSizable { }
 extension Vertex: MemoryLayoutSizable { }
+extension ForceLayoutEdge: MemoryLayoutSizable { }
+extension ForceLayoutNode: MemoryLayoutSizable { }
+extension GlyphMapKernelAtlasIn: MemoryLayoutSizable { }
+extension GlyphMapKernelOut: MemoryLayoutSizable { }
+

@@ -6,10 +6,23 @@
 //
 
 import MetalKit
+import MetalLinkHeaders
 
+public typealias GlyphNode = MetalLinkGlyphNode
+public typealias NodeSyntaxID = String
+public typealias NodeSet = Set<GlyphNode>
+public typealias SortedNodeSet = [GlyphNode]
+
+// TODO: Use a delegate thing
+// Point model matrix / size / bounds / etc into a buffer pointer at an index.
+// That should mean instant updates into the GPU without computes... I guess..?
+// Parenting could work that way too...
+// TODO: Use a delegate thing 2
+// - So I jumped the shark and now I just iterate over the whole buffer,
+//   match the instance id, and create a whole new node around it. I could make a
+//   convenience init for that. 
 public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public let key: GlyphCacheKey
-    public let texture: MTLTexture
     public var meta: Meta
     
     public var quad: MetalLinkQuadMesh
@@ -17,36 +30,33 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     
     public override var hasIntrinsicSize: Bool { true }
     
-    public override var contentSize: LFloat3 {
-        LFloat3(quad.width, quad.height, 1)
+    public override var contentBounds: Bounds {
+        Bounds(
+            LFloat3(-quad.width / 2.0, -quad.height / 2.0, 0),
+            LFloat3( quad.width / 2.0,  quad.height / 2.0, 1)
+        ) * scale
     }
     
-    public override var contentOffset: LFloat3 {
-        LFloat3(-quad.width / 2.0, quad.height / 2.0, 0)
-    }
-    
-    public init(_ link: MetalLink,
-         key: GlyphCacheKey,
-         texture: MTLTexture,
-         quad: MetalLinkQuadMesh) {
+    public init(
+        _ link: MetalLink,
+        key: GlyphCacheKey,
+        quad: MetalLinkQuadMesh
+    ) {
         self.key = key
-        self.texture = texture
         self.quad = quad
         self.meta = Meta()
         super.init(link, mesh: quad)
-        setQuadSize()
     }
     
-    public func setQuadSize() {
+    public func setQuadSize(size: LFloat2) {
         guard !quad.initialSizeSet else { return }
-        let size = UnitSize.from(texture.simdSize)
+        let size = UnitSize.from(size)
         quad.setSize(size)
     }
     
-    // TODO: This isn't really used anymore, glyphs are done with instancing now.
-    // This allow glyphs to be drawing without said instancing though.
-    public override func applyTextures(_ sdp: inout SafeDrawPass) {
-        sdp.renderCommandEncoder.setFragmentTexture(texture, index: 0)
+    public func setQuadUnitSize(size: LFloat2) {
+        guard !quad.initialSizeSet else { return }
+        quad.setSize(size)
     }
 }
 
@@ -57,18 +67,12 @@ public extension MetalLinkGlyphNode {
     // flexibility and adding cohesion (coupling?). This is basically what I
     // encoded into SCNNode.name. This is more explicit.
     struct Meta {
-        public var syntaxID: String? // TODO: This used to be `NodeSyntaxID`
-        public var instanceID: InstanceIDType?
-        public var instanceBufferIndex: Int?
+        public var syntaxID: NodeSyntaxID?
         
         public init(
-            syntaxID: String? = nil,
-            instanceID: InstanceIDType? = nil,
-            instanceBufferIndex: Int? = nil
+            syntaxID: String? = nil
         ) {
             self.syntaxID = syntaxID
-            self.instanceID = instanceID
-            self.instanceBufferIndex = instanceBufferIndex
         }
     }
 }

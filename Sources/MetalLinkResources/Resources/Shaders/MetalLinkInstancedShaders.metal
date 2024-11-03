@@ -1,5 +1,5 @@
 //
-//  2ETimeTutorialShader.metal
+//  SwiftGlyphInstancingShader.metal
 //  MetalSimpleInstancing
 //
 //  Created by Ivan Lugo on 8/6/22.
@@ -9,9 +9,11 @@
 #include <metal_stdlib>
 using namespace metal;
 
+//#include "include/MetalLinkResources.h"
 #include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 
+constant float4x4 identityMatrix = float4x4(1.0);
 
 float4x4 rotate(float3 axis, float angleRadians) {
     float x = axis.x, y = axis.y, z = axis.z;
@@ -23,7 +25,6 @@ float4x4 rotate(float3 axis, float angleRadians) {
                     float4( t * x * z + y * s, t * y * z - x * s,     t * z * z + c, 0),
                     float4(                 0,                 0,                 0, 1));
 }
-
 
 float4x4 rotateAboutX(float angleRadians) {
     constexpr float3 X_AXIS = float3(1, 0, 0);
@@ -39,51 +40,6 @@ float4x4 rotateAboutZ(float angleRadians) {
     constexpr float3 X_AXIS = float3(0, 0, 1);
     return rotate(X_AXIS, angleRadians);
 }
-
-
-// MARK: - Instances
-
-// recall buffer(x) is the Swift-defined buffer position for these vertices
-vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage_in ]],
-                                                constant SceneConstants &sceneConstants [[ buffer(1) ]],
-                                                constant InstancedConstants *modelConstants [[ buffer(2) ]],
-                                                constant VirtualParentConstants *parentConstants [[ buffer(3) ]],
-                                                uint instanceId [[ instance_id ]] ) {
-    RasterizerData rasterizerData;
-    InstancedConstants constants = modelConstants[instanceId];
-    VirtualParentConstants parent = parentConstants[constants.parentIndex];
-    
-    // Static matrix
-    float4x4 instanceModel = constants.modelMatrix;
-    float4x4 parentMatrix = parent.modelMatrix;
-    
-    // Do test rotation
-//    float4x4 instanceModel = constants.modelMatrix
-//    * rotateAboutX(cos(sceneConstants.totalGameTime))
-//    * rotateAboutY(sin(sceneConstants.totalGameTime));
-    
-    rasterizerData.position =
-    sceneConstants.projectionMatrix // camera
-    * sceneConstants.viewMatrix     // viewport
-    * parentMatrix                  // parent!?
-    * instanceModel                 // transforms
-    * float4(vertexIn.position, 1)  // current position
-    ;
-    
-    // Lol indexing into float4
-    uint uvIndex = vertexIn.uvTextureIndex;
-    float u = constants.textureDescriptorU[uvIndex];
-    float v = constants.textureDescriptorV[uvIndex];
-    rasterizerData.textureCoordinate = float2(u, v);
-    
-    rasterizerData.totalGameTime = sceneConstants.totalGameTime;
-    rasterizerData.vertexPosition = vertexIn.position;
-    rasterizerData.modelInstanceID = constants.instanceID;
-    rasterizerData.addedColor = constants.addedColor;
-    
-    return rasterizerData;
-}
-
 
 float4 colorBlend_Add(float4 bottom, float4 top) {
     bottom.r = bottom.r + top.r;
@@ -110,15 +66,69 @@ float4 colorBlend_Screen(float4 a, float4 b) {
 }
 
 float4 colorBlend_Multiply(float4 bottom, float4 top) {
-//    if (top.r > 0) { bottom.r = bottom.r * top.r; }
-//    if (top.g > 0) { bottom.g = bottom.g * top.g; }
-//    if (top.b > 0) { bottom.b = bottom.b * top.b; }
-    bottom.r = bottom.r * top.r;
-    bottom.g = bottom.g * top.g;
-    bottom.b = bottom.b * top.b;
+    if (top.r > 0) { bottom.r = bottom.r * top.r; }
+    if (top.g > 0) { bottom.g = bottom.g * top.g; }
+    if (top.b > 0) { bottom.b = bottom.b * top.b; }
+//    bottom.r = bottom.r * top.r;
+//    bottom.g = bottom.g * top.g;
+//    bottom.b = bottom.b * top.b;
     return bottom;
 }
 
+
+// MARK: - Instances
+
+bool getNthBit_I(int8_t value, uint8_t bitPosition) {
+    // Check if the bit at the given position is set (1) or not (0)
+    return (value & (1 << bitPosition)) != 0;
+}
+
+
+// recall buffer(x) is the Swift-defined buffer position for these vertices
+vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage_in ]],
+                                                constant SceneConstants &sceneConstants [[ buffer(1) ]],
+                                                constant InstancedConstants *modelConstants [[ buffer(2) ]],
+                                                constant BasicModelConstants &parentConstants [[ buffer(9) ]], // Constants of the parent rendered object this instance is attached to
+                                                uint instanceId [[ instance_id ]] ) {
+    RasterizerData rasterizerData;
+    InstancedConstants constants = modelConstants[instanceId];
+    
+    // Static matrix
+    float4x4 instanceModel = constants.modelMatrix;
+    float4x4 parentMatrix = identityMatrix;
+    bool useParent = getNthBit_I(constants.flags, 0);
+    if (useParent) {
+        parentMatrix = parentConstants.modelMatrix;
+    }
+    
+    // Do test rotation
+//    float4x4 instanceModel = constants.modelMatrix
+//    * rotateAboutX(cos(sceneConstants.totalGameTime))
+//    * rotateAboutY(sin(sceneConstants.totalGameTime));
+    
+    rasterizerData.position =
+      sceneConstants.projectionMatrix // camera
+    * sceneConstants.viewMatrix       // viewport
+    * parentMatrix                    // parent root transform
+    * instanceModel                   // transforms
+    * float4(vertexIn.position, 1)    // current position
+    ;
+    
+    // Lol indexing into float4
+    uint uvIndex = vertexIn.uvTextureIndex;
+    float u = constants.textureDescriptorU[uvIndex];
+    float v = constants.textureDescriptorV[uvIndex];
+    rasterizerData.textureCoordinate = float2(u, v);
+    
+    rasterizerData.totalGameTime = sceneConstants.totalGameTime;
+    rasterizerData.vertexPosition = vertexIn.position;
+    rasterizerData.modelInstanceID = constants.bufferIndex;
+    
+    rasterizerData.addedColor = float4(constants.addedColorR / 255.0, constants.addedColorG / 255.0, constants.addedColorB / 255.0, 1.0);
+    rasterizerData.multipliedColor = float4(constants.multipliedColorR / 255.0, constants.multipliedColorG / 255.0, constants.multipliedColorB / 255.0, 1.0);
+    
+    return rasterizerData;
+}
 
 // Instanced texturing and 'instanceID' coloring for hit-test/picking
 fragment PickingTextureFragmentOut instanced_fragment_function(
@@ -130,9 +140,11 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
                               filter::bicubic);
     
     float4 color = atlas.sample(sampler, rasterizerData.textureCoordinate);
-    color = colorBlend_Add(color, rasterizerData.addedColor);
+    
 //    color = colorBlend_Overlay(color, rasterizerData.addedColor);
-//    color = colorBlend_Multiply(color, rasterizerData.addedColor);
+    // TODO: Configure ordering
+    color = colorBlend_Multiply(color, rasterizerData.multipliedColor);
+    color = colorBlend_Add(color, rasterizerData.addedColor);
         
     PickingTextureFragmentOut out;
     out.mainColor = float4(color.r, color.g, color.b, color.a);

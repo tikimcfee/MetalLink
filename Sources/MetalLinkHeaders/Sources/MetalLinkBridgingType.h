@@ -6,18 +6,15 @@
 //
 
 
-
 #ifndef MetalLinkBridgingType_h
 #define MetalLinkBridgingType_h
-#include <simd/simd.h>
-// TODO: Make `uint` type a bridged name.
 
+#include <simd/simd.h>
 
 struct BasicModelConstants {
     simd_float4x4 modelMatrix;
     simd_float4 color;
-    uint textureIndex;
-    uint pickingId;
+    int pickingId;
 };
 
 struct InstancedConstants {
@@ -25,10 +22,59 @@ struct InstancedConstants {
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
-    uint instanceID;
-    simd_float4 addedColor;
-    uint parentIndex; // index of virtualparentconstants from cpu mtlbuffer
-    uint bufferIndex; // index of self in cpu mtlbuffer
+    // Compute specific
+    simd_float2 textureSize;
+    simd_float4 positionOffset;
+    uint64_t unicodeHash;
+    
+    uint8_t addedColorR;
+    uint8_t addedColorG;
+    uint8_t addedColorB;
+    uint8_t multipliedColorR;
+    uint8_t multipliedColorG;
+    uint8_t multipliedColorB;
+    
+    /*
+     MetalLinkGPUTypes.swift
+     public enum Flag: UInt8 {
+         case useParent
+         case ignoreHover
+     }
+     */
+    int8_t flags;
+    int bufferIndex; // index of self in cpu mtlbuffer
+};
+
+// MARK: - Glyphees
+
+struct GlyphMapKernelAtlasIn {
+    uint64_t unicodeHash;
+    
+    simd_float2 textureSize;
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+};
+
+// MARK: -- GlyphMapKernel Outputs and Structs
+
+struct GlyphMapKernelOut {
+    uint32_t codePoint;
+    uint64_t unicodeHash;
+
+    // --- buffer indexing
+    int sourceRenderableStringIndex; // the index for this glyph as it appears in its source, rendered 'text'
+    
+    // --- texture
+    simd_float2 textureSize;
+    simd_float4 textureDescriptorU;
+    simd_float4 textureDescriptorV;
+    
+    // --- layout
+    simd_float4 positionOffset;
+    
+    int rendered;
+    int foundLineStart;
+    int LineBreaksAtRender;
 };
 
 struct SceneConstants {
@@ -38,19 +84,42 @@ struct SceneConstants {
     simd_float4x4 pointerMatrix;
 };
 
-struct VirtualParentConstants {
-    // TODO: Use a flag and an index to do the parenting thing
-    // Not sure if this will work, but might be able to do
-    // parent multiplication on GPU with something like this
-//    uint parentBufferIndex;
-//    uint useParentBuffer;
+enum GraphemeStatus {
+    SINGLE = 0,
+    START,
+    MIDDLE,
+    END
+};
+
+enum GraphemeCategory {
+    // -- 'utf32GlyphSingle`
+    //- 0 : "single"
+    utf32GlyphSingle = 0,
     
-    simd_float4x4 modelMatrix;
-    uint bufferIndex; // index of self in cpu mtlbuffer
+    // -- 'utf32GlyphEmojiPrefix`
+    //- 1 : "start"
+    //- 2 : "middle"
+    //- 3 : "middle"
+    //- 4 : "end"
+    utf32GlyphEmojiPrefix,
+    
+    // -- 'utf32GlyphTag`
+    //- 14 : "start"
+    //- 15 : "end"
+    //- 16 : "middle"
+    //- 17 : "end"
+    utf32GlyphTag,
+    
+    // -- 'utf32GlyphEmojiSingle`
+    //- 40 : "start"
+    //- 41 : "middle"
+    //- 42 : "end"
+    //- 43 : "end"
+    utf32GlyphEmojiSingle,
+    
+    // -- 'utf32GlyphData`
+    //- 0 : "single"
+    utf32GlyphData
 };
 
 #endif /* MetalLinkBridgingType_h */
-
-
-
-

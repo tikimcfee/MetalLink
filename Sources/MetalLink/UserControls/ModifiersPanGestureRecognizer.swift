@@ -1,5 +1,4 @@
 import Foundation
-import SceneKit
 import SwiftUI
 
 extension GestureRecognizer {
@@ -29,7 +28,7 @@ extension UIPanGestureRecognizer {
         )
     }
 }
-extension UIPinchGestureRecognizer {
+extension MagnificationGestureRecognizer {
     var makeMagnificationEvent: MagnificationEvent {
         return MagnificationEvent(
             state: state.translated,
@@ -77,7 +76,10 @@ class ModifierStore {
     }
 
     var pressingCommand: Bool {
-//        modifierFlags.contains(.command)
+        modifierFlags.contains(.command)
+    }
+    
+    var pressingShift: Bool {
         modifierFlags.contains(.shift)
     }
 
@@ -87,8 +89,8 @@ class ModifierStore {
 
     func computePositions(_ currentLocation: CGPoint) {
         positionsForFlagChanges[.option] = pressingOption ? currentLocation : nil
-//        positionsForFlagChanges[.command] = pressingCommand ? currentLocation : nil
-        positionsForFlagChanges[.shift] = pressingCommand ? currentLocation : nil
+        positionsForFlagChanges[.command] = pressingCommand ? currentLocation : nil
+        positionsForFlagChanges[.shift] = pressingShift ? currentLocation : nil
         positionsForFlagChanges[.control] = pressingControl ? currentLocation : nil
     }
 }
@@ -148,8 +150,9 @@ class ModifiersPanGestureRecognizer: PanGestureRecognizer {
         return PanEvent(
             state: state.translated,
             currentLocation: currentLocation.asSimd,
-            commandStart: self[.shift]?.asSimd,
+            commandStart: self[.command]?.asSimd,
             optionStart: self[.option]?.asSimd,
+            shiftStart: self[.shift]?.asSimd,
             controlStart: self[.control]?.asSimd
         )
     }
@@ -172,7 +175,7 @@ extension NSGestureRecognizer.State {
     }
 }
 
-extension NSGestureRecognizer.State: CustomStringConvertible {
+extension NSGestureRecognizer.State: @retroactive CustomStringConvertible {
     public var description: String {
         switch self {
         case .began:
@@ -194,7 +197,7 @@ extension NSGestureRecognizer.State: CustomStringConvertible {
     }
 }
 
-extension NSEvent.ModifierFlags: Hashable {
+extension NSEvent.ModifierFlags: @retroactive Hashable {
     public var hashValue: Int {
         return rawValue.hashValue
     }

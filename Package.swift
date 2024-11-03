@@ -1,4 +1,4 @@
-// swift-tools-version: 5.8
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "MetalLink",
     platforms: [
-        .iOS(.v15),
-        .macOS(.v13),
+        .iOS(.v17),
+        .macOS(.v14),
     ],
     products: [
         .library(
@@ -16,14 +16,21 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "main")
+        .package(url: "https://github.com/tikimcfee/BitHandling.git", branch: "sgalpha-bits"),
+//        .package(url: "https://github.com/schwa/MetalCompilerPlugin", branch: "main")
     ],
     targets: [
+//        .target(
+//            name: "MetalLinkResources",
+//            plugins: [
+//                .plugin(name: "MetalCompilerPlugin", package: "MetalCompilerPlugin")
+//            ]
+//        ),
         .target(
             name: "MetalLinkResources",
             dependencies: ["MetalLinkHeaders"],
             resources: [
-                .process("Sources/Shaders"),
+                .process("Resources/Shaders"),
             ],
             publicHeadersPath: "."
         ),
@@ -35,6 +42,7 @@ let package = Package(
             name: "MetalLink",
             dependencies: [
                 "MetalLinkResources",
+                "MetalLinkHeaders",
                 "BitHandling"
             ]
         ),

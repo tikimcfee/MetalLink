@@ -13,9 +13,11 @@ import MetalLinkHeaders
 import Combine
 
 public class MetalLink {
+    public let DefaultQueueMaxUnprocessedBuffers = 64
+    
     public let view: CustomMTKView
     public let device: MTLDevice
-    public let commandQueue: MTLCommandQueue
+    public let defaultCommandQueue: MTLCommandQueue
     public let defaultLibrary: MTLLibrary
     public let input: DefaultInputReceiver
     
@@ -25,7 +27,6 @@ public class MetalLink {
     // They all use MetalLink._library to fetch, and could be fields instead
     public lazy var meshLibrary = MeshLibrary(self)
     public lazy var shaderLibrary = MetalLinkShaderCache(link: self)
-    public lazy var vertexDescriptorLibrary = VertexDescriptorLibrary(link: self)
     public lazy var renderPipelineDescriptorLibrary = RenderPipelineDescriptorLibrary(link: self)
     public lazy var pipelineStateLibrary = RenderPipelineStateLibrary(link: self)
     public lazy var depthStencilStateLibrary = DepthStencilStateLibrary(link: self)
@@ -39,21 +40,36 @@ public class MetalLink {
     
     public init(view: CustomMTKView) throws {
         self.view = view
-        guard let device = view.device else { throw CoreError.noMetalDevice }
-        guard let queue = device.makeCommandQueue() else { throw CoreError.noCommandQueue }
-        guard let library = MetalLinkResources.getDefaultLibrary(from: device) else { throw CoreError.noDefaultLibrary }
+        
+        guard let device = view.device
+        else {
+            throw CoreError.noMetalDevice
+        }
+        
+        guard let queue = device.makeCommandQueue(maxCommandBufferCount: DefaultQueueMaxUnprocessedBuffers)
+        else {
+            throw CoreError.noCommandQueue
+        }
+        
+        guard let library = MetalLinkResources.getDefaultLibrary(from: device)
+        else {
+            throw CoreError.noDefaultLibrary
+        }
+        
         self.device = device
-        self.commandQueue = queue
+        self.defaultCommandQueue = queue
         self.defaultLibrary = library
         self.input = DefaultInputReceiver.shared
     }
 }
 
+#if !os(visionOS)
 extension MetalLink {
     func onSizeChange(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         sizeSubject.send(size)
     }
 }
+#endif
 
 // MetalLink reads itself lol
 extension MetalLink: MetalLinkReader {
@@ -61,13 +77,29 @@ extension MetalLink: MetalLinkReader {
 }
 
 #if os(iOS)
-extension OSEvent {
-    var locationInWindow: LFloat2 { LFloat2.zero }
+public extension OSEvent {
+    var locationInWindow: LFloat2 {
+        set { 
+            automationElements = [newValue]
+        }
+        get {
+            // TODO: Test if this works across device
+            guard let elements = automationElements,
+                  !elements.isEmpty,
+                  let location = elements[0] as? LFloat2
+            else { return .zero }
+            return location
+        }
+    }
     var deltaY: Float { 0.0 }
     var deltaX: Float { 0.0 }
 }
 
-extension Float {
+public extension LFloat2 {
+    var asSimd: Self { self }
+}
+
+public extension Float {
     var float: Float { self }
 }
 #endif

@@ -13,10 +13,12 @@ public protocol BackingIndexed {
 }
 
 public extension BackingIndexed {
-    var arrayIndex: Int { Int(bufferIndex) }
+    var arrayIndex: Int {
+        Int(bufferIndex)
+    }
 }
 
-public let BackingBufferDefaultSize = 31_415
+public let BackingBufferDefaultSize = 256
 
 public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     public let link: MetalLink
@@ -24,8 +26,10 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
     public var pointer: UnsafeMutablePointer<Stored>
     
     public let enlargeMultiplier = 2.01
-    private(set) public var currentBufferSize: Int
-    private(set) public var currentEndIndex = 0
+    
+    public var currentBufferSize: Int
+    public var currentEndIndex = 0
+    
     private var shouldRebuild: Bool {
         currentEndIndex == currentBufferSize
     }
@@ -40,9 +44,15 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         initialSize: Int = BackingBufferDefaultSize
     ) throws {
         self.link = link
-        self.currentBufferSize = initialSize
-        let buffer = try link.makeBuffer(of: Stored.self, count: currentBufferSize)
+        // Take the max to make enough for room for long names of small files
+        self.currentBufferSize = Swift.max(initialSize, BackingBufferDefaultSize)
+        
+        let buffer = try link.makeBuffer(of: Stored.self, count: initialSize)
         self.buffer = buffer
+        self.pointer = buffer.boundPointer(as: Stored.self, count: initialSize)
+    }
+    
+    public func remakePointer() {
         self.pointer = buffer.boundPointer(as: Stored.self, count: currentBufferSize)
     }
     
@@ -53,7 +63,7 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         defer { createSemaphore.signal() }
         
         if shouldRebuild {
-            try expandBuffer(nextSize: defaultEnlargeNextSize)
+            try expandBuffer(nextSize: defaultEnlargeNextSize, force: false)
         }
         
         var next = pointer[currentEndIndex]
@@ -68,12 +78,16 @@ public class BackingBuffer<Stored: MemoryLayoutSizable & BackingIndexed> {
         return next
     }
     
-    private func expandBuffer(
-        nextSize: Int
+    public func expandBuffer(
+        nextSize: Int,
+        force: Bool
     ) throws {
         enlargeSemaphore.wait()
         defer { enlargeSemaphore.signal() }
-        guard shouldRebuild else {
+        
+        guard nextSize > currentBufferSize else { return }
+        
+        guard shouldRebuild || force else {
             print("Already enlarged by another consumer; breaking")
             return
         }

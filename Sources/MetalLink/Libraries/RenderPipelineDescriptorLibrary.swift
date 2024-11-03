@@ -26,7 +26,7 @@ public class RenderPipelineDescriptorLibrary: LockingCache<MetalLinkDescriptorPi
         self.link = link
     }
     
-    public override func make(_ key: Key, _ store: inout [Key: Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         switch key {
         case .BasicPipelineDescriptor:
             return Basic(link)
@@ -45,7 +45,7 @@ public extension RenderPipelineDescriptorLibrary {
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.BasicVertex]
-            let vertexDescriptor = link.vertexDescriptorLibrary[.Basic]
+            let vertexDescriptor = MetalLinkVertexType.Basic.descriptor
             let fragmentFunction = link.shaderLibrary[.BasicFragment]
             
             self.renderPipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -68,7 +68,7 @@ extension RenderPipelineDescriptorLibrary {
         
         init(_ link: MetalLink) {
             let vertexFunction = link.shaderLibrary[.InstancedVertex]
-            let vertexDescriptor = link.vertexDescriptorLibrary[.Instanced]
+            let vertexDescriptor = MetalLinkVertexType.Instanced.descriptor
             let fragmentFunction = link.shaderLibrary[.InstancedFragment]
             
             self.renderPipelineDescriptor = MTLRenderPipelineDescriptor()
@@ -82,4 +82,14 @@ extension RenderPipelineDescriptorLibrary {
             renderPipelineDescriptor.label = name
         }
     }
+}
+
+func _applyBasicAlphaBlending(to descriptor: MTLRenderPipelineDescriptor, at index: Int) {
+    descriptor.colorAttachments[index].isBlendingEnabled = true
+    descriptor.colorAttachments[index].rgbBlendOperation = .add
+    descriptor.colorAttachments[index].alphaBlendOperation = .add
+    descriptor.colorAttachments[index].sourceRGBBlendFactor = .sourceAlpha
+    descriptor.colorAttachments[index].sourceAlphaBlendFactor = .sourceAlpha
+    descriptor.colorAttachments[index].destinationRGBBlendFactor = .oneMinusSourceAlpha
+    descriptor.colorAttachments[index].destinationAlphaBlendFactor = .oneMinusSourceAlpha
 }

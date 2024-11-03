@@ -6,6 +6,12 @@ import Foundation
 import MetalKit
 import SwiftUI
 
+#if os(macOS)
+public let METAL_VIEW_MTK_PIXEL_FORMAT = MTLPixelFormat.rgba8Unorm // macOS
+#else
+public let METAL_VIEW_MTK_PIXEL_FORMAT = MTLPixelFormat.bgra8Unorm // iOS
+#endif
+
 public struct MetalView: NSUIViewRepresentable {
     public var mtkView: CustomMTKView
     public var link: MetalLink
@@ -23,11 +29,13 @@ public struct MetalView: NSUIViewRepresentable {
     
     #if os(iOS)
     public func makeUIView(context: Context) -> some UIView {
+        #if !os(visionOS)
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
-        mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.colorPixelFormat = METAL_VIEW_MTK_PIXEL_FORMAT
         mtkView.depthStencilPixelFormat = .depth32Float
+        #endif
         return mtkView
     }
     
@@ -39,7 +47,7 @@ public struct MetalView: NSUIViewRepresentable {
         mtkView.preferredFramesPerSecond = 60
         mtkView.enableSetNeedsDisplay = true
         mtkView.isPaused = false
-        mtkView.colorPixelFormat = .bgra8Unorm
+        mtkView.colorPixelFormat = METAL_VIEW_MTK_PIXEL_FORMAT
         mtkView.depthStencilPixelFormat = .depth32Float
         return mtkView
     }
@@ -72,19 +80,22 @@ public extension MetalView {
             mtkView.keyDownReceiver = link.input
             mtkView.positionReceiver = link.input
             
-//            print("-- Metal Gesture Recognizers --")
-//            print("This will disable some view events by default, like 'drag'")
-//            mtkView.addGestureRecognizer(link.input.gestureShim.tapGestureRecognizer)
-//            mtkView.addGestureRecognizer(link.input.gestureShim.magnificationRecognizer)
-//            mtkView.addGestureRecognizer(link.input.gestureShim.panRecognizer)
-//            print("-------------------------------")
+            #if os(iOS)
+            print("-- Metal Gesture Recognizers --")
+            print("This will disable some view events by default, like 'drag'")
+            mtkView.addGestureRecognizer(link.input.gestureShim.tapGestureRecognizer)
+            mtkView.addGestureRecognizer(link.input.gestureShim.magnificationRecognizer)
+            mtkView.addGestureRecognizer(link.input.gestureShim.panRecognizer)
+            print("-------------------------------")
+            #endif
             
+            #if !os(visionOS)
             mtkView.delegate = renderer
             mtkView.framebufferOnly = false
             mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
             mtkView.drawableSize = mtkView.frame.size
             mtkView.enableSetNeedsDisplay = true
+            #endif
         }
     }
 }
-

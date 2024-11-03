@@ -5,8 +5,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tikimcfee/BitHandling.git",
       "state" : {
+        "branch" : "sgalpha-bits",
+        "revision" : "3c527920400caebf8682ea7ab929daa911d33344"
+      }
+    },
+    {
+      "identity" : "metalcompilerplugin",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/schwa/MetalCompilerPlugin",
+      "state" : {
         "branch" : "main",
-        "revision" : "f54e0969e58dad58d5b11349b263ea1308e845a3"
+        "revision" : "8eee0b05069520306c93abe7ee9a333740d59007"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser",
+      "state" : {
+        "revision" : "41982a3656a71c768319979febd796c6fd111d5c",
+        "version" : "1.5.0"
       }
     },
     {

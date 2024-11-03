@@ -18,6 +18,7 @@ public struct FontRenderer {
 
 public extension FontRenderer {
     func measure(_ text: String) -> (LFloat2, LFloat2) {
+        
         let measureSize = text.size(withAttributes: [.font: measuringFont])
         let textSize = LFloat2(measureSize.width.float, measureSize.height.float)
         let textSizeScaled = LFloat2(
@@ -36,9 +37,9 @@ public extension FontRenderer {
 
 private extension FontRenderer {
 #if os(iOS)
-    static let FONT_SIZE: Float = 16.0
+    static let FONT_SIZE: Float = 32.0
     static let SCALE_FACTOR: Float = 1.0
-    static let DESCALE_FACTOR: Float = 16.0
+    static let DESCALE_FACTOR: Float = 32.0
 #else
     static let FONT_SIZE: Float = 32.0
     static let SCALE_FACTOR: Float = 1.0

@@ -1,9 +1,7 @@
-//
-//  File.swift
 //  
 //
-//  Created by Ivan Lugo on 6/8/23.
-//
+//  Created on 12/16/23.
+//  
 
 import Foundation
 import Metal

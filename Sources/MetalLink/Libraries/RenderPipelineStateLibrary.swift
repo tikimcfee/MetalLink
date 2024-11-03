@@ -26,7 +26,7 @@ public class RenderPipelineStateLibrary: LockingCache<MetalLinkRenderPipelineSta
         self.link = link
     }
     
-    public override func make(_ key: Key, _ store: inout [Key: Value]) -> RenderPipelineState {
+    public override func make(_ key: Key) -> Value {
         switch key {
         case .Basic:
             return try! Basic(link)

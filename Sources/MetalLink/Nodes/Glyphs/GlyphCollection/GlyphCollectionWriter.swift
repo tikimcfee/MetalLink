@@ -8,6 +8,56 @@
 import Foundation
 import MetalLinkHeaders
 
+class RopeNode {
+    var value: String
+    var weight: Int
+    var left: RopeNode?
+    var right: RopeNode?
+
+    init(value: String) {
+        self.value = value
+        self.weight = value.count
+    }
+}
+
+class Rope {
+    var root: RopeNode
+
+    init(value: String) {
+        self.root = RopeNode(value: value)
+    }
+
+    func index(_ i: Int) -> Character? {
+        return index(i, node: root)
+    }
+
+    private func index(_ i: Int, node: RopeNode?) -> Character? {
+        guard let node = node else { return nil }
+        let value = node.value
+        
+        if i < node.weight {
+            return i < value.count
+                ? value[value.index(value.startIndex, offsetBy: i)]
+                : index(i - node.weight, node: node.right)
+        } else {
+            return index(i - node.weight, node: node.right)
+        }
+    }
+
+    // Insertion and deletion methods would go here.
+}
+
+public actor AsyncCollectionWriter {
+    let target: GlyphCollection
+    var linkAtlas: MetalLinkAtlas { target.linkAtlas }
+    
+    public init(target: GlyphCollection) {
+        self.target = target
+    }
+    
+    
+}
+
 public struct GlyphCollectionWriter {
     private static let locked_worker = DispatchQueue(label: "WriterWritingWritely", qos: .userInteractive)
     
@@ -22,50 +72,35 @@ public struct GlyphCollectionWriter {
     // potentially recreating the buffer hundreds of times.
     // Buffer *should* only reset when the texture is called,
     // but that's a fragile guarantee.
-    public func addGlyph(
-        _ key: GlyphCacheKey,
-        _ action: (GlyphNode, inout InstancedConstants) -> Void
-    ) {
-        Self.locked_worker.sync {
-            doAddGlyph(key, action)
-        }
+    public func writeGlyphToState(
+        _ key: GlyphCacheKey
+    ) -> GlyphNode? {
+        addGlyphToCollectionState(key)
     }
     
-    private func doAddGlyph(
-        _ key: GlyphCacheKey,
-        _ action: (GlyphNode, inout InstancedConstants) -> Void
-    ) {
-        guard let newGlyph = linkAtlas.newGlyph(key) else {
+    private func addGlyphToCollectionState(
+        _ key: GlyphCacheKey
+    ) -> GlyphNode? {
+        linkAtlas.addGlyphToAtlasIfMissing(key)
+        
+        guard let newGlyph = target.generateInstance(key) else {
             print("No glyph for", key)
-            return
+            return .none
         }
-        
         newGlyph.parent = target
-        target.instanceState.appendToState(
-            node: newGlyph
-        )
         
-        do {
-            try target.instanceState.makeAndUpdateConstants { constants in
-                if let cachedPair = linkAtlas.uvPairCache[key] {
-                    constants.textureDescriptorU = cachedPair.u
-                    constants.textureDescriptorV = cachedPair.v
-                } else {
-                    print("--------------")
-                    print("MISSING UV PAIR")
-                    print("\(key.glyph)")
-                    print("--------------")
-                }
-                
-                target.instanceState.instanceIdNodeLookup[constants.instanceID] = newGlyph
-                newGlyph.meta.instanceBufferIndex = constants.arrayIndex
-                newGlyph.meta.instanceID = constants.instanceID
-                target.renderer.insert(newGlyph, &constants)
-                action(newGlyph, &constants)
-            }
-        } catch {
-            print(error)
-            return
+        if let cachedPair = linkAtlas.builder.cacheRef[key] {
+            newGlyph.instanceConstants?.textureDescriptorU = cachedPair.u
+            newGlyph.instanceConstants?.textureDescriptorV = cachedPair.v
+            newGlyph.instanceConstants?.textureSize = UnitSize.from(cachedPair.size)
+            newGlyph.setQuadSize(size: cachedPair.size)
+        } else {
+            print("--------------")
+            print("MISSING UV PAIR")
+            print("\(key)")
+            print("--------------")
         }
+        
+        return newGlyph
     }
 }

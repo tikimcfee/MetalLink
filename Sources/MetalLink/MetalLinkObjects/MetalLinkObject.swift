@@ -19,7 +19,6 @@ public class MetalLinkObject: MetalLinkNode {
     private lazy var stencilState: MTLDepthStencilState
         = link.depthStencilStateLibrary[.Less]
     
-    public var state = State()
     public var constants = BasicModelConstants()
     private var material = MetalLinkMaterial()
     
@@ -30,12 +29,13 @@ public class MetalLinkObject: MetalLinkNode {
     }
     
     public override func update(deltaTime: Float) {
-        super.update(deltaTime: deltaTime)        
         updateModelConstants()
+        super.update(deltaTime: deltaTime)
     }
     
-    override public func doRender(in sdp: inout SafeDrawPass) {
+    override public func doRender(in sdp: SafeDrawPass) {
         guard let meshVertexBuffer = mesh.getVertexBuffer() else { return }
+        updateModelConstants()
         
         // Setup rendering states for next draw pass
         sdp.currentPipeline = pipelineState
@@ -47,18 +47,18 @@ public class MetalLinkObject: MetalLinkNode {
         
         // Update fragment shader
         sdp.currentBasicMaterial = material
-        applyTextures(&sdp)
+        applyTextures(sdp)
         
         // Do the draw
-        drawPrimitives(&sdp)
+        drawPrimitives(sdp)
     }
     
-    func applyTextures(_ sdp: inout SafeDrawPass) {
+    func applyTextures(_ sdp: SafeDrawPass) {
         
     }
     
     // Explicitly overridable
-    func drawPrimitives(_ sdp: inout SafeDrawPass) {
+    func drawPrimitives(_ sdp: SafeDrawPass) {
         sdp.renderCommandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: mesh.vertexCount)
     }
 }
@@ -73,6 +73,8 @@ extension MetalLinkObject {
 extension MetalLinkObject {
     public func updateModelConstants() {
         // Pull matrix from node position
-        constants.modelMatrix = modelMatrix
+        if currentModel.willUpdate {
+            constants.modelMatrix = modelMatrix
+        }
     }
 }

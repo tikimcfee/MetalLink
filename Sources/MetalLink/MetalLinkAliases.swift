@@ -9,8 +9,8 @@
 import Foundation
 
 public typealias TextureIndex = UInt32
-public typealias InstanceIDType = UInt32
-public typealias IndexedBufferType = UInt32
+public typealias InstanceIDType = Int32
+public typealias IndexedBufferType = Int32
 
 public typealias LInt2 = SIMD2<Int>
 public typealias LInt3 = SIMD3<Int>

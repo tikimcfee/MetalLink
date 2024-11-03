@@ -6,25 +6,26 @@
 //
 
 import Foundation
-import SceneKit
+import simd
 
 // MARK: -- Measuring and layout
 
 public protocol Measures: AnyObject {
     var nodeId: String { get }
     
-    var rectPos: Bounds { get }
-    var bounds: Bounds { get }
     var position: LFloat3 { get set }
-    var worldPosition: LFloat3 { get set }
+    var worldPosition: LFloat3 { get }
+    
+    var sizeBounds: Bounds { get }
+    var bounds: Bounds { get }
+    var worldBounds: Bounds { get }
     
     var hasIntrinsicSize: Bool { get }
-    var contentSize: LFloat3 { get }
-    var contentOffset: LFloat3 { get }
+    var contentBounds: Bounds { get }
     
+    var asNode: MetalLinkNode { get }
     var parent: MetalLinkNode? { get set }
     func convertPosition(_ position: LFloat3, to: MetalLinkNode?) -> LFloat3
-    func enumerateChildren(_ action: (MetalLinkNode) -> Void)
 }
 
 // MARK: - Position
@@ -48,9 +49,9 @@ public extension Measures {
 
 // MARK: - Size
 public extension Measures {
-    var contentHalfWidth: Float { contentSize.x / 2.0 }
-    var contentHalfHeight: Float { contentSize.y / 2.0 }
-    var contentHalfLength: Float { contentSize.z / 2.0 }
+    var contentHalfWidth: Float { contentBounds.width / 2.0 }
+    var contentHalfHeight: Float { contentBounds.height / 2.0 }
+    var contentHalfLength: Float { contentBounds.length / 2.0 }
 }
 
 // MARK: - Bounds
@@ -58,36 +59,37 @@ public extension Measures {
 public extension Measures {
     var boundsWidth: VectorFloat {
         let currentBounds = bounds
-        return BoundsWidth(currentBounds)
+        return currentBounds.width
     }
     var boundsHeight: VectorFloat {
         let currentBounds = bounds
-        return BoundsHeight(currentBounds)
+        return currentBounds.height
     }
     var boundsLength: VectorFloat {
         let currentBounds = bounds
-        return BoundsLength(currentBounds)
+        return currentBounds.length
     }
     
-    var boundsCenterWidth: VectorFloat {
+    var boundsCenterX: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsWidth(currentBounds) / 2.0
+        return currentBounds.min.x + currentBounds.width / 2.0
     }
-    var boundsCenterHeight: VectorFloat {
+    
+    var boundsCenterY: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsHeight(currentBounds) / 2.0
+        return currentBounds.min.y + currentBounds.height / 2.0
     }
-    var boundsCenterLength: VectorFloat {
+    
+    var boundsCenterZ: VectorFloat {
         let currentBounds = bounds
-        return currentBounds.min.x + BoundsLength(currentBounds) / 2.0
+        return currentBounds.min.z + currentBounds.length / 2.0
     }
     
     var boundsCenterPosition: LFloat3 {
-        let currentBounds = bounds
         let vector = LFloat3(
-            x: currentBounds.min.x + BoundsWidth(currentBounds) / 2.0,
-            y: currentBounds.min.y + BoundsHeight(currentBounds) / 2.0,
-            z: currentBounds.min.z + BoundsLength(currentBounds) / 2.0
+            x: boundsCenterX,
+            y: boundsCenterY,
+            z: boundsCenterZ
         )
         return vector
     }
@@ -96,32 +98,19 @@ public extension Measures {
 // MARK: - Named positions
 
 public extension Measures {
-    var localLeading: VectorFloat { bounds.min.x }
-    var localTrailing: VectorFloat { bounds.max.x }
-    var localTop: VectorFloat { bounds.max.y }
-    var localBottom: VectorFloat { bounds.min.y }
-    var localFront: VectorFloat { bounds.max.z }
-    var localBack: VectorFloat { bounds.min.z }
+    var leading: VectorFloat  { bounds.min.x  }
+    var trailing: VectorFloat { bounds.max.x  }
     
-//    var leading: VectorFloat { rectPos.min.x }
-//    var trailing: VectorFloat { rectPos.max.x }
-//    var top: VectorFloat { rectPos.max.y }
-//    var bottom: VectorFloat { rectPos.min.y }
-//    var front: VectorFloat { rectPos.max.z }
-//    var back: VectorFloat { rectPos.min.z }
+    var top: VectorFloat      { bounds.max.y  }
+    var bottom: VectorFloat   { bounds.min.y  }
     
-    var leading: VectorFloat { localLeading }
-    var trailing: VectorFloat { localTrailing }
-    var top: VectorFloat { localTop }
-    var bottom: VectorFloat { localBottom }
-    var front: VectorFloat { localFront }
-    var back: VectorFloat { localBack }
+    var front: VectorFloat    { bounds.max.z  }
+    var back: VectorFloat     { bounds.min.z  }
 }
 
 public extension Measures {
     @discardableResult
     func setLeading(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(leading - newValue)
         let delta = newValue - leading
         xpos += delta
         return self
@@ -129,8 +118,6 @@ public extension Measures {
     
     @discardableResult
     func setTrailing(_ newValue: VectorFloat) -> Self{
-//        let delta = abs(trailing - newValue)
-//        xpos -= delta
         let delta = newValue - trailing
         xpos += delta
         return self
@@ -138,16 +125,13 @@ public extension Measures {
     
     @discardableResult
     func setTop(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(top - newValue)
         let delta = newValue - top
-//        ypos -= delta
         ypos += delta
         return self
     }
     
     @discardableResult
     func setBottom(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(bottom - newValue)
         let delta = newValue - bottom
         ypos += delta
         return self
@@ -155,67 +139,174 @@ public extension Measures {
     
     @discardableResult
     func setFront(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(front - newValue)
         let delta = newValue - front
-//        zpos -= delta
         zpos += delta
         return self
     }
     
     @discardableResult
     func setBack(_ newValue: VectorFloat) -> Self {
-//        let delta = abs(back - newValue)
         let delta = newValue - back
         zpos += delta
         return self
     }
 }
 
+extension MetalLinkNode {
+    /*
+     A suggestion was to use the matrix itself to account for non-translation changes,
+     but it doesn't work here because, at the moment, the parent is already applied.
+     Can (re)separate parent from child computations if this ends up being needed. Likely it is.
+     //        if let finalMatrix = final?.modelMatrix {
+     //            position = position.preMultiplied(matrix: finalMatrix)
+     //        }
+     */
+    public func convertPosition(_ convertTarget: LFloat3, to final: MetalLinkNode?) -> LFloat3 {
+        var position: LFloat3 = convertTarget
+        var nodeParent = parent
+        while !(nodeParent == final || nodeParent == nil) {
+            position += nodeParent?.position ?? .zero
+            nodeParent = nodeParent?.parent
+        }
+        // Stopped at 'final'; add the final position manually
+        position += final?.position ?? .zero
+        return position
+    }
+}
+
 public extension Measures {
-    func computeBoundingBox(convertParent: Bool = true) -> Bounds {
-        let computing = BoundsComputing()
-        
-        enumerateChildren { childNode in
-//            var safeBox = childNode.computeBoundingBox(convertParent: convertParent)
-            var safeBox = childNode.rectPos
-            if convertParent {
-                safeBox.min = convertPosition(safeBox.min, to: parent)
-                safeBox.max = convertPosition(safeBox.max, to: parent)
-            }
-            computing.consumeBounds(safeBox)
+    func setWorldPosition(_ worldPosition: LFloat3) {
+        // If the node has a parent, convert the world position to the parent's local space
+        if let parent = self.parent {
+            let parentWorldPosition = parent.computeWorldPosition()
+            self.position = worldPosition - parentWorldPosition
+        } else {
+            // If the node has no parent, the world position is the local position
+            self.position = worldPosition
+        }
+    }
+    
+    func computeWorldPosition() -> LFloat3 {
+        var finalPosition: LFloat3 = position
+        var nodeParent = parent
+        while let parent = nodeParent {
+            finalPosition += parent.position
+            nodeParent = parent.parent
+        }
+        return finalPosition
+    }
+}
+
+public extension Measures {
+    func computeWorldBounds() -> Bounds {
+        var finalBounds = sizeBounds
+        var nextParent = parent
+        while let parent = nextParent {
+            finalBounds.min += parent.position
+            finalBounds.max += parent.position
+            nextParent = parent.parent
+        }
+        return finalBounds
+    }
+    
+    func computeLocalSize() -> Bounds {
+        var totalBounds = Bounds.forBaseComputing
+
+        for childNode in asNode.children {
+            let childSize = childNode.computeLocalBounds()
+            totalBounds.union(with: childSize)
         }
         
         if hasIntrinsicSize {
-            let size = contentSize
-            let offset = contentOffset
-            var min = LFloat3(position.x + offset.x,
-                              position.y + offset.y - size.y,
-                              position.z + offset.z)
-            var max = LFloat3(position.x + offset.x + size.x,
-                              position.y + offset.y,
-                              position.z + offset.z + size.z)
-            min = convertParent ? convertPosition(min, to: parent) : min
-            max = convertParent ? convertPosition(max, to: parent) : max
-            computing.consumeBounds((min, max))
+            let size = contentBounds
+            let offsetSize = size + position
+            totalBounds.union(with: offsetSize)
         }
         
-        return computing.bounds
+        return totalBounds
+    }
+    
+    func computeLocalBounds() -> Bounds {
+        var size = computeLocalSize()
+        size.min = convertPosition(size.min, to: parent)
+        size.max = convertPosition(size.max, to: parent)
+        return size
+    }
+}
+
+// MARK: - Delegating Measures Wrapper
+
+public protocol MeasuresDelegating: Measures {
+    var delegateTarget: Measures { get }
+    
+    var rotation: LFloat3 { get set }
+}
+
+public extension MeasuresDelegating {
+    var position: LFloat3 {
+        get { delegateTarget.position }
+        set { delegateTarget.position = newValue }
+    }
+    
+    var rotation: LFloat3 {
+        get { delegateTarget.asNode.rotation }
+        set { delegateTarget.asNode.rotation = newValue }
+    }
+    
+    var lengthX: Float {
+        asNode.lengthX
+    }
+    
+    var lengthY: Float {
+        asNode.lengthY
+    }
+    
+    var lengthZ: Float {
+        asNode.lengthZ
+    }
+    
+    var nodeId: String { delegateTarget.nodeId }
+    
+    var worldPosition: LFloat3 { delegateTarget.worldPosition }
+    
+    var sizeBounds: Bounds { delegateTarget.sizeBounds }
+    
+    var bounds: Bounds { delegateTarget.bounds }
+    
+    var worldBounds: Bounds { delegateTarget.worldBounds }
+    
+    var hasIntrinsicSize: Bool { delegateTarget.hasIntrinsicSize }
+    
+    var contentBounds: Bounds { delegateTarget.contentBounds }
+    
+    var asNode: MetalLinkNode { delegateTarget.asNode }
+    
+    var parent: MetalLinkNode? {
+        get { delegateTarget.parent }
+        set { delegateTarget.parent = newValue }
+    }
+    
+    func convertPosition(_ position: LFloat3, to: MetalLinkNode?) -> LFloat3 {
+        delegateTarget.convertPosition(position, to: to)
+    }
+    
+    func add(child: MetalLinkNode) {
+        asNode.add(child: child)
     }
 }
 
 public extension Measures {
     var dumpstats: String {
         """
-        ContentSizeX:                    \(contentSize.x)
-        ContentSizeY:                    \(contentSize.y)
-        ContentSizeZ:                    \(contentSize.z)
+        ContentBoundsMin:  \(contentBounds.min)
+        ContentBoundsMax:  \(contentBounds.max)
         
-        nodePosition:                    \(position)
-        worldPosition:                   \(worldPosition)
+        nodePosition:      \(position)
+        worldPosition:     \(worldPosition)
 
-        boundsMin:                       \(bounds.min)
-        boundsMax:                       \(bounds.max)
-        boundsCenter:                    \(boundsCenterPosition)
+        boundsMin:         \(bounds.min)
+        boundsMax:         \(bounds.max)
+        boundsCenter:      \(boundsCenterPosition)
         --
         """
     }

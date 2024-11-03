@@ -10,23 +10,16 @@ import MetalKit
 import BitHandling
 
 public enum MetalLinkVertexType {
+    private static let basic = BasicVertexDescriptor()
+    private static let instanced = InstancedVertexDescriptor()
+    
     case Basic
     case Instanced
-}
-
-public class VertexDescriptorLibrary: LockingCache<MetalLinkVertexType, MTLVertexDescriptor> {
-    let link: MetalLink
     
-    public init(link: MetalLink) {
-        self.link = link
-    }
-    
-    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
-        switch key {
-        case .Basic:
-            return Basic().descriptor
-        case .Instanced:
-            return Instanced().descriptor
+    var descriptor: MTLVertexDescriptor {
+        switch self {
+        case .Basic:     return Self.basic.descriptor
+        case .Instanced: return Self.instanced.descriptor
         }
     }
 }
@@ -42,68 +35,63 @@ protocol MetalLinkVertexDescriptor {
 }
 
 // MARK: Basics
-extension VertexDescriptorLibrary {
-    struct Basic: MetalLinkVertexDescriptor {
-        var name = "Basic Vertex Component"
-        let descriptor = MTLVertexDescriptor()
-        var attributeIndex: Int = 0
-        var attributeOffset: Int = 0
-        var bufferIndex: Int = 0
-        var layoutIndex: Int = 0
+private struct BasicVertexDescriptor: MetalLinkVertexDescriptor {
+    var name = "Basic Vertex Component"
+    let descriptor = MTLVertexDescriptor()
+    var attributeIndex: Int = 0
+    var attributeOffset: Int = 0
+    var bufferIndex: Int = 0
+    var layoutIndex: Int = 0
+    
+    init() {
+        // Vertex Position
+        descriptor.attributes[attributeIndex].format = .float3
+        descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
+        descriptor.attributes[attributeIndex].offset = 0
+        attributeIndex += 1
+        attributeOffset += LFloat3.memSize
         
-        init() {
-            // Vertex Position
-            descriptor.attributes[attributeIndex].format = .float3
-            descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
-            descriptor.attributes[attributeIndex].offset = 0
-            attributeIndex += 1
-            attributeOffset += LFloat3.memSize
-            
-            // UV Texture Index
-            descriptor.attributes[attributeIndex].format = .uint
-            descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
-            descriptor.attributes[attributeIndex].offset = attributeOffset
-            attributeIndex += 1
-            attributeOffset += UInt.memSize
+        // UV Texture Index
+        descriptor.attributes[attributeIndex].format = .uint
+        descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
+        descriptor.attributes[attributeIndex].offset = attributeOffset
+        attributeIndex += 1
+        attributeOffset += UInt.memSize
 
-            // Layout
-            descriptor.layouts[layoutIndex].stride = Vertex.memStride
-            descriptor.layouts[layoutIndex].stepFunction = .perVertex
-            descriptor.layouts[layoutIndex].stepRate = 1
-        }
+        // Layout
+        descriptor.layouts[layoutIndex].stride = Vertex.memStride
+        descriptor.layouts[layoutIndex].stepFunction = .perVertex
+        descriptor.layouts[layoutIndex].stepRate = 1
     }
 }
 
 // MARK: Instanced
-extension VertexDescriptorLibrary {
-    struct Instanced: MetalLinkVertexDescriptor {
-        var name = "Instanced Vertex Component"
-        let descriptor = MTLVertexDescriptor()
-        var attributeIndex: Int = 0
-        var attributeOffset: Int = 0
-        var bufferIndex: Int = 0
-        var layoutIndex: Int = 0
+private struct InstancedVertexDescriptor: MetalLinkVertexDescriptor {
+    var name = "Instanced Vertex Component"
+    let descriptor = MTLVertexDescriptor()
+    var attributeIndex: Int = 0
+    var attributeOffset: Int = 0
+    var bufferIndex: Int = 0
+    var layoutIndex: Int = 0
+    
+    init() {
+        // Vertex Position
+        descriptor.attributes[attributeIndex].format = .float3
+        descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
+        descriptor.attributes[attributeIndex].offset = 0
+        attributeIndex += 1
+        attributeOffset += LFloat3.memSize
         
-        init() {
-            // Vertex Position
-            descriptor.attributes[attributeIndex].format = .float3
-            descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
-            descriptor.attributes[attributeIndex].offset = 0
-            attributeIndex += 1
-            attributeOffset += LFloat3.memSize
-            
-            // UV Texture Index
-            descriptor.attributes[attributeIndex].format = .uint
-            descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
-            descriptor.attributes[attributeIndex].offset = attributeOffset
-            attributeIndex += 1
-            attributeOffset += UInt.memSize
-            
-            // Layout
-            descriptor.layouts[layoutIndex].stride = Vertex.memStride
-            descriptor.layouts[layoutIndex].stepFunction = .perVertex
-            descriptor.layouts[layoutIndex].stepRate = 1
-        }
+        // UV Texture Index
+        descriptor.attributes[attributeIndex].format = .uint
+        descriptor.attributes[attributeIndex].bufferIndex = bufferIndex
+        descriptor.attributes[attributeIndex].offset = attributeOffset
+        attributeIndex += 1
+        attributeOffset += UInt.memSize
+        
+        // Layout
+        descriptor.layouts[layoutIndex].stride = Vertex.memStride
+        descriptor.layouts[layoutIndex].stepFunction = .perVertex
+        descriptor.layouts[layoutIndex].stepRate = 1
     }
-
 }

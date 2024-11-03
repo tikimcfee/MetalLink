@@ -8,6 +8,7 @@
 #include <metal_stdlib>
 //using namespace metal;
 
+//#include "include/MetalLinkResources.h"
 #include "../../../MetalLinkHeaders/Sources/MetalLinkHeaders.h"
 #include "MetalLinkShared.metal"
 

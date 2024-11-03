@@ -6,14 +6,11 @@
 //
 
 import Foundation
-import SceneKit
 import MetalKit
 
-public typealias SizedText = (SCNGeometry, SCNGeometry, CGSize)
-
 public class GlyphBuilder {
-//    public static let device: MTLDevice = MTLCreateSystemDefaultDevice()!
-//    public static let loader: MTKTextureLoader = MTKTextureLoader(device: device)
+    
+    public init() { }
     
     public let fontRenderer = FontRenderer.shared
     
@@ -23,12 +20,12 @@ public class GlyphBuilder {
     }
     
     public func makeTextLayer(_ key: GlyphCacheKey) -> CATextLayer {
-        let safeString = key.glyph
+        let safeString = String(key)
         let (_, wordSizeScaled) = fontRenderer.measure(safeString)
         
         // Create and configure text layer
         let textLayer = CATextLayer()
-        textLayer.foregroundColor = key.foreground.cgColor
+        textLayer.foregroundColor = CGColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
         textLayer.string = safeString
         textLayer.font = fontRenderer.renderingFont
         textLayer.alignmentMode = .left

@@ -1,53 +1,74 @@
 import Foundation
 
-enum EventState {
+public enum EventState {
     case began, changed, ended
 }
 
-enum EventType {
+public enum EventType {
     case deviceTap
 }
 
-struct MagnificationEvent {
-    let state: EventState?
+public struct MagnificationEvent {
+    public var state: EventState?
 
-    let rawMagnification: VectorFloat
-    var magnification: VectorFloat {
+    public let rawMagnification: VectorFloat
+    public var magnification: VectorFloat {
         #if os(iOS)
         return rawMagnification
         #elseif os(OSX)
         return rawMagnification + 1
         #endif
     }
+    
+    public static var newEmpty: MagnificationEvent { MagnificationEvent(rawMagnification: .zero) }
+    public static var newEmptyPair: (MagnificationEvent, MagnificationEvent) { (.newEmpty, .newEmpty) }
 }
 
-struct PanEvent {
-    let state: EventState?
+public struct PanEvent: Hashable, Equatable {
+    public static var newEmpty: PanEvent { PanEvent(currentLocation: .zero) }
+    public static var newEmptyPair: (PanEvent, PanEvent) { (.newEmpty, .newEmpty) }
+    
+    public var state: EventState?
+    public let currentLocation: LFloat2
 
-    let currentLocation: LFloat2
-
-    var commandStart: LFloat2?
-    var pressingCommand: Bool { commandStart != nil }
-
-    var optionStart: LFloat2?
-    var pressingOption: Bool { optionStart != nil }
-
-    var controlStart: LFloat2?
-    var pressingControl: Bool { controlStart != nil }
+    public var commandStart: LFloat2?
+    public var pressingCommand: Bool { commandStart != nil }
+    public var optionStart: LFloat2?
+    public var pressingOption: Bool { optionStart != nil }
+    public var controlStart: LFloat2?
+    public var pressingControl: Bool { controlStart != nil }
+    public var shiftStart: LFloat2?
+    public var pressingShift: Bool { shiftStart != nil }
+    
+    public init(
+        state: EventState? = nil,
+        currentLocation: LFloat2,
+        commandStart: LFloat2? = nil,
+        optionStart: LFloat2? = nil,
+        shiftStart: LFloat2? = nil,
+        controlStart: LFloat2? = nil
+    ) {
+        self.state = state
+        self.currentLocation = currentLocation
+        self.commandStart = commandStart
+        self.optionStart = optionStart
+        self.shiftStart = shiftStart
+        self.controlStart = controlStart
+    }
 }
 
 public struct GestureEvent {
-    let state: EventState?
-    let type: EventType?
+    public let state: EventState?
+    public let type: EventType?
     
-    let currentLocation: LFloat2
+    public let currentLocation: LFloat2
     
-    var commandStart: LFloat2?
-    var pressingCommand: Bool { commandStart != nil }
+    public var commandStart: LFloat2?
+    public var pressingCommand: Bool { commandStart != nil }
     
-    var optionStart: LFloat2?
-    var pressingOption: Bool { optionStart != nil }
+    public var optionStart: LFloat2?
+    public var pressingOption: Bool { optionStart != nil }
     
-    var controlStart: LFloat2?
-    var pressingControl: Bool { controlStart != nil }
+    public var controlStart: LFloat2?
+    public var pressingControl: Bool { controlStart != nil }
 }

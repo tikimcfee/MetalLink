@@ -5,12 +5,13 @@
 //  Created by Ivan Lugo on 11/4/21.
 //
 
-import SceneKit
+import BitHandling
 import Combine
+import Foundation
 
-public let default_MovementSpeed: VectorFloat = 500
-public let default_ModifiedMovementSpeed: VectorFloat = 1000
-private let default_UpdateDeltaMillis = 16
+#if os(macOS)
+import AppKit
+#endif
 
 public typealias FileOperationReceiver = (FileOperation) -> Void
 public enum FileOperation {
@@ -21,24 +22,24 @@ public typealias FocusChangeReceiver = (SelfRelativeDirection) -> Void
 
 public extension KeyboardInterceptor {
     class State: ObservableObject {
-        @Published var directions: Set<SelfRelativeDirection> = []
+        @Published public var directions: Set<SelfRelativeDirection> = []
 #if os(iOS)
-        @Published var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags.none
+        @Published public var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags.none
 #else
-        @Published var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags()
+        @Published public var currentModifiers: OSEvent.ModifierFlags = OSEvent.ModifierFlags()
 #endif
         
         // TODO: Track all focus directions and provide a trail?
-        @Published var focusPath: [SelfRelativeDirection] = []
+        @Published public var focusPath: [SelfRelativeDirection] = []
     }
     
     class Positions: ObservableObject {
-        @Published var totalOffset: LFloat3 = .zero
-        @Published var travelOffset: LFloat3 = .zero
-        @Published var rotationOffset: LFloat3 = .zero
-        @Published var rotationDelta: LFloat3 = .zero
+        @Published public var totalOffset: LFloat3 = .zero
+        @Published public var travelOffset: LFloat3 = .zero
+        @Published public var rotationOffset: LFloat3 = .zero
+        @Published public var rotationDelta: LFloat3 = .zero
         
-        func reset() {
+        public func reset() {
             totalOffset = .zero
             travelOffset = .zero
             rotationOffset = .zero
@@ -54,45 +55,14 @@ public protocol KeyboardPositionSource {
     var rotation: LFloat3 { get }
 }
 
-public extension KeyboardInterceptor {
-    struct CameraTarget: KeyboardPositionSource {
-        var targetCamera: MetalLinkCamera
-        var bag = Set<AnyCancellable>()
-
-        public var worldUp: LFloat3 { targetCamera.worldUp }
-        public var worldRight: LFloat3 { targetCamera.worldRight }
-        public var worldFront: LFloat3 { targetCamera.worldFront }
-        public var current: LFloat3 { targetCamera.position }
-        public var rotation: LFloat3 { targetCamera.rotation }
-        
-        init(targetCamera: MetalLinkCamera,
-             interceptor: KeyboardInterceptor
-        ) {
-            self.targetCamera = targetCamera
-            
-            interceptor.positions.$travelOffset.sink { offset in
-                targetCamera.position += offset
-            }.store(in: &bag)
-        }
-    }
-}
-
 public class KeyboardInterceptor {
-
-    private let movementQueue = DispatchQueue(label: "KeyboardCamera", qos: .userInteractive)
     
-    private(set) var state = State()
-    private(set) var positions = Positions()
-    private(set) var running: Bool = false
+    public private(set) var state = State()
+    public private(set) var positions = Positions()
     
     public var onNewFileOperation: FileOperationReceiver?
     public var onNewFocusChange: FocusChangeReceiver?
     public var positionSource: KeyboardPositionSource?
-    
-    private var dispatchTimeNext: DispatchTime {
-        let next = DispatchTime.now() + .milliseconds(default_UpdateDeltaMillis)
-        return next
-    }
     
     public init(onNewFileOperation: FileOperationReceiver? = nil) {
         self.onNewFileOperation = onNewFileOperation
@@ -103,33 +73,24 @@ public class KeyboardInterceptor {
     }
     
     public func onNewKeyEvent(_ event: OSEvent) {
-        movementQueue.sync {
-            self.enqueuedKeyConsume(event)
-        }
+        enqueuedKeyConsume(event)
     }
     
-    private func enqueueRunLoop() {
-        guard !running else { return }
-        running = true
+    public func runCurrentInterceptedState() {
         runLoopImplementation()
     }
     
     private func runLoopImplementation() {
         guard !state.directions.isEmpty else {
-            running = false
             return
         }
         
         let finalDelta = state.currentModifiers.contains(.shift)
-            ? default_ModifiedMovementSpeed
-            : default_MovementSpeed
+            ? GlobalLiveConfig.Default.movementSpeedModified
+            : GlobalLiveConfig.Default.movementSpeed
         
         state.directions.forEach { direction in
             doDirectionDelta(direction, finalDelta)
-        }
-        
-        movementQueue.asyncAfter(deadline: dispatchTimeNext) {
-            self.runLoopImplementation()
         }
     }
     
@@ -137,13 +98,12 @@ public class KeyboardInterceptor {
         guard !state.directions.contains(direction) else { return }
         print("start", direction)
         state.directions.insert(direction)
-        enqueueRunLoop()
     }
     
     private func stopMovement(_ direction: SelfRelativeDirection) {
+        guard state.directions.contains(direction) else { return }
         print("stop", direction)
         state.directions.remove(direction)
-        enqueueRunLoop()
     }
 }
 
@@ -152,50 +112,42 @@ private extension KeyboardInterceptor {
         _ direction: SelfRelativeDirection,
         _ finalDelta: VectorFloat
     ) {
-        weak var weakSelf = self
+        guard let source = self.positionSource else { return }
         
-        DispatchQueue.main.async {
-            doDelta()
+        var positionOffset: LFloat3 = .zero
+        var rotationOffset: LFloat3 = .zero
+        
+        switch direction {
+        case .forward:
+            positionOffset = source.worldFront * Float(finalDelta)
+        case .backward:
+            positionOffset = source.worldFront * -Float(finalDelta)
+            
+        case .right:
+            positionOffset = source.worldRight * Float(finalDelta)
+        case .left:
+            positionOffset = source.worldRight * -Float(finalDelta)
+            
+        case .up:
+            positionOffset = source.worldUp * Float(finalDelta)
+        case .down:
+            positionOffset = source.worldUp * -Float(finalDelta)
+            
+        case .yawLeft:
+            rotationOffset = LFloat3(0, -GlobalLiveConfig.Default.movementYawMagnitude, 0)
+        case .yawRight:
+            rotationOffset = LFloat3(0, GlobalLiveConfig.Default.movementYawMagnitude, 0)
         }
         
-        func doDelta() {
-            guard let self = weakSelf else { return }
-            guard let source = self.positionSource else { return }
-            
-            var positionOffset: LFloat3 = .zero
-            var rotationOffset: LFloat3 = .zero
-            
-            switch direction {
-            case .forward:
-                positionOffset = source.worldFront * Float(finalDelta)
-            case .backward:
-                positionOffset = source.worldFront * -Float(finalDelta)
-                
-            case .right:
-                positionOffset = source.worldRight * Float(finalDelta)
-            case .left:
-                positionOffset = source.worldRight * -Float(finalDelta)
-                
-            case .up:
-                positionOffset = source.worldUp * Float(finalDelta)
-            case .down:
-                positionOffset = source.worldUp * -Float(finalDelta)
-                
-            case .yawLeft:
-                rotationOffset = LFloat3(0, -5, 0)
-            case .yawRight:
-                rotationOffset = LFloat3(0, 5, 0)
-            }
-            
-            positions.totalOffset += positionOffset
-            positions.travelOffset = positionOffset
-            positions.rotationOffset += rotationOffset
-            positions.rotationDelta = rotationOffset
-        }
+        positions.totalOffset += positionOffset
+        positions.travelOffset = positionOffset
+        positions.rotationOffset += rotationOffset
+        positions.rotationDelta = rotationOffset
     }
 }
 
 #if os(iOS)
+import UIKit
 public extension OSEvent {
     class ModifierFlags: Equatable {
         public static let none = ModifierFlags(-1)
@@ -269,10 +221,15 @@ private extension KeyboardInterceptor {
         switch event.type {
         case .keyDown:
             onKeyDown(event.characters ?? "", event)
+            
         case .keyUp:
             onKeyUp(event.characters ?? "", event)
-        default:
+            
+        case .flagsChanged:
             onFlagsChanged(event.modifierFlags, event)
+            
+        default:
+            break
         }
     }
     
@@ -282,11 +239,11 @@ private extension KeyboardInterceptor {
         } else if let focusDirection = focusDirectionForKey(characters, event) {
             changeFocus(focusDirection)
         } else {
+            // MARK: - Shortcuts
+            // Probably need a shortcut shim thing here.. oof..
             switch characters {
-                
             case "o" where event.modifierFlags.contains(.command):
                 onNewFileOperation?(.openDirectory)
-                
             default:
                 break
             }
@@ -294,13 +251,21 @@ private extension KeyboardInterceptor {
     }
     
     private func onKeyUp(_ characters: String, _ event: OSEvent) {
-        guard let direction = directionForKey(characters) else { return }
+        guard let direction = directionForKey(characters) else {
+            return
+        }
         stopMovement(direction)
     }
     
     private func onFlagsChanged(_ flags: OSEvent.ModifierFlags, _ event: OSEvent) {
         state.currentModifiers = flags
-        enqueueRunLoop()
+        
+        /// This is to try and fix the stuck key thing.  So there's some kind of 'unknown' flag
+        /// with value 256 that occurs after repeated characters and combination keys. We interpret this as:
+        /// "the keyboard has stopped doing weird magic stuff, clear state and assume things will work"
+        if flags.__unsafe__isUnknown {
+            state.directions.removeAll(keepingCapacity: true)
+        }
     }
     
     private func changeFocus(_ focusDirection: SelfRelativeDirection) {
@@ -308,38 +273,16 @@ private extension KeyboardInterceptor {
         onNewFocusChange?(focusDirection)
     }
 }
+
+
 #endif
 
 func directionForKey(_ key: String) -> SelfRelativeDirection? {
-    switch key {
-    case "a", "A": return .left
-    case "d", "D": return .right
-    case "w", "W": return .forward
-    case "s", "S": return .backward
-    case "z", "Z": return .down
-    case "x", "X": return .up
-    case "q", "Q": return .yawLeft
-    case "e", "E": return .yawRight
-    default: return nil
-    }
+    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    return map.movement[key]
 }
 
 func focusDirectionForKey(_ key: String, _ event: OSEvent) -> SelfRelativeDirection? {
-    switch key {
-    case "h", "H": return .left
-    case "l", "L": return .right
-    case "j", "J": return .down
-    case "k", "K": return .up
-    case "n", "N": return .forward
-    case "m", "M": return .backward
-    #if os(macOS)
-    case _ where event.specialKey == .leftArrow: return .left
-    case _ where event.specialKey == .rightArrow: return .right
-    case _ where event.specialKey == .upArrow && event.modifierFlags.contains(.shift): return .forward
-    case _ where event.specialKey == .downArrow && event.modifierFlags.contains(.shift): return .backward
-    case _ where event.specialKey == .upArrow: return .up
-    case _ where event.specialKey == .downArrow: return .down
-    #endif
-    default: return nil
-    }
+    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    return map.focus[key]
 }

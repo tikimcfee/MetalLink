@@ -21,35 +21,21 @@ public class MetalLinkBaseMesh: MetalLinkMesh {
     private let link: MetalLink
     private var vertexBuffer: MTLBuffer?
     
-    // Making this concurrent is sorta throwing up hands
-    // to a lock on meshes, but I'm still testing.. is what
-    // I'm telling myself.
+    public var vertices: [Vertex] = []
+    public var vertexCount: Int { vertices.count }
     
-    public var vertices: [Vertex] {
-        get { concurrenctVertices.values }
-        set {
-            concurrenctVertices.removeAll(keepingCapacity: true)
-            newValue.forEach { concurrenctVertices.append($0) }
-        }
-    }
-    public var concurrenctVertices = ConcurrentArray<Vertex>()
-    public var vertexCount: Int { concurrenctVertices.count }
     public var name: String { "BaseMesh" }
 
     init(_ link: MetalLink) {
         self.link = link
-        createVertices().forEach {
-            concurrenctVertices.append($0)
-        }
+        self.vertices = createVertices()
     }
     
     public func getVertexBuffer() -> MTLBuffer? {
         guard !vertices.isEmpty else { return nil }
         if let buffer = vertexBuffer { return buffer }
-        concurrenctVertices.directWriteAccess {
-            vertexBuffer = try? Self.createVertexBuffer(with: link, for: $0)
-            vertexBuffer?.label = name
-        }
+        vertexBuffer = try? Self.createVertexBuffer(with: link, for: vertices)
+        vertexBuffer?.label = name
         return vertexBuffer
     }
     
@@ -68,7 +54,8 @@ private extension MetalLinkBaseMesh {
         let memoryLength = vertices.count * Vertex.memStride
         
         guard !vertices.isEmpty, let buffer = link.device.makeBuffer(
-            bytes: vertices, length: memoryLength,
+            bytes: vertices, 
+            length: memoryLength,
             options: []
         ) else {
             throw CoreError.noBufferAvailable

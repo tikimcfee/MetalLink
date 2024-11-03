@@ -20,7 +20,7 @@ public class MeshLibrary: LockingCache<MeshType, MetalLinkMesh> {
         self.link = link
     }
     
-    public override func make(_ key: Key, _ store: inout [Key : Value]) -> Value {
+    public override func make(_ key: Key) -> Value {
         switch key {
         case .Triangle:
             return MetalLinkTriangleMesh(link)

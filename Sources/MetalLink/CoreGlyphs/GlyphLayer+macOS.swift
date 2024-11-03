@@ -11,10 +11,10 @@ import CoreServices
 import AppKit
 
 public struct BitmapImages: Hashable {
-    let requested: NSUIImage
-    let requestedCG: CGImage
-    let template: NSUIImage
-    let templateCG: CGImage
+    public let requested: NSUIImage
+    public let requestedCG: CGImage
+    public let template: NSUIImage
+    public let templateCG: CGImage
     
     public init(_ requested: NSUIImage,
          _ requestedCG: CGImage,
@@ -45,7 +45,7 @@ public extension CALayer {
             return nil
         }
         
-        backgroundColor = key.background.cgColor
+        backgroundColor = NSUIColor.black.cgColor
         render(in: requestedContext.cgContext)
         
         backgroundColor = NSUIColor(displayP3Red: 0.2, green: 0.7, blue: 0.7, alpha: 0.8).cgColor
