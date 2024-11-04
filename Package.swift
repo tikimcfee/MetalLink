@@ -7,7 +7,7 @@ let package = Package(
     name: "MetalLink",
     platforms: [
         .iOS(.v17),
-        .macOS(.v15),
+        .macOS(.v14),
     ],
     products: [
         .library(
