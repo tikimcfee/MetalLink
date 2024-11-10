@@ -365,6 +365,15 @@ uint indexOfCharacterAfter(
         -
      
 */
+struct GridOffset {
+    float x;      // Adjusted x position
+    float y;      // Adjusted y position
+    float z;      // Z-depth
+    int xPages;   // How many horizontal pages we've moved
+    int yPages;   // How many vertical pages we've moved
+};
+
+
 struct PageOffset {
     float x;      // Adjusted x position
     float y;      // Adjusted y position
@@ -381,7 +390,7 @@ PageOffset calculatePageOffsets(
     float pageWidthPad  = 10,
     float pageHeight    = -150,
     float pageHeightPad = 20,
-    int pagesWide       = 10
+    int pagesWide       = 5
 ) {
     PageOffset result;
     
@@ -389,7 +398,7 @@ PageOffset calculatePageOffsets(
     result.yPages = int(abs(yPosition) / pageHeight);
     result.y = yPosition + (pageHeight * result.yPages);
     // This lets the pages stack vertically as well
-//    result.y = result.y + (pageHeight - pageHeightPad) * abs(int(result.yPages / pagesWide));
+    result.y = result.y + (pageHeight - pageHeightPad) * abs(int(result.yPages / pagesWide));
     
     // Calculate horizontal page and offset
     result.xPages = int(xPosition / pageWidth);
@@ -481,8 +490,6 @@ kernel void utf32GlyphMap_FastLayout(
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
         
         float previousX = previousGlyph.positionOffset.x;
-        float previousY = previousGlyph.positionOffset.y;
-        float previousZ = previousGlyph.positionOffset.z;
         float previousSizeX = previousGlyph.textureSize.x;
         float previousSizeY = previousGlyph.textureSize.y;
         float previousBreaks = previousGlyph.LineBreaksAtRender;
@@ -491,9 +498,6 @@ kernel void utf32GlyphMap_FastLayout(
         
         if (
             previousRendered == true
-            && previousX > 0
-            && previousY < 0
-            && previousZ == -0.1
             && backtrackCount > 128
         ) {
             if (previousGlyph.codePoint == '\n') {
@@ -547,7 +551,6 @@ kernel void utf32GlyphMap_FastLayout(
         }
     }
     
-    out.positionOffset.z = -0.1;
     utf32Buffer[id] = out;
     utf32Buffer[id].rendered = true;
 }
