@@ -82,4 +82,5 @@ struct ForceLayoutEdge {
     // Nodes with a stronger relationship will be pulled closer together.
     float strength;
 };
+
 #endif

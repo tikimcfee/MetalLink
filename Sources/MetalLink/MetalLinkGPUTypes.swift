@@ -27,11 +27,11 @@ public struct Vertex {
 extension SceneConstants: MemoryLayoutSizable { }
 extension BasicModelConstants: MemoryLayoutSizable { }
 
-func getNthBit(_ value: Int8, bitPosition: UInt8) -> Bool {
+func getNthBit(_ value: UInt8, bitPosition: UInt8) -> Bool {
     return (value & (1 << bitPosition)) != 0
 }
 
-func modifyNthBit(_ value: Int8, bitPosition: UInt8, set: Bool) -> Int8 {
+func modifyNthBit(_ value: UInt8, bitPosition: UInt8, set: Bool) -> UInt8 {
     if set {
         // Set the bit if 'set' is true
         return value | (1 << bitPosition)
@@ -74,7 +74,7 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
     }
     
     public mutating func reset() {
-        modelMatrix = matrix_identity_float4x4
+//        modelMatrix = matrix_identity_float4x4
         textureDescriptorU = .zero
         textureDescriptorV = .zero
         textureSize = .zero

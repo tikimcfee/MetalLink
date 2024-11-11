@@ -98,7 +98,16 @@ open class MetalLinkInstancedObject<
             type: .triangle,
             vertexStart: 0,
             vertexCount: mesh.vertexCount,
-            instanceCount: instanceState.instanceBufferCount
+            instanceCount: min(
+                instanceState.instanceBufferCount,
+                instanceState.maxRenderCount
+            )
+//            ,
+//            baseInstance: clamp(
+//                instanceState.baseRenderIndex,
+//                min: 0,
+//                max: instanceState.instanceBufferCount - 1
+//            )
         )
     }
 }

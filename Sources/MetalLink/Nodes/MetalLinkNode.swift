@@ -291,7 +291,7 @@ public extension MetalLinkNode {
         if let parentMatrix = parent?.modelMatrix {
             matrix = matrix_multiply(parentMatrix, matrix)
         }
-        instanceConstants?.modelMatrix = matrix
+//        instanceConstants?.modelMatrix = matrix
         return matrix
     }
 }

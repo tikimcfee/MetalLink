@@ -26,7 +26,6 @@ public extension ConvertCompute {
         
         let dataStream = subject
             .receive(on: WorkerPool.shared.nextConcurrentWorker())
-        //        .receive(on: WorkerPool.shared.nextPooledConcurrentWorker())
             .compactMap { source in
                 do {
                     var data: Data
@@ -46,7 +45,7 @@ public extension ConvertCompute {
                     """.data(using: .utf8)!
                     }
                     
-                    let maxSize = Int(1024.0 * 1024.0 * 8)
+                    let maxSize = Int(1024.0 * 1024.0 * 2)
                     if data.count > maxSize {
                         print("Prefixing large file from full render: \(source.pathComponents.suffix(2)) - \(data.count.megabytes)")
                         data = data.prefix(maxSize)

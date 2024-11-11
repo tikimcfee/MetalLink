@@ -25,6 +25,9 @@ public class InstanceState<
     public var didSetRoot = false
     public let constants: BackingBuffer<InstancedConstants>
     
+    public var maxRenderCount: Int = GlobalLiveConfig.Default.maxInstancesPerGrid
+    public var baseRenderIndex: Int = 0
+    
     public var minXBuffer: MTLBuffer?
     public var minYBuffer: MTLBuffer?
     public var minZBuffer: MTLBuffer?

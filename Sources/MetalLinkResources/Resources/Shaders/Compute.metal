@@ -398,7 +398,7 @@ PageOffset calculatePageOffsets(
     result.yPages = int(abs(yPosition) / pageHeight);
     result.y = yPosition + (pageHeight * result.yPages);
     // This lets the pages stack vertically as well
-    result.y = result.y + (pageHeight - pageHeightPad) * abs(int(result.yPages / pagesWide));
+//    result.y = result.y + (pageHeight - pageHeightPad) * abs(int(result.yPages / pagesWide));
     
     // Calculate horizontal page and offset
     result.xPages = int(xPosition / pageWidth);
@@ -715,15 +715,16 @@ kernel void blitGlyphsIntoConstants(
     
     out.flags = modifyNthBit(out.flags, 0, true);
     out.unicodeHash = glyphCopy.unicodeHash;
-    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-        glyphCopy.positionOffset.x,
-        glyphCopy.positionOffset.y,
-        glyphCopy.positionOffset.z
-    ));
+//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
+//        glyphCopy.positionOffset.x,
+//        glyphCopy.positionOffset.y,
+//        glyphCopy.positionOffset.z
+//    ));
     out.textureDescriptorU = glyphCopy.textureDescriptorU;
     out.textureDescriptorV = glyphCopy.textureDescriptorV;
     out.textureSize = glyphCopy.textureSize;
     out.positionOffset = glyphCopy.positionOffset;
+    out.scale = float4(1, 1, 1, 1);
     targetConstants[targetBufferIndex] = out;
     
     atomicMin(minX, 0, glyphCopy.positionOffset.x - glyphCopy.textureSize.x / 2.0);

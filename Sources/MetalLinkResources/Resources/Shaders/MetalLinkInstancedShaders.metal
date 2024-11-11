@@ -15,6 +15,21 @@ using namespace metal;
 
 constant float4x4 identityMatrix = float4x4(1.0);
 
+float4x4 scaleBy(float3 s) {
+    return float4x4(float4(s.x,  0,   0, 0),
+                    float4(0,  s.y,   0, 0),
+                    float4(0,    0, s.z, 0),
+                    float4(0,    0,   0, 1));
+}
+
+float4x4 translationOf_I(float3 offset) {
+    return float4x4(float4( 1, 0, 0, 0),
+                    float4( 0, 1, 0, 0),
+                    float4( 0, 0, 1, 0),
+                    float4(offset.x, offset.y, offset.z, 1));
+}
+
+
 float4x4 rotate(float3 axis, float angleRadians) {
     float x = axis.x, y = axis.y, z = axis.z;
     float c = cos(angleRadians);
@@ -94,7 +109,17 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     InstancedConstants constants = modelConstants[instanceId];
     
     // Static matrix
-    float4x4 instanceModel = constants.modelMatrix;
+//    float4x4 instanceModel = constants.modelMatrix;
+    float4x4 instanceModel = float4x4(1.0) * translationOf_I(float3(
+        constants.positionOffset.x,
+        constants.positionOffset.y,
+        constants.positionOffset.z
+    ));
+    instanceModel = instanceModel * scaleBy(float3(
+        constants.scale.x,
+        constants.scale.y,
+        constants.scale.z
+    ));
     float4x4 parentMatrix = identityMatrix;
     bool useParent = getNthBit_I(constants.flags, 0);
     if (useParent) {
@@ -102,7 +127,7 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     }
     
     // Do test rotation
-//    float4x4 instanceModel = constants.modelMatrix
+//    instanceModel = instanceModel
 //    * rotateAboutX(cos(sceneConstants.totalGameTime))
 //    * rotateAboutY(sin(sceneConstants.totalGameTime));
     
@@ -124,8 +149,17 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     rasterizerData.vertexPosition = vertexIn.position;
     rasterizerData.modelInstanceID = constants.bufferIndex;
     
-    rasterizerData.addedColor = float4(constants.addedColorR / 255.0, constants.addedColorG / 255.0, constants.addedColorB / 255.0, 1.0);
-    rasterizerData.multipliedColor = float4(constants.multipliedColorR / 255.0, constants.multipliedColorG / 255.0, constants.multipliedColorB / 255.0, 1.0);
+    rasterizerData.addedColor = float4(
+        constants.addedColorR / 255.0,
+        constants.addedColorG / 255.0,
+        constants.addedColorB / 255.0,
+        1.0
+    );
+    rasterizerData.multipliedColor = float4(
+        constants.multipliedColorR / 255.0,
+        constants.multipliedColorG / 255.0,
+        constants.multipliedColorB / 255.0, 1.0
+    );
     
     return rasterizerData;
 }
@@ -141,8 +175,9 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
     
     float4 color = atlas.sample(sampler, rasterizerData.textureCoordinate);
     
-//    color = colorBlend_Overlay(color, rasterizerData.addedColor);
+
     // TODO: Configure ordering
+//    color = colorBlend_Overlay(color, rasterizerData.addedColor);
     color = colorBlend_Multiply(color, rasterizerData.multipliedColor);
     color = colorBlend_Add(color, rasterizerData.addedColor);
         

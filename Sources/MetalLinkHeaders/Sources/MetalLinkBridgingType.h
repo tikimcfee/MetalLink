@@ -18,13 +18,15 @@ struct BasicModelConstants {
 };
 
 struct InstancedConstants {
-    simd_float4x4 modelMatrix;
+//    simd_float4x4 modelMatrix;
+    
     simd_float4 textureDescriptorU;
     simd_float4 textureDescriptorV;
     
     // Compute specific
     simd_float2 textureSize;
     simd_float4 positionOffset;
+    simd_float4 scale;
     uint64_t unicodeHash;
     
     uint8_t addedColorR;
@@ -41,8 +43,8 @@ struct InstancedConstants {
          case ignoreHover
      }
      */
-    int8_t flags;
     int bufferIndex; // index of self in cpu mtlbuffer
+    uint8_t flags;
 };
 
 // MARK: - Glyphees

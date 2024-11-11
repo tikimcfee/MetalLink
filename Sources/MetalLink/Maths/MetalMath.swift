@@ -6,6 +6,10 @@
 //
 import simd
 
+func clamp<T: Comparable>(_ value: T, min minIn: T, max maxIn: T) -> T {
+    max(min(maxIn, value), minIn)
+}
+
 public let X_AXIS = LFloat3(1, 0, 0)
 public let Y_AXIS = LFloat3(0, 1, 0)
 public let Z_AXIS = LFloat3(0, 0, 1)
