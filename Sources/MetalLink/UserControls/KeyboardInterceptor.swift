@@ -13,11 +13,10 @@ import Foundation
 import AppKit
 #endif
 
-public typealias FileOperationReceiver = (FileOperation) -> Void
 public enum FileOperation {
     case openDirectory
 }
-
+public typealias FileOperationReceiver = (FileOperation) -> Void
 public typealias FocusChangeReceiver = (SelfRelativeDirection) -> Void
 
 public extension KeyboardInterceptor {
