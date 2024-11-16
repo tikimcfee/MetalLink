@@ -10,7 +10,7 @@ import Combine
 import MetalLinkHeaders
 import simd
 
-open class  MetalLinkNode: Measures {
+open class MetalLinkNode: Measures {
     public lazy var nodeId = UUID().uuidString
     
     public init() {
@@ -109,6 +109,10 @@ open class  MetalLinkNode: Measures {
     
     public var planeAreaXY: VectorFloat {
         return lengthX * lengthY
+    }
+    
+    public var volume: VectorFloat {
+        return lengthX * lengthY * lengthZ
     }
     
     public var lengthX: VectorFloat {

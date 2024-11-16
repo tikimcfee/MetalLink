@@ -265,6 +265,10 @@ public extension MeasuresDelegating {
         asNode.lengthZ
     }
     
+    var volume: Float {
+        asNode.volume
+    }
+    
     var nodeId: String { delegateTarget.nodeId }
     
     var worldPosition: LFloat3 { delegateTarget.worldPosition }
