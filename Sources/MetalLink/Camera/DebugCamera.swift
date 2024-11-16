@@ -68,6 +68,8 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
             if scrollLock.isEmpty {
                 print("-- removing scroll bounds: \(String(describing: scrollBounds))")
                 scrollBounds = nil
+            } else {
+                print("-- locked bounds: \(scrollLock)")
             }
         }
     }
