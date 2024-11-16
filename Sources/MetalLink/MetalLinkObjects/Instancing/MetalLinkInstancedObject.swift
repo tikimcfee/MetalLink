@@ -101,13 +101,12 @@ open class MetalLinkInstancedObject<
             instanceCount: min(
                 instanceState.instanceBufferCount,
                 instanceState.maxRenderCount
+            ),
+            baseInstance: clamp(
+                instanceState.baseRenderIndex,
+                min: 0,
+                max: instanceState.instanceBufferCount - 1
             )
-//            ,
-//            baseInstance: clamp(
-//                instanceState.baseRenderIndex,
-//                min: 0,
-//                max: instanceState.instanceBufferCount - 1
-//            )
         )
     }
 }

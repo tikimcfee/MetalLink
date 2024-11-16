@@ -77,7 +77,7 @@ extension GlyphCollection: MetalLinkReader {
     }
     
     public var instanceCount: Int {
-        return instanceState.constants.endIndex
+        return instanceState.instanceBufferCount
     }
     
     public func createInstanceStateCountBuffer() throws -> MTLBuffer {
