@@ -175,7 +175,6 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
     
     float4 color = atlas.sample(sampler, rasterizerData.textureCoordinate);
     
-
     // TODO: Configure ordering
 //    color = colorBlend_Overlay(color, rasterizerData.addedColor);
     color = colorBlend_Multiply(color, rasterizerData.multipliedColor);

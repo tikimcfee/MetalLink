@@ -39,12 +39,12 @@ public extension ConvertCompute {
                     }
                 } else {
                     data = """
-                Unsupported file type
-                \(source.path())
-                """.data(using: .utf8)!
-                }
+                    Unsupported file type
+                    \(source.path())
+                    """.data(using: .utf8)!
+                    }
                 
-                let maxSize = Int(1024.0 * 1024.0 * 2)
+                let maxSize = Int(1024.0 * 1024.0 * GlobalLiveConfig.store.preference.maxFileSizePerGridMegabytes)
                 if data.count > maxSize {
                     print("Prefixing large file from full render: \(source.pathComponents.suffix(2)) - \(data.count.megabytes)")
                     data = data.prefix(maxSize)

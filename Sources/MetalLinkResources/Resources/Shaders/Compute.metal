@@ -702,7 +702,6 @@ kernel void blitGlyphsIntoConstants(
         return;
     }
     
-//    uint myID = atomic_fetch_add_explicit(instanceCounter, 1, memory_order_relaxed);
     InstancedConstants out = targetConstants[targetBufferIndex];
     
     out.bufferIndex = targetBufferIndex;
@@ -715,11 +714,6 @@ kernel void blitGlyphsIntoConstants(
     
     out.flags = modifyNthBit(out.flags, 0, true);
     out.unicodeHash = glyphCopy.unicodeHash;
-//    out.modelMatrix = float4x4(1.0) * translationOf(float3(
-//        glyphCopy.positionOffset.x,
-//        glyphCopy.positionOffset.y,
-//        glyphCopy.positionOffset.z
-//    ));
     out.textureDescriptorU = glyphCopy.textureDescriptorU;
     out.textureDescriptorV = glyphCopy.textureDescriptorV;
     out.textureSize = glyphCopy.textureSize;
