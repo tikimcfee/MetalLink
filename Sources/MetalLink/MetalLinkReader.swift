@@ -82,8 +82,4 @@ public extension MetalLinkReader {
             Int(view.drawableSize.height)
         )
     }
-    
-    var defaultOrthographicProjection: simd_float4x4 {
-        view.defaultOrthographicProjection
-    }
 }
