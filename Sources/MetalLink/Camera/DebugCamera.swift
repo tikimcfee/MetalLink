@@ -44,15 +44,15 @@ public class DebugCamera: MetalLinkCamera, KeyboardPositionSource, MetalLinkRead
     }
     
     public var nearClipPlane: Float {
-        return GlobalLiveConfig.Default.cameraNearZ
+        return GlobalLiveConfig.store.preference.cameraNearZ
     }
     
     public var farClipPlane: Float {
-        return GlobalLiveConfig.Default.cameraFarZ
+        return GlobalLiveConfig.store.preference.cameraFarZ
     }
     
     public var fov: Float {
-        return GlobalLiveConfig.Default.cameraFieldOfView
+        return GlobalLiveConfig.store.preference.cameraFieldOfView
     }
     
     // MARK: -- Controls

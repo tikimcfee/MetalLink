@@ -85,8 +85,8 @@ public class KeyboardInterceptor {
         }
         
         let finalDelta = state.currentModifiers.contains(.shift)
-            ? GlobalLiveConfig.Default.movementSpeedModified
-            : GlobalLiveConfig.Default.movementSpeed
+            ? GlobalLiveConfig.store.preference.movementSpeedModified
+            : GlobalLiveConfig.store.preference.movementSpeed
         
         state.directions.forEach { direction in
             doDirectionDelta(direction, finalDelta)
@@ -133,9 +133,9 @@ private extension KeyboardInterceptor {
             positionOffset = source.worldUp * -Float(finalDelta)
             
         case .yawLeft:
-            rotationOffset = LFloat3(0, -GlobalLiveConfig.Default.movementYawMagnitude, 0)
+            rotationOffset = LFloat3(0, -GlobalLiveConfig.store.preference.movementYawMagnitude, 0)
         case .yawRight:
-            rotationOffset = LFloat3(0, GlobalLiveConfig.Default.movementYawMagnitude, 0)
+            rotationOffset = LFloat3(0, GlobalLiveConfig.store.preference.movementYawMagnitude, 0)
         }
         
         positions.totalOffset += positionOffset
@@ -277,11 +277,11 @@ private extension KeyboardInterceptor {
 #endif
 
 func directionForKey(_ key: String) -> SelfRelativeDirection? {
-    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    var map: Keymap { GlobalLiveConfig.store.preference.keymap }
     return map.movement[key]
 }
 
 func focusDirectionForKey(_ key: String, _ event: OSEvent) -> SelfRelativeDirection? {
-    var map: Keymap { GlobalLiveConfig.Default.keymap }
+    var map: Keymap { GlobalLiveConfig.store.preference.keymap }
     return map.focus[key]
 }

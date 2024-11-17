@@ -69,8 +69,8 @@ extension DebugCamera {
                 self.scrollLock.contains(.transverse)
             )
             
-            let sensitivity: Float = GlobalLiveConfig.Default.scrollSpeed
-            let sensitivityModified = GlobalLiveConfig.Default.scrollSpeedModified
+            let sensitivity: Float = GlobalLiveConfig.store.preference.scrollSpeed
+            let sensitivityModified = GlobalLiveConfig.store.preference.scrollSpeedModified
             
             let speedModified = self.interceptor.state.currentModifiers.contains(.shift)
             let inOutModifier = self.interceptor.state.currentModifiers.contains(.option)
@@ -118,8 +118,8 @@ extension DebugCamera {
                 
                 let delta = pair.1.currentLocation - pair.0.currentLocation
                 interceptor.positions.travelOffset = LFloat3(
-                    -delta.x * GlobalLiveConfig.Default.mobilePanXComputed,
-                     delta.y * GlobalLiveConfig.Default.mobilePanYComputed,
+                    -delta.x * GlobalLiveConfig.store.preference.mobilePanXComputed,
+                     delta.y * GlobalLiveConfig.store.preference.mobilePanYComputed,
                      0
                 )
             }.store(in: &cancellables)
@@ -130,7 +130,7 @@ extension DebugCamera {
             .sink { [interceptor] pair in
                 let next: MagnificationEvent = pair.1
                 guard next.state == .changed else { return }
-                let delta = (1 - next.magnification) * GlobalLiveConfig.Default.magnificationRawMultiplier
+                let delta = (1 - next.magnification) * GlobalLiveConfig.store.preference.magnificationRawMultiplier
                 interceptor.positions.travelOffset = LFloat3(0, 0, delta)
             }.store(in: &cancellables)
         
