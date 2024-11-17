@@ -490,9 +490,9 @@ kernel void utf32GlyphMap_FastLayout(
         GlyphMapKernelOut previousGlyph = utf32Buffer[previousGlyphIndex];
         
         float previousX = previousGlyph.positionOffset.x;
+        float previousY = previousGlyph.positionOffset.y;
         float previousSizeX = previousGlyph.textureSize.x;
         float previousSizeY = previousGlyph.textureSize.y;
-        float previousBreaks = previousGlyph.LineBreaksAtRender;
         int previousRendered = previousGlyph.rendered;
         int previousFoundStart = previousGlyph.foundLineStart;
         
@@ -501,8 +501,6 @@ kernel void utf32GlyphMap_FastLayout(
             && backtrackCount > 128
         ) {
             if (previousGlyph.codePoint == '\n') {
-                out.LineBreaksAtRender += 1;
-                
                 if (out.foundLineStart == false) {
                     out.positionOffset.x = 0;
                 }
@@ -510,8 +508,7 @@ kernel void utf32GlyphMap_FastLayout(
                 out.foundLineStart = true;
             }
             
-            out.LineBreaksAtRender += previousBreaks;
-            out.positionOffset.y += -1 * previousBreaks * previousSizeY;
+            out.positionOffset.y += previousY;
             
             if (out.foundLineStart == false) {
                 out.positionOffset.x += previousX;
@@ -523,7 +520,6 @@ kernel void utf32GlyphMap_FastLayout(
         }
         else {
             if (previousGlyph.codePoint == '\n') {
-                out.LineBreaksAtRender += 1;
                 out.positionOffset.y -= previousSizeY;
                 out.foundLineStart = true;
             }

@@ -76,7 +76,6 @@ struct GlyphMapKernelOut {
     
     int rendered;
     int foundLineStart;
-    int LineBreaksAtRender;
 };
 
 struct SceneConstants {
