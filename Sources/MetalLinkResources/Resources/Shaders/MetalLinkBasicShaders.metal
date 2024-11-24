@@ -41,9 +41,9 @@ vertex RasterizerData basic_vertex_function(
     RasterizerData rasterizerData;
     float4x4 modelMatrix = modelConstants.modelMatrix;
     
-//    bool isSearchMatched = getNthBit_Basic(modelConstants.flags, 2);
-//    if (isSearchMatched) {
-//        const float scale = 5;
+    bool isSearchMatched = getNthBit_Basic(modelConstants.flags, 2);
+    if (isSearchMatched) {
+        const float scale = 5;
 //        
 //        const float scaledWidth = modelConstants.width * scale;
 //        const float scaledHeight = modelConstants.height * scale;
@@ -54,12 +54,12 @@ vertex RasterizerData basic_vertex_function(
 //            -modelConstants.height,
 //            0
 //        ));
-//        modelMatrix = modelMatrix * scaleBy_Basic(float3(
-//            scale,
-//            scale,
-//            1.0
-//        ));
-//    }
+        modelMatrix = modelMatrix * scaleBy_Basic(float3(
+            scale,
+            scale,
+            1.0
+        ));
+    }
     
     rasterizerData.position =
     sceneConstants.projectionMatrix // camera

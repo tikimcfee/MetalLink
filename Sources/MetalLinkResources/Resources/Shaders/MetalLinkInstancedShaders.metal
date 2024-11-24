@@ -113,25 +113,25 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     if (useParent) {
         parentMatrix = parentConstants.modelMatrix;
     }
-//    bool isMatchedSearchParent = getNthBit_I(parentConstants.flags, 2);
-//    if (isMatchedSearchParent) {
-//        const float scale = 5;
-//        
+    bool isMatchedSearchParent = getNthBit_I(parentConstants.flags, 2);
+    if (isMatchedSearchParent) {
+        const float scale = 5;
+        
 //        const float scaledWidth = parentConstants.width * scale;
 //        const float scaledHeight = parentConstants.height * scale;
 //        const float widthDelta = scaledWidth - parentConstants.width;
 //        const float heightDelta = scaledHeight - parentConstants.height;
-//        parentMatrix = parentMatrix * scaleBy(float3(
-//            scale,
-//            scale,
-//            1.0
-//        ));
+        parentMatrix = parentMatrix * scaleBy(float3(
+            scale,
+            scale,
+            1.0
+        ));
 //        parentMatrix = parentMatrix * translationOf_I(float3(
 //            scaledWidth,
 //            scaledHeight,
 //            50.0
 //        ));
-//    }
+    }
     
     const float scale = 3;
     bool isMatchedSearchInstance = getNthBit_I(constants.flags, 2);

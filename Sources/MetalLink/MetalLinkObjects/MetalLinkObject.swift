@@ -59,7 +59,11 @@ public class MetalLinkObject: MetalLinkNode {
     
     // Explicitly overridable
     func drawPrimitives(_ sdp: SafeDrawPass) {
-        sdp.renderCommandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: mesh.vertexCount)
+        sdp.renderCommandEncoder.drawPrimitives(
+            type: .triangle,
+            vertexStart: 0,
+            vertexCount: mesh.vertexCount
+        )
     }
 }
 
