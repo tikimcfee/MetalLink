@@ -39,7 +39,6 @@ public extension GlyphCollection {
         ) {
             let size = letterNode.quadSize
             letterNode.position = currentPosition
-            letterNode.rebuildNow()
             pointer.right(size.x)
             
             charactersInLines += 1

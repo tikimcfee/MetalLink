@@ -89,6 +89,7 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         textureSize = .zero
         
         positionOffset = .zero
+        scale = .one
         
         unicodeHash = .zero
         
@@ -102,6 +103,7 @@ extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
         bufferIndex = .zero
         setFlag(.useParent, true)
         setFlag(.ignoreHover, false)
+        setFlag(.matchesSearch, false)
     }
 }
 
