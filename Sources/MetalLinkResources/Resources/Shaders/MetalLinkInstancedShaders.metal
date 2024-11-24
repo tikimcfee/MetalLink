@@ -126,11 +126,11 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
 //            scale,
 //            1.0
 //        ));
-////        parentMatrix = parentMatrix * translationOf_I(float3(
-////            scaledWidth,
-////            scaledHeight,
-////            50.0
-////        ));
+//        parentMatrix = parentMatrix * translationOf_I(float3(
+//            scaledWidth,
+//            scaledHeight,
+//            50.0
+//        ));
 //    }
     
     const float scale = 3;

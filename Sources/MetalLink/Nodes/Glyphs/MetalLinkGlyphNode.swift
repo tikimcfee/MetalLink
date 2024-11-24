@@ -21,13 +21,25 @@ public class MetalLinkGlyphNode: MetalLinkObject, QuadSizable {
     public var node: MetalLinkNode { self }
     
     public override var scale: LFloat3 {
-        get { instanceConstants?.scale.xyz ?? .zero }
-        set { instanceConstants?.scale = LFloat4(newValue, .zero) }
+        get { instanceConstants?.scale.xyz ?? super.scale }
+        set {
+            if instanceConstants != nil {
+                instanceConstants?.scale = LFloat4(newValue, 1)
+            } else {
+                super.scale = newValue
+            }
+        }
     }
     
     public override var position: LFloat3 {
-        get { instanceConstants?.positionOffset.xyz ?? .zero }
-        set { instanceConstants?.positionOffset = LFloat4(newValue, .zero) }
+        get { instanceConstants?.positionOffset.xyz ?? super.position }
+        set {
+            if instanceConstants != nil {
+                instanceConstants?.positionOffset = LFloat4(newValue, .zero)
+            } else {
+                super.position = newValue
+            }
+        }
     }
     
     public override var hasIntrinsicSize: Bool { true }

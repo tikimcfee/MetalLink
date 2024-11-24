@@ -826,6 +826,8 @@ kernel void blitGlyphsIntoConstants(
     out.multipliedColorB = 255;
     
     out.flags = modifyNthBit(out.flags, 0, true);
+    out.flags = modifyNthBit(out.flags, 1, false);
+    out.flags = modifyNthBit(out.flags, 2, false);
     out.unicodeHash = glyphCopy.unicodeHash;
     out.textureDescriptorU = glyphCopy.textureDescriptorU;
     out.textureDescriptorV = glyphCopy.textureDescriptorV;

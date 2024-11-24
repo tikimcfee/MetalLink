@@ -49,16 +49,16 @@ vertex RasterizerData basic_vertex_function(
 //        const float scaledHeight = modelConstants.height * scale;
 //        const float widthDelta = scaledWidth - modelConstants.width;
 //        const float heightDelta = scaledHeight - modelConstants.height;
+//        modelMatrix = modelMatrix * translationOf_Basic(float3(
+//            modelConstants.width,
+//            -modelConstants.height,
+//            0
+//        ));
 //        modelMatrix = modelMatrix * scaleBy_Basic(float3(
 //            scale,
 //            scale,
 //            1.0
 //        ));
-////        modelMatrix = modelMatrix * translationOf_Basic(float3(
-////            scaledWidth,
-////            scaledHeight,
-////            50.0
-////        ));
 //    }
     
     rasterizerData.position =

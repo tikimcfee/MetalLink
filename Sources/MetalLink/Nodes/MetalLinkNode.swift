@@ -171,6 +171,8 @@ open class MetalLinkNode: Measures {
         currentModel.updateNow()
         cachedBounds.updateNow()
         cachedSize.updateNow()
+        cachedWorldBounds.updateNow()
+        cachedWorldPosition.updateNow()
         
         for child in children {
             child.rebuildNow()

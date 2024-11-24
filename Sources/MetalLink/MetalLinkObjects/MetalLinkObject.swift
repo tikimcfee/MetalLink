@@ -75,8 +75,8 @@ extension MetalLinkObject {
         // Pull matrix from node position
         if currentModel.willUpdate {
             constants.modelMatrix = modelMatrix
-            constants.width = contentBounds.width
-            constants.height = contentBounds.height
+            constants.width = bounds.width
+            constants.height = bounds.height
         }
     }
 }

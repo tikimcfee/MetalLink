@@ -124,8 +124,8 @@ extension MetalLinkInstancedObject {
         // override rebuild and set there instead? How expensive is it to keep setting the same value?
         if currentModel.willUpdate {
             rootConstants.modelMatrix = modelMatrix
-            rootConstants.width = contentBounds.width
-            rootConstants.height = contentBounds.height
+            rootConstants.width = bounds.width
+            rootConstants.height = bounds.height
         }
     }
 }

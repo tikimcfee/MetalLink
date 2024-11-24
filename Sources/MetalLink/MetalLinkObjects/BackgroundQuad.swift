@@ -21,8 +21,8 @@ public class BackgroundQuad: MetalLinkObject, QuadSizable {
     
     public override var contentBounds: Bounds {
         Bounds(
-            LFloat3(-size.x / 2, size.y / 2, 0),
-            LFloat3( size.x / 2, size.y / 2, 1)
+            LFloat3(0, size.y, 0),
+            LFloat3(size.x, 0, 1)
         ) * scale
     }
     
