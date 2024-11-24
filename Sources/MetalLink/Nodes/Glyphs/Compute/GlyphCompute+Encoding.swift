@@ -140,6 +140,86 @@ public extension ConvertCompute {
         )
     }
     
+    
+    func searchConstants(
+        in collection: GlyphCollection,
+        with query: [CharacterHashType],
+        clearOnly: Bool,
+        using commandBuffer: MTLCommandBuffer
+    ) throws -> (
+        foundMatch: MTLBuffer,
+//        debug: UnsafeMutablePointer<CharacterHashType>,
+        encoder: MTLComputeCommandEncoder
+    ) {
+        let computeCommandEncoder = commandBuffer.makeComputeCommandEncoder()
+        guard let computeCommandEncoder
+        else { throw ComputeError.startupFailure }
+        
+        computeCommandEncoder.pushDebugGroup("[SG] Root Search Dispatch")
+        
+        // Set the compute kernel's parameters
+        let collectionBuffer = collection.instanceState.instanceBuffer;
+        computeCommandEncoder.setBuffer(collectionBuffer, offset: 0, index: 0)
+        
+        var collectionSize = UInt(collection.instanceState.constants.endIndex)
+        computeCommandEncoder.setBytes(&collectionSize, length: MemoryLayout<UInt>.stride, index: 1)
+        
+        var localQuery = query
+        var localQueryLength = UInt(query.count)
+        let localQueryByteLength: Int = CharacterHashType.memStride(of: query.count)
+        computeCommandEncoder.setBytes(&localQuery, length: localQueryByteLength, index: 2)
+        computeCommandEncoder.setBytes(&localQueryLength, length: MemoryLayout<UInt>.stride, index: 3)
+        
+        let foundMatchBuffer = try UInt.zero.asMetalBuffer(link)
+        computeCommandEncoder.setBuffer(foundMatchBuffer, offset: 0, index: 4)
+        
+        // Debugging?
+//        var debugBuffer = [CharacterHashType](repeating: 0, count: Int(collectionSize))
+//        let debugLength = debugBuffer.count * MemoryLayout<CharacterHashType>.stride
+//        let debugMetalBuffer = device.makeBuffer(bytes: &debugBuffer, length: debugLength)!
+//        computeCommandEncoder.setBuffer(debugMetalBuffer, offset: 0, index: 5) // New debug buffer
+        
+        // Set the pipeline state
+        let searchState = try functions.searchGlyphs()
+        let clearSearchState = try functions.clearSearchGlyphs()
+        
+        // Calculate the number of threads and threadgroups
+        let threadGroupSize = MTLSize(width: searchState.threadExecutionWidth, height: 1, depth: 1)
+        let validStartPositions = collectionSize - UInt(query.count) + 1
+        let threadGroupsWidthCeil = (Int(validStartPositions) + threadGroupSize.width - 1) / threadGroupSize.width
+        let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
+        
+        // Dispatch the compute kernel
+        computeCommandEncoder.setComputePipelineState(clearSearchState)
+        computeCommandEncoder.pushDebugGroup("[SG] - Dispatch clear search")
+        computeCommandEncoder.dispatchThreadgroups(
+            threadGroupsPerGrid,
+            threadsPerThreadgroup: threadGroupSize
+        )
+        computeCommandEncoder.popDebugGroup()
+        
+        if !clearOnly {
+            computeCommandEncoder.setComputePipelineState(searchState)
+            computeCommandEncoder.pushDebugGroup("[SG] - Dispatch search")
+            computeCommandEncoder.dispatchThreadgroups(
+                threadGroupsPerGrid,
+                threadsPerThreadgroup: threadGroupSize
+            )
+            computeCommandEncoder.popDebugGroup()
+        }
+        
+        // Finalize encoding
+        computeCommandEncoder.popDebugGroup()
+        computeCommandEncoder.endEncoding()
+        
+//        let debugPointer = debugMetalBuffer.boundPointer(as: CharacterHashType.self, count: debugLength)
+        return (
+            foundMatchBuffer,
+//            debugPointer,
+            computeCommandEncoder
+        )
+    }
+    
     func setupCopyBlitCommandEncoder(
         for unprocessedBuffer: MTLBuffer,
         targeting targetConstants: InstanceState<GlyphCacheKey, MetalLinkGlyphNode>,

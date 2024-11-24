@@ -5,64 +5,78 @@
 
 import Foundation
 import MetalKit
+import BitHandling
 
 // MARK: - Kernel functions + Pipeline states
 
+enum LinkFunctionTargets: String {
+    case rawRenderName = "utf8ToUtf32Kernel"
+    case atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
+    case fastLayoutKernelName = "utf32GlyphMap_FastLayout"
+    case fastLayoutPaginateKernelName = "utf32GlyphMap_FastLayout_Paginate"
+    case compressionKernalName = "processNewUtf32AtlasMapping"
+    case constantsBlitKernelName = "blitGlyphsIntoConstants"
+    case searchGlyphsKernelName = "searchGlyphs"
+    case clearSearchGlyphsKernelName = "clearSearchGlyphs"
+    
+    private func functionInstance(_ link: MetalLink) -> MTLFunction? {
+        link.library.makeFunction(name: rawValue)
+    }
+    
+    func makePipelineState(_ link: MetalLink) throws -> MTLComputePipelineState {
+        guard let function = functionInstance(link)
+        else { throw ComputeError.missingFunction(rawValue) }
+        return try link.device.makeComputePipelineState(function: function)
+    }
+}
+
 internal class ConvertComputeFunctions: MetalLinkReader {
+    var cache = [LinkFunctionTargets: MTLComputePipelineState]()
     let link: MetalLink
     init(link: MetalLink) { self.link = link }
     
-    let rawRenderName = "utf8ToUtf32Kernel"
-    lazy var rawRenderkernelFunction = library.makeFunction(name: rawRenderName)
-    
-    let atlasRenderName = "utf8ToUtf32KernelAtlasMapped"
-    lazy var atlasRenderKernelFunction = library.makeFunction(name: atlasRenderName)
-    
-    let fastLayoutKernelName = "utf32GlyphMap_FastLayout"
-    lazy var fastLayoutKernelFunction = library.makeFunction(name: fastLayoutKernelName)
-    
-    let fastLayoutPaginateKernelName = "utf32GlyphMap_FastLayout_Paginate"
-    lazy var fastLayoutPaginateKernelFunction = library.makeFunction(name: fastLayoutPaginateKernelName)
-    
-    let compressionKernalName = "processNewUtf32AtlasMapping"
-    lazy var compressionKernelFunction = library.makeFunction(name: compressionKernalName)
-    
-    let constantsBlitKernelName = "blitGlyphsIntoConstants"
-    lazy var constantsBlitKernelFunction = library.makeFunction(name: constantsBlitKernelName)
+    let lock = LockWrapper()
+    func cached(_ key: LinkFunctionTargets) throws -> MTLComputePipelineState {
+        lock.writeLock()
+        if let function = cache[key] {
+            lock.unlock()
+            return function
+        }
+        let newFunction = try key.makePipelineState(link)
+        cache[key] = newFunction
+        lock.unlock()
+        return newFunction
+    }
     
     func makeRawRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let rawRenderkernelFunction
-        else { throw ComputeError.missingFunction(rawRenderName) }
-        return try device.makeComputePipelineState(function: rawRenderkernelFunction)
+        try cached(.rawRenderName)
     }
-    
+
     func makeAtlasRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let atlasRenderKernelFunction
-        else { throw ComputeError.missingFunction(atlasRenderName) }
-        return try device.makeComputePipelineState(function: atlasRenderKernelFunction)
+        try cached(.atlasRenderName)
     }
-    
+
     func makeFastLayoutRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let fastLayoutKernelFunction
-        else { throw ComputeError.missingFunction(fastLayoutKernelName) }
-        return try device.makeComputePipelineState(function: fastLayoutKernelFunction)
+        try cached(.fastLayoutKernelName)
     }
-    
+
     func makeFastLayoutPaginateRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let fastLayoutPaginateKernelFunction
-        else { throw ComputeError.missingFunction(fastLayoutPaginateKernelName) }
-        return try device.makeComputePipelineState(function: fastLayoutPaginateKernelFunction)
+        try cached(.fastLayoutPaginateKernelName)
     }
-    
+
     func makeCompressionRenderPipelineState() throws -> MTLComputePipelineState {
-        guard let compressionKernelFunction
-        else { throw ComputeError.missingFunction(compressionKernalName) }
-        return try device.makeComputePipelineState(function: compressionKernelFunction)
+        try cached(.compressionKernalName)
     }
-    
+
     func makeConstantsBlitPipelineState() throws -> MTLComputePipelineState {
-        guard let constantsBlitKernelFunction
-        else { throw ComputeError.missingFunction(constantsBlitKernelName) }
-        return try device.makeComputePipelineState(function: constantsBlitKernelFunction)
+        try cached(.constantsBlitKernelName)
+    }
+
+    func searchGlyphs() throws -> MTLComputePipelineState {
+        try cached(.searchGlyphsKernelName)
+    }
+
+    func clearSearchGlyphs() throws -> MTLComputePipelineState {
+        try cached(.clearSearchGlyphsKernelName)
     }
 }

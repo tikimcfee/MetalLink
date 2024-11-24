@@ -107,9 +107,39 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
                                                 uint instanceId [[ instance_id ]] ) {
     RasterizerData rasterizerData;
     InstancedConstants constants = modelConstants[instanceId];
+    float4x4 parentMatrix = identityMatrix;
     
-    // Static matrix
-//    float4x4 instanceModel = constants.modelMatrix;
+    bool useParent = getNthBit_I(constants.flags, 0);
+    if (useParent) {
+        parentMatrix = parentConstants.modelMatrix;
+    }
+//    bool isMatchedSearchParent = getNthBit_I(parentConstants.flags, 2);
+//    if (isMatchedSearchParent) {
+//        const float scale = 5;
+//        
+//        const float scaledWidth = parentConstants.width * scale;
+//        const float scaledHeight = parentConstants.height * scale;
+//        const float widthDelta = scaledWidth - parentConstants.width;
+//        const float heightDelta = scaledHeight - parentConstants.height;
+//        parentMatrix = parentMatrix * scaleBy(float3(
+//            scale,
+//            scale,
+//            1.0
+//        ));
+////        parentMatrix = parentMatrix * translationOf_I(float3(
+////            scaledWidth,
+////            scaledHeight,
+////            50.0
+////        ));
+//    }
+    
+    const float scale = 3;
+    bool isMatchedSearchInstance = getNthBit_I(constants.flags, 2);
+    if (isMatchedSearchInstance) {
+        constants.positionOffset.z += scale;
+//        constants.scale.x += scale;
+//        constants.scale.y += scale;
+    }
     float4x4 instanceModel = float4x4(1.0) * translationOf_I(float3(
         constants.positionOffset.x,
         constants.positionOffset.y,
@@ -120,10 +150,21 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
         constants.scale.y,
         constants.scale.z
     ));
-    float4x4 parentMatrix = identityMatrix;
-    bool useParent = getNthBit_I(constants.flags, 0);
-    if (useParent) {
-        parentMatrix = parentConstants.modelMatrix;
+    if (isMatchedSearchInstance) {
+        constants.addedColorR = 255;
+        constants.addedColorG = 0;
+        constants.addedColorB = 0;
+        
+//        const float offsetX = constants.positionOffset.x;
+//        const float offsetY = constants.positionOffset.y;
+//        instanceModel = instanceModel
+////        * rotateAboutX(cos(sceneConstants.totalGameTime))
+////        * rotateAboutY(sin(sceneConstants.totalGameTime))
+//        * translationOf_I(float3(
+//            (sin(sceneConstants.totalGameTime) * constants.positionOffset.x),
+//            (sin(sceneConstants.totalGameTime + constants.positionOffset.x)),
+//            (sin(sceneConstants.totalGameTime + constants.positionOffset.x * 30))
+//        ));
     }
     
     // Do test rotation
@@ -158,7 +199,8 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
     rasterizerData.multipliedColor = float4(
         constants.multipliedColorR / 255.0,
         constants.multipliedColorG / 255.0,
-        constants.multipliedColorB / 255.0, 1.0
+        constants.multipliedColorB / 255.0,
+        1.0
     );
     
     return rasterizerData;

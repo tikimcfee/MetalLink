@@ -24,8 +24,22 @@ public struct Vertex {
     }
 }
 
+public enum ConstantsFlags: UInt8 {
+    case useParent
+    case ignoreHover
+    case matchesSearch
+}
+
 extension SceneConstants: MemoryLayoutSizable { }
-extension BasicModelConstants: MemoryLayoutSizable { }
+extension BasicModelConstants: MemoryLayoutSizable {
+    public func getFlag(_ queryFlag: ConstantsFlags) -> Bool {
+        getNthBit(flags, bitPosition: queryFlag.rawValue)
+    }
+    
+    mutating public func setFlag(_ queryFlag: ConstantsFlags, _ bit: Bool) {
+        flags = modifyNthBit(flags, bitPosition: queryFlag.rawValue, set: bit)
+    }
+}
 
 func getNthBit(_ value: UInt8, bitPosition: UInt8) -> Bool {
     return (value & (1 << bitPosition)) != 0
@@ -60,16 +74,11 @@ public extension LFloat4 {
 }
 
 extension InstancedConstants: MemoryLayoutSizable, BackingIndexed {
-    public enum Flag: UInt8 {
-        case useParent
-        case ignoreHover
-    }
-    
-    public func getFlag(_ queryFlag: Flag) -> Bool {
+    public func getFlag(_ queryFlag: ConstantsFlags) -> Bool {
         getNthBit(flags, bitPosition: queryFlag.rawValue)
     }
     
-    mutating public func setFlag(_ queryFlag: Flag, _ bit: Bool) {
+    mutating public func setFlag(_ queryFlag: ConstantsFlags, _ bit: Bool) {
         flags = modifyNthBit(flags, bitPosition: queryFlag.rawValue, set: bit)
     }
     

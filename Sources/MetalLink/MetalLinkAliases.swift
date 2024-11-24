@@ -8,6 +8,7 @@
 
 import Foundation
 
+public typealias CharacterHashType = UInt64
 public typealias TextureIndex = UInt32
 public typealias InstanceIDType = Int32
 public typealias IndexedBufferType = Int32

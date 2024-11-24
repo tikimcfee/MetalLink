@@ -26,15 +26,26 @@ bool getNthBit(int8_t value, uint8_t bitPosition) {
     return (value & (1 << bitPosition)) != 0;
 }
 
-int8_t modifyNthBit(int8_t value, uint8_t bitPosition, bool set) {
+//int8_t modifyNthBit(int8_t value, uint8_t bitPosition, bool set) {
+//    if (set) {
+//        // Set the bit if 'set' is true
+//        return value | (1 << bitPosition);
+//    } else {
+//        // Clear the bit if 'set' is false
+//        return value & ~(1 << bitPosition);
+//    }
+//}
+
+uint8_t modifyNthBit(uint8_t value, uint8_t bitPosition, bool set) {
+    bitPosition = bitPosition & 0x7;
+    
     if (set) {
-        // Set the bit if 'set' is true
-        return value | (1 << bitPosition);
+        return value | (1u << bitPosition);
     } else {
-        // Clear the bit if 'set' is false
-        return value & ~(1 << bitPosition);
+        return value & ~(1u << bitPosition);
     }
 }
+
 
 // Safely get byte at index, handling bounds check
 uint8_t getByte(
@@ -669,6 +680,112 @@ void atomicMax(
                                                     memory_order_relaxed));
 }
 
+kernel void searchGlyphs_debug(
+    uint id                                  [[thread_position_in_grid]],
+    device       InstancedConstants* targetConstants      [[buffer(0)]],
+    constant     uint* constantsCount                     [[buffer(1)]],
+    constant     uint64_t* searchInputHashes              [[buffer(2)]],
+    constant     uint* searchInputLength                  [[buffer(3)]],
+    device       atomic_uint* foundMatch                  [[buffer(4)]],  // Use atomic_uint for thread safety
+    device       uint64_t* debug                          [[buffer(5)]]
+) {
+    const uint searchLength = *searchInputLength;
+    const uint count = *constantsCount;
+
+    // Bounds check
+    if ((id + searchLength) > count) {
+        return;
+    }
+
+    InstancedConstants out;
+    uint searchHash;
+    bool matches = true;
+
+    // Compare each hash in the search query
+    for (uint i = 0; i < searchLength; i++) {
+        out = targetConstants[id + i];
+        searchHash = searchInputHashes[i];
+        if (out.unicodeHash != searchHash) {
+            matches = false;
+            break;  // Exit the loop on mismatch
+        } else {
+            debug[id + i] = searchHash;
+        }
+    }
+
+    if (matches) {
+        // Update flags in the matching range
+        for (uint i = 0; i < searchLength; i++) {
+            out = targetConstants[id + i];
+            out.flags = modifyNthBit(out.flags, 2, true);  // Modify the 2nd bit of the flag
+            targetConstants[id + i] = out;
+        }
+
+        // Atomically set foundMatch to true
+        atomic_store_explicit(foundMatch, 1, memory_order_relaxed);
+    }
+}
+
+kernel void searchGlyphs(
+    uint id                                  [[thread_position_in_grid]],
+    device       InstancedConstants* targetConstants      [[buffer(0)]],
+    constant     uint* constantsCount                     [[buffer(1)]],
+    constant     uint64_t* searchInputHashes              [[buffer(2)]],
+    constant     uint* searchInputLength                  [[buffer(3)]],
+    device       atomic_uint* foundMatch                  [[buffer(4)]]
+//    device       uint64_t* debug                          [[buffer(5)]]
+) {
+    const uint searchLength = *searchInputLength;
+    const uint count = *constantsCount;
+
+    // Bounds check
+    if ((id + searchLength) > count) {
+        return;
+    }
+
+    InstancedConstants out;
+    uint searchHash;
+    bool matches = true;
+
+    // Compare each hash in the search query
+    for (uint i = 0; i < searchLength; i++) {
+        out = targetConstants[id + i];
+        searchHash = searchInputHashes[i];
+        if (out.unicodeHash != searchHash) {
+            matches = false;
+            break;  // Exit the loop on mismatch
+        }
+    }
+
+    if (matches) {
+        // Update flags in the matching range
+        for (uint i = 0; i < searchLength; i++) {
+            out = targetConstants[id + i];
+            out.flags = modifyNthBit(out.flags, 2, true);  // Modify the 2nd bit of the flag
+            targetConstants[id + i] = out;
+        }
+
+        // Atomically set foundMatch to true
+        atomic_store_explicit(foundMatch, 1, memory_order_relaxed);
+    }
+}
+
+
+kernel void clearSearchGlyphs(
+                 uint id                                  [[thread_position_in_grid]],
+    device       InstancedConstants* targetConstants      [[buffer(0)]],
+    constant     uint* constantsCount                     [[buffer(1)]]
+) {
+    if (id > *constantsCount) {
+        return;
+    }
+    
+    InstancedConstants out = targetConstants[id];
+    out.flags = modifyNthBit(out.flags, 2, false);
+    targetConstants[id] = out;
+}
+
+
 kernel void blitGlyphsIntoConstants(
     device       GlyphMapKernelOut* unprocessedGlyphs     [[buffer(0)]],
                  uint id                                  [[thread_position_in_grid]],
@@ -685,16 +802,16 @@ kernel void blitGlyphsIntoConstants(
     device       atomic_float* maxY                       [[buffer(9)]],
     device       atomic_float* maxZ                       [[buffer(10)]]
 ) {
-    if (id < 0 || id > *unprocessedSize) {
+    if (id >= *unprocessedSize) {
         return;
     }
     GlyphMapKernelOut glyphCopy = unprocessedGlyphs[id];
-    if (glyphCopy.unicodeHash == 0) {
-        return;
-    }
+//    if (glyphCopy.unicodeHash == 0) {
+//        return;
+//    }
     
     uint targetBufferIndex = glyphCopy.sourceRenderableStringIndex;
-    if (targetBufferIndex < 0 || targetBufferIndex > *expectedCharacterCount) {
+    if (targetBufferIndex >= *expectedCharacterCount) {
         return;
     }
     

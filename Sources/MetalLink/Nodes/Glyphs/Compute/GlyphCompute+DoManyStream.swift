@@ -15,6 +15,71 @@ import Combine
 // MARK: -- [Many]
 
 public extension ConvertCompute {
+    func searchGlyphs_Conc(
+        in collection: GlyphCollection,
+        with query: [CharacterHashType],
+        collectionMatched: inout Bool,
+        clearOnly: Bool
+    ) throws {
+// -------------------------------------
+//        onDebugStart()
+// -------------------------------------
+        guard let commandBuffer = self.commandQueue.makeCommandBuffer()
+        else { throw ComputeError.startupFailure }
+        
+        let (
+            foundMatch,
+              /*debugPointer, */
+            _ /*encoder*/
+        ) = try self.searchConstants(
+            in: collection,
+            with: query,
+            clearOnly: clearOnly,
+            using: commandBuffer
+        )
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        let checked = foundMatch.boundPointer(as: UInt.self, count: 1)
+        collectionMatched = checked[0] == 1
+// -------------------------------------
+//        onDebugStop()
+        
+//         (0..<100).map { pointer[$0].getFlag(.matchesSearch) }.filter { $0 }
+//         (0..<100).compactMap { pointer[$0].getFlag(.matchesSearch) }.filter { $0 }
+//         (0..<100).filter { query.contains(pointer[$0].unicodeHash) }.compactMap { pointer[$0].unicodeHash.glyphComputeCharacter }
+        
+//        let checked = foundMatch.boundPointer(as: UInt.self, count: 1)
+////        let debug = (0..<100).map { debugPointer[$0] }
+//        if checked[0] == 1 {
+//            let (count, pointer) = collection.instancePointerPair
+//            
+//            let hashes =     (0..<1000).compactMap { pointer[$0].unicodeHash }
+//            let flags  =     (0..<1000).compactMap { pointer[$0].flags }
+//            let characters = hashes.compactMap     { $0.glyphComputeCharacter }
+//                        
+//            print("Well, it worked!")
+//        }
+// -------------------------------------
+    }
+    
+    private func onDebugStart(_ captureManager: MTLCaptureManager = .shared()) {
+        do {
+            let captureDescriptor = MTLCaptureDescriptor()
+            captureDescriptor.captureObject = commandQueue
+            captureDescriptor.destination = .developerTools
+            try captureManager.startCapture(with: captureDescriptor)
+        } catch {
+            print(error)
+        }
+    }
+    
+    private func onDebugStop(_ captureManager: MTLCaptureManager = .shared()) {
+        if captureManager.isCapturing {
+            captureManager.stopCapture()
+        }
+    }
+    
     func executeManyWithAtlas_Conc(
         in source: URL,
         atlas: MetalLinkAtlas

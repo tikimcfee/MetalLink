@@ -38,6 +38,7 @@ public extension MemoryLayoutSizable {
 
 extension UInt: MemoryLayoutSizable { }
 extension UInt32: MemoryLayoutSizable { }
+extension UInt64: MemoryLayoutSizable { }
 extension LFloat2: MemoryLayoutSizable { }
 extension LFloat3: MemoryLayoutSizable { }
 extension LFloat4: MemoryLayoutSizable { }

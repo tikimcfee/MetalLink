@@ -14,7 +14,10 @@
 struct BasicModelConstants {
     simd_float4x4 modelMatrix;
     simd_float4 color;
+    float width;
+    float height;
     int pickingId;
+    uint8_t flags;
 };
 
 struct InstancedConstants {
@@ -41,6 +44,7 @@ struct InstancedConstants {
      public enum Flag: UInt8 {
          case useParent
          case ignoreHover
+         case matchesCurrentSearch
      }
      */
     int bufferIndex; // index of self in cpu mtlbuffer

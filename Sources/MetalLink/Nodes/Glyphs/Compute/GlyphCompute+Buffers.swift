@@ -137,3 +137,30 @@ extension ConvertCompute {
         )
     }
 }
+
+extension UInt {
+    func asMetalBuffer(_ link: MetalLink) throws -> MTLBuffer {
+        let data = withUnsafeBytes(of: self) { Data($0) }
+        guard let buffer = link.device.loadToMTLBuffer(data: data)
+        else { throw ComputeError.bufferCreationFailed }
+        return buffer
+    }
+}
+
+extension UInt64 {
+    func asMetalBuffer(_ link: MetalLink) throws -> MTLBuffer {
+        let data = withUnsafeBytes(of: self) { Data($0) }
+        guard let buffer = link.device.loadToMTLBuffer(data: data)
+        else { throw ComputeError.bufferCreationFailed }
+        return buffer
+    }
+}
+
+extension Float {
+    func asMetalBuffer(_ link: MetalLink) throws -> MTLBuffer {
+        let data = withUnsafeBytes(of: self) { Data($0) }
+        guard let buffer = link.device.loadToMTLBuffer(data: data)
+        else { throw ComputeError.bufferCreationFailed }
+        return buffer
+    }
+}

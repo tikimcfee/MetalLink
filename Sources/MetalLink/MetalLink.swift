@@ -61,6 +61,26 @@ public class MetalLink {
         self.defaultLibrary = library
         self.input = DefaultInputReceiver.shared
     }
+    
+    public init(device: MTLDevice) throws {
+        self.view = CustomMTKView()
+        view.device = device
+        
+        guard let queue = device.makeCommandQueue(maxCommandBufferCount: DefaultQueueMaxUnprocessedBuffers)
+        else {
+            throw CoreError.noCommandQueue
+        }
+        
+        guard let library = MetalLinkResources.getDefaultLibrary(from: device)
+        else {
+            throw CoreError.noDefaultLibrary
+        }
+        
+        self.device = device
+        self.defaultCommandQueue = queue
+        self.defaultLibrary = library
+        self.input = DefaultInputReceiver.shared
+    }
 }
 
 #if !os(visionOS)
