@@ -47,6 +47,59 @@ public class EncodeResult {
     }
 }
 
+public enum QueryMode {
+    case exact(
+        raw: [CharacterHashType]
+    )
+    
+    case caseInsensitive(
+        upper: [CharacterHashType],
+        lower: [CharacterHashType]
+    )
+    
+    var primaryQueryCount: Int {
+        switch self {
+        case .exact(let raw):
+            raw.count
+        case .caseInsensitive(let upper, _):
+            upper.count
+        }
+    }
+    
+    public func applyToEncoder(
+        link: MetalLink,
+        computeCommandEncoder: MTLComputeCommandEncoder
+    ) throws {
+        var localQuery: [CharacterHashType]
+        var localQuerySecondary: [CharacterHashType]
+        var localQueryLength: UInt
+        let localQueryByteLength: Int
+        let useSecondaryQueryBuffer: MTLBuffer
+        
+        switch self {
+        case .exact(let raw):
+            localQuery = raw
+            localQuerySecondary = raw
+            localQueryLength = UInt(raw.count)
+            localQueryByteLength = CharacterHashType.memStride(of: raw.count)
+            useSecondaryQueryBuffer = try UInt.zero.asMetalBuffer(link)
+            
+            
+        case .caseInsensitive(let upper, let lower):
+            localQuery = upper
+            localQuerySecondary = lower
+            localQueryLength = UInt(upper.count)
+            localQueryByteLength = CharacterHashType.memStride(of: upper.count)
+            useSecondaryQueryBuffer = try UInt(1).asMetalBuffer(link)
+        }
+        
+        computeCommandEncoder.setBytes(&localQuery,          length: localQueryByteLength, index: 2)
+        computeCommandEncoder.setBytes(&localQuerySecondary, length: localQueryByteLength, index: 3)
+        computeCommandEncoder.setBytes(&localQueryLength,    length: MemoryLayout<UInt>.stride, index: 4)
+        computeCommandEncoder.setBuffer(useSecondaryQueryBuffer, offset: 0, index: 5)
+    }
+}
+
 public extension ConvertCompute {
     
     // Give me .utf8 text data and an atlas buffer and I'll do even weirder things
@@ -140,15 +193,13 @@ public extension ConvertCompute {
         )
     }
     
-    
     func searchConstants(
         in collection: GlyphCollection,
-        with query: [CharacterHashType],
+        queryMode mode: QueryMode,
         clearOnly: Bool,
         using commandBuffer: MTLCommandBuffer
     ) throws -> (
         foundMatch: MTLBuffer,
-//        debug: UnsafeMutablePointer<CharacterHashType>,
         encoder: MTLComputeCommandEncoder
     ) {
         let computeCommandEncoder = commandBuffer.makeComputeCommandEncoder()
@@ -164,20 +215,13 @@ public extension ConvertCompute {
         var collectionSize = UInt(collection.instanceState.constants.endIndex)
         computeCommandEncoder.setBytes(&collectionSize, length: MemoryLayout<UInt>.stride, index: 1)
         
-        var localQuery = query
-        var localQueryLength = UInt(query.count)
-        let localQueryByteLength: Int = CharacterHashType.memStride(of: query.count)
-        computeCommandEncoder.setBytes(&localQuery, length: localQueryByteLength, index: 2)
-        computeCommandEncoder.setBytes(&localQueryLength, length: MemoryLayout<UInt>.stride, index: 3)
+        try mode.applyToEncoder(
+            link: link,
+            computeCommandEncoder: computeCommandEncoder
+        )
         
         let foundMatchBuffer = try UInt.zero.asMetalBuffer(link)
-        computeCommandEncoder.setBuffer(foundMatchBuffer, offset: 0, index: 4)
-        
-        // Debugging?
-//        var debugBuffer = [CharacterHashType](repeating: 0, count: Int(collectionSize))
-//        let debugLength = debugBuffer.count * MemoryLayout<CharacterHashType>.stride
-//        let debugMetalBuffer = device.makeBuffer(bytes: &debugBuffer, length: debugLength)!
-//        computeCommandEncoder.setBuffer(debugMetalBuffer, offset: 0, index: 5) // New debug buffer
+        computeCommandEncoder.setBuffer(foundMatchBuffer, offset: 0, index: 6)
         
         // Set the pipeline state
         let searchState = try functions.searchGlyphs()
@@ -185,7 +229,7 @@ public extension ConvertCompute {
         
         // Calculate the number of threads and threadgroups
         let threadGroupSize = MTLSize(width: searchState.threadExecutionWidth, height: 1, depth: 1)
-        let validStartPositions = collectionSize - UInt(query.count) + 1
+        let validStartPositions = collectionSize - UInt(mode.primaryQueryCount) + 1
         let threadGroupsWidthCeil = (Int(validStartPositions) + threadGroupSize.width - 1) / threadGroupSize.width
         let threadGroupsPerGrid = MTLSize(width: threadGroupsWidthCeil, height: 1, depth: 1)
         

@@ -731,9 +731,10 @@ kernel void searchGlyphs(
     device       InstancedConstants* targetConstants      [[buffer(0)]],
     constant     uint* constantsCount                     [[buffer(1)]],
     constant     uint64_t* searchInputHashes              [[buffer(2)]],
-    constant     uint* searchInputLength                  [[buffer(3)]],
-    device       atomic_uint* foundMatch                  [[buffer(4)]]
-//    device       uint64_t* debug                          [[buffer(5)]]
+    constant     uint64_t* searchInputSecondary           [[buffer(3)]],
+    constant     uint* searchInputLength                  [[buffer(4)]],
+    device       uint* useSecondaryInput                  [[buffer(5)]],
+    device       atomic_uint* foundMatch                  [[buffer(6)]]
 ) {
     const uint searchLength = *searchInputLength;
     const uint count = *constantsCount;
@@ -745,16 +746,26 @@ kernel void searchGlyphs(
 
     InstancedConstants out;
     uint searchHash;
+    uint secondaryHash;
     bool matches = true;
-
+    const bool useSecondary = (*useSecondaryInput) == 1;
+    
     // Compare each hash in the search query
     for (uint i = 0; i < searchLength; i++) {
-        out = targetConstants[id + i];
-        searchHash = searchInputHashes[i];
-        if (out.unicodeHash != searchHash) {
-            matches = false;
-            break;  // Exit the loop on mismatch
+        out           = targetConstants[id + i];
+        searchHash    = searchInputHashes[i];
+        secondaryHash = searchInputSecondary[i];
+        
+        const bool matchesPrimary = out.unicodeHash == searchHash;
+        const bool matchesSecondary = out.unicodeHash == secondaryHash;
+        if (useSecondary) {
+            matches = matches && (matchesPrimary || matchesSecondary);
         }
+        else {
+            matches = matches && matchesPrimary;
+        }
+        
+        if (!matches) { break; }
     }
 
     if (matches) {

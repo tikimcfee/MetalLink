@@ -17,7 +17,7 @@ import Combine
 public extension ConvertCompute {
     func searchGlyphs_Conc(
         in collection: GlyphCollection,
-        with query: [CharacterHashType],
+        mode queryMode: QueryMode,
         collectionMatched: inout Bool,
         clearOnly: Bool
     ) throws {
@@ -33,7 +33,7 @@ public extension ConvertCompute {
             _ /*encoder*/
         ) = try self.searchConstants(
             in: collection,
-            with: query,
+            queryMode: queryMode,
             clearOnly: clearOnly,
             using: commandBuffer
         )
