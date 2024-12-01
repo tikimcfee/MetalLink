@@ -29,8 +29,7 @@ public extension ConvertCompute {
         
         let (
             foundMatch,
-              /*debugPointer, */
-            _ /*encoder*/
+            _
         ) = try self.searchConstants(
             in: collection,
             queryMode: queryMode,
