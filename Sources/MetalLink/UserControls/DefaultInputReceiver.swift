@@ -12,7 +12,7 @@ import UIKit
 #endif
 
 public extension DefaultInputReceiver {
-    static var shared = DefaultInputReceiver()
+    static let shared = DefaultInputReceiver()
 }
 
 public class DefaultInputReceiver: ObservableObject, MousePositionReceiver, KeyDownReceiver {
