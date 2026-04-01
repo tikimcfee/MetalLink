@@ -90,7 +90,14 @@ open class MetalLinkInstancedObject<
         
         // Set our constants so the instancing shader can do the multiplication itself so we don't have to.
         sdp.setCurrentVertexBytes(&rootConstants, BasicModelConstants.memStride, 9)
-                
+
+        // Bind group transform buffer at index 3 (required by instanced vertex shader).
+        // When groupTransformBuffer is set on the SafeDrawPass, all instances index into it
+        // via parentConstants.groupId. groupId == 0 uses identity (no group transform).
+        if let groupBuffer = sdp.groupTransformBuffer {
+            sdp.setCurrentVertexBuffer(groupBuffer, 0, 3)
+        }
+
         // Draw the single instanced glyph mesh (see DIRTY FILTHY HACK for details).
         // Constants need to capture vertex transforms for emoji/nonstandard.
         // OR, use multiple draw calls for sizes (noooo...)

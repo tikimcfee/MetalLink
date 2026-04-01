@@ -11,11 +11,15 @@ import MetalLinkHeaders
 
 public class SafeDrawPass {
     private static var reusedPassContainer: SafeDrawPass?
-    
+
     public var renderPassDescriptor: MTLRenderPassDescriptor
     public var renderCommandEncoder: MTLRenderCommandEncoder
     public var commandBuffer: MTLCommandBuffer
-    
+
+    /// Group transform buffer bound at vertex buffer index 3.
+    /// Set once per frame by the renderer. When nil, a fallback identity buffer is used.
+    public var groupTransformBuffer: MTLBuffer?
+
     private var currents = Currents()
 
         
@@ -143,6 +147,7 @@ extension SafeDrawPass {
             container.renderPassDescriptor = renderPassDescriptor
             container.renderCommandEncoder = renderCommandEncoder
             container.commandBuffer = commandBuffer
+            container.groupTransformBuffer = link.fallbackGroupTransformBuffer
             container.reset()
             return container
         } else {
@@ -151,6 +156,7 @@ extension SafeDrawPass {
                 renderCommandEncoder: renderCommandEncoder,
                 commandBuffer: commandBuffer
             )
+            container.groupTransformBuffer = link.fallbackGroupTransformBuffer
             reusedPassContainer = container
             return container
         }

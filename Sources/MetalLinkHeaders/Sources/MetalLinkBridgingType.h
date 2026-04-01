@@ -18,6 +18,12 @@ struct BasicModelConstants {
     float height;
     int pickingId;
     uint8_t flags;
+    uint8_t _pad0;          // explicit padding for alignment
+    uint16_t groupId;       // indexes into GroupTransform buffer; 0 = no group (legacy path)
+};
+
+struct GroupTransform {
+    simd_float4x4 matrix;   // 64 bytes, identity when inactive
 };
 
 struct InstancedConstants {

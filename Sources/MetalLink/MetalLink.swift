@@ -11,6 +11,7 @@ import MetalKit
 import MetalLinkResources
 import MetalLinkHeaders
 import Combine
+import simd
 
 public class MetalLink {
     public let DefaultQueueMaxUnprocessedBuffers = 64
@@ -34,6 +35,19 @@ public class MetalLink {
     // TODO: Make these color indices named to match their descriptor usages
     public lazy var glyphPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 1)
     public lazy var gridPickingTexture = MetalLinkPickingTexture(link: self, colorIndex: 2)
+
+    /// Fallback group transform buffer containing a single identity matrix at index 0.
+    /// Used when no GroupTransformManager is available yet (migration path).
+    /// All legacy collections have groupId == 0, which indexes into this identity entry.
+    public lazy var fallbackGroupTransformBuffer: MTLBuffer = {
+        let stride = MemoryLayout<GroupTransform>.stride
+        // Allocate space for at least 1 entry (index 0 = identity)
+        let buffer = device.makeBuffer(length: stride, options: .storageModeShared)!
+        buffer.label = "FallbackGroupTransforms"
+        let ptr = buffer.contents().bindMemory(to: GroupTransform.self, capacity: 1)
+        ptr[0].matrix = matrix_identity_float4x4
+        return buffer
+    }()
     
     private lazy var sizeSubject = PassthroughSubject<CGSize, Never>()
     private(set) lazy var sizeSharedUpdates = sizeSubject.share()

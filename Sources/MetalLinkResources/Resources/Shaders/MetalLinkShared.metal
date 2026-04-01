@@ -20,12 +20,13 @@ struct VertexIn {
 
 struct RasterizerData {
     float totalGameTime;
-    
+
     float4 position [[ position ]];
     float3 vertexPosition [[ flat ]];
     float2 textureCoordinate;
-    
+
     uint modelInstanceID [[ flat ]];
+    uint groupId [[ flat ]];
     float4 addedColor;
     float4 multipliedColor;
 };
@@ -38,6 +39,7 @@ struct Material {
 struct PickingTextureFragmentOut {
     float4 mainColor     [[ color(0) ]];
     uint pickingID       [[ color(1) ]];
+    uint groupId         [[ color(2) ]];
 };
 
 struct BasicPickingTextureFragmentOut {

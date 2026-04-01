@@ -103,15 +103,23 @@ bool getNthBit_I(int8_t value, uint8_t bitPosition) {
 vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage_in ]],
                                                 constant SceneConstants &sceneConstants [[ buffer(1) ]],
                                                 constant InstancedConstants *modelConstants [[ buffer(2) ]],
+                                                constant GroupTransform *groupTransforms [[ buffer(3) ]],
                                                 constant BasicModelConstants &parentConstants [[ buffer(9) ]], // Constants of the parent rendered object this instance is attached to
                                                 uint instanceId [[ instance_id ]] ) {
     RasterizerData rasterizerData;
     InstancedConstants constants = modelConstants[instanceId];
     float4x4 parentMatrix = identityMatrix;
-    
+
     bool useParent = getNthBit_I(constants.flags, 0);
     if (useParent) {
         parentMatrix = parentConstants.modelMatrix;
+    }
+
+    // Group transform: layout position for the grid this collection belongs to.
+    // groupId == 0 means no group (legacy path), identity matrix applied.
+    float4x4 groupMatrix = identityMatrix;
+    if (parentConstants.groupId > 0) {
+        groupMatrix = groupTransforms[parentConstants.groupId].matrix;
     }
 //    bool isMatchedSearchParent = getNthBit_I(parentConstants.flags, 2);
 //    if (isMatchedSearchParent) {
@@ -176,19 +184,21 @@ vertex RasterizerData instanced_vertex_function(const VertexIn vertexIn [[ stage
       sceneConstants.projectionMatrix // camera
     * sceneConstants.viewMatrix       // viewport
     * parentMatrix                    // parent root transform
+    * groupMatrix                     // group (grid layout) transform
     * instanceModel                   // transforms
     * float4(vertexIn.position, 1)    // current position
     ;
-    
+
     // Lol indexing into float4
     uint uvIndex = vertexIn.uvTextureIndex;
     float u = constants.textureDescriptorU[uvIndex];
     float v = constants.textureDescriptorV[uvIndex];
     rasterizerData.textureCoordinate = float2(u, v);
-    
+
     rasterizerData.totalGameTime = sceneConstants.totalGameTime;
     rasterizerData.vertexPosition = vertexIn.position;
     rasterizerData.modelInstanceID = constants.bufferIndex;
+    rasterizerData.groupId = parentConstants.groupId;
     
     rasterizerData.addedColor = float4(
         constants.addedColorR / 255.0,
@@ -225,6 +235,7 @@ fragment PickingTextureFragmentOut instanced_fragment_function(
     PickingTextureFragmentOut out;
     out.mainColor = float4(color.r, color.g, color.b, color.a);
     out.pickingID = rasterizerData.modelInstanceID;
-    
+    out.groupId = rasterizerData.groupId;
+
     return out;
 }
